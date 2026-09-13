@@ -56,6 +56,7 @@ export function makeSign({ zh = '', en = '', chips = [], w = 6, h = 1.6 }) {
 export function hangingSign(opts, x, y, z, ry = 0) {
   const g = makeSign(opts);
   const h = opts.h || 1.6;
+  for (const c of g.children) c.position.y = y;   // makeSign leaves the plate at y=0
   const ceilY = FLOOR_H - SLAB_T - 0.45;
   const rodLen = ceilY - (y + h / 2);
   for (const s of [-1, 1]) {
@@ -78,6 +79,7 @@ export function platformSign(face) {
     w: 7.5, h: 1.5,
   });
   const ceilY = FLOOR_H - SLAB_T - 0.45, plateY = 3.4, h = 1.5;
+  for (const c of g.children) c.position.y = plateY;
   const rodLen = ceilY - (plateY + h / 2);
   for (const s of [-1, 1]) {
     const rod = box(0.05, Math.max(rodLen, 0.05), 0.05, M.signPost);
