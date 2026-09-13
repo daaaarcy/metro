@@ -11,10 +11,11 @@ import {
 } from './builders/structure.js';
 import { platformLevel, benches } from './builders/platforms.js';
 import { escalatorRun, runWorldRect, exitShaft, liftShaft, footbridge } from './builders/circulation.js';
-import { makeSign, platformSign, exitTotem } from './builders/signage.js';
-import { gateBank, serviceBooth, shops, toilets, kiosk, hvac, restaurant, mallEntrance } from './builders/props.js';
+import { makeSign, hangingSign, platformSign, exitTotem } from './builders/signage.js';
+import { gateBank, serviceBooth, shops, toilets, kiosk, hvac, restaurant, mallEntrance, sevenEleven } from './builders/props.js';
+import { calligraphy, posters, postersEnd, binPair, fireCabinets, mapBoard } from './builders/decor.js';
 import { tunnelTube } from './builders/tracks.js';
-import { GATE_ROWS, RESTAURANTS, MALL } from './station-data.js';
+import { GATE_ROWS, RESTAURANTS, MALL, SEVEN } from './station-data.js';
 import { FITTINGS } from './registry.js';
 
 const INTERIOR_H = FLOOR_H - SLAB_T - 0.5;
@@ -153,6 +154,16 @@ export function buildStation() {
       end.position.set(-rect.x1 + 1.2, 3.2, 0);
       end.rotation.y = Math.PI / 2;
       g.add(end);
+      // real-station dressing: calligraphy across the tracks, ad lightboxes,
+      // fire cabinets on the walls, bins beside the benches
+      g.add(calligraphy(rect, 0));
+      for (const s of [-1, 1]) {
+        g.add(posters(rect.x0 + 34, rect.x1 - 34, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 38));
+        g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 56));
+      }
+      for (const bx of [-50, -20, 10, 40]) {
+        g.add(binPair(bx, spec.kind === 'island' ? 1.5 : 10.9, 0));
+      }
     }
 
     if (lvl.type === 'concourse') {
@@ -169,11 +180,22 @@ export function buildStation() {
       for (const r of GATE_ROWS) g.add(gateBank(r.x0, r.x1, r.z, 0));
       for (const r of RESTAURANTS) g.add(restaurant(r, r.side * 19.6, 0, -r.side));
       g.add(mallEntrance(MALL.x, MALL.side * 19.6, 0, -MALL.side));
+      g.add(sevenEleven(SEVEN.x, SEVEN.side * 19.6, 0, -SEVEN.side));
       for (const [i, x] of [-48, -14, 40, 55].entries()) g.add(kiosk(x, -13.2, 0, i + 2));
       for (const [i, x] of [-60, -20, 25, 62].entries()) g.add(kiosk(x, 13.2, 0, i + 5));
       g.add(serviceBooth(0, 13, 0));
       g.add(serviceBooth(-30, -13, 0));
+      g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, 0, 3.0, 13));
+      g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -30, 3.0, -13));
       g.add(toilets(-70, -14, 0));
+      // end-wall ads + system map + bins + fire cabinets
+      g.add(postersEnd(rect, 0, -1, rect.z0 + 4, rect.z1 - 4, 12));
+      g.add(postersEnd(rect, 0, 1, rect.z0 + 4, 0, 12));
+      g.add(mapBoard(rect.x1 - 0.7, 9, 0, -Math.PI / 2));
+      for (const s of [-1, 1]) {
+        g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 60));
+        for (const bx of [-56, -4, 56]) g.add(binPair(bx, s * 11.8, 0));
+      }
       // keep columns out of the exit stair shafts (they land inside the concourse)
       const exitHoles = EXITS.map(ex => {
         const cz = ex.side * EXIT_Z, half = ESC.runLen / 2;
@@ -192,9 +214,21 @@ export function buildStation() {
         s.position.set(x, 3.6, -6);
         g.add(s);
       }
-      const exitSign = makeSign({ zh: '出口 Exits', en: 'Exits A–F', w: 6, h: 1.4 });
+      // wayfinding with exit-letter chips like the real concourse signs
+      const exitSign = makeSign({
+        zh: '出口', en: 'Exits',
+        chips: ['A', 'B', 'C', 'D', 'E', 'F'].map(t => ({ text: t, color: '#e2231a' })),
+        w: 11, h: 1.5,
+      });
       exitSign.position.set(-20, 3.6, 8);
       g.add(exitSign);
+      const exitSign2 = makeSign({
+        zh: '出口', en: 'Exits',
+        chips: ['A', 'B', 'C', 'D', 'E', 'F'].map(t => ({ text: t, color: '#e2231a' })),
+        w: 11, h: 1.5,
+      });
+      exitSign2.position.set(30, 3.6, -8);
+      g.add(exitSign2);
     }
 
     if (lvl.type === 'lobby') {
@@ -210,6 +244,9 @@ export function buildStation() {
       g.add(benches(rect.x0 + 14, rect.x1 - 14, -14.5, 0));
       g.add(benches(rect.x0 + 14, rect.x1 - 14, 14.5, 0));
       g.add(serviceBooth(-35, 13, 0));
+      g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -35, 3.0, 13));
+      g.add(posters(rect.x0 + 8, rect.x1 - 8, rect.z1 - 0.62, 0, Math.PI, 20));
+      for (const bx of [-30, 0, 30, 60]) g.add(binPair(bx, -15.2, 0));
       for (const [i, x] of [-12, 30].entries()) g.add(kiosk(x, -13.4, 0, i + 9));
       g.add(columns(rect, 0, [-9, 9], 16, floorHoles));
       g.add(lightStrips(rect, 0, [-10, 0, 10]));

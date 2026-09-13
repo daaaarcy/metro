@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { M } from './materials.js';
 import { ESC, LIFT_SIZE, BRIDGE, FLOOR_H } from '../station-data.js';
-import { solid, walkable, ESC_RUNS } from '../registry.js';
+import { solid, walkable, ESC_RUNS, STAIR_RUNS } from '../registry.js';
 import { box } from './structure.js';
 import { exitFascia } from './signage.js';
 
@@ -100,6 +100,21 @@ export function stairRun(run) {
   return g;
 }
 
+// register a staircase for pedestrian pathing — normalized to a top end
+// (level `from`) and bottom end (level `to`) plus the unit vector top→bot
+function registerStair(run, from, to) {
+  const top = run.y1 >= run.y2 ? { x: run.x1, z: run.z1, y: run.y1 }
+                               : { x: run.x2, z: run.z2, y: run.y2 };
+  const bot = run.y1 >= run.y2 ? { x: run.x2, z: run.z2, y: run.y2 }
+                               : { x: run.x1, z: run.z1, y: run.y1 };
+  const h = Math.hypot(bot.x - top.x, bot.z - top.z);
+  STAIR_RUNS.push({
+    top, bot, ux: (bot.x - top.x) / h, uz: (bot.z - top.z) / h,
+    horiz: h, drop: top.y - bot.y, slope: Math.hypot(h, top.y - bot.y),
+    from, to,
+  });
+}
+
 // world AABB of a run's plan footprint (+margin), used for floor openings
 export function runWorldRect(run, margin = 0.55) {
   return {
@@ -120,6 +135,7 @@ export function exitShaft(exit, yG, yL1) {
     w: 2.4,
   };
   g.add(stairRun(run));
+  registerStair(run, 'G', 'L1');
 
   // pavilion: glazed canopy over the stair mouth — the entry end
   // (facing the station core, at the stair top) is left open
@@ -184,19 +200,34 @@ export function liftShaft(wx, wz, yTop, yBot) {
   return g;
 }
 
+const planterMat = new THREE.MeshStandardMaterial({ color: 0x3f6b3a, roughness: 0.9 });
+
 // U1 footbridge: decks, parapets, towers down to G, neighbouring buildings.
 export function footbridge() {
   const g = new THREE.Group();
   const y = BRIDGE.y;
-  const mk = (r) => {
+  const mk = (r, gaps = []) => {
     const w = r.x1 - r.x0, d = r.z1 - r.z0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
     const deck = box(w, 0.4, d, M.bridgeDeck);
     deck.position.set(cx, y - 0.2, cz);
     g.add(walkable(deck));
-    for (const zz of [r.z0 + 0.06, r.z1 - 0.06]) {
-      const p = box(w, 1.1, 0.08, M.glass);
-      p.position.set(cx, y + 0.55, zz);
-      g.add(solid(p));
+    for (const [zz, side] of [[r.z0 + 0.06, 'z0'], [r.z1 - 0.06, 'z1']]) {
+      // parapet segments split around any gaps (stair mouths)
+      const cuts = gaps.filter(gp => gp.side === side).sort((a, b) => a.a - b.a);
+      let sx = r.x0;
+      for (const gp of cuts) {
+        if (gp.a > sx) {
+          const p = box(gp.a - sx, 1.1, 0.08, M.glass);
+          p.position.set((sx + gp.a) / 2, y + 0.55, zz);
+          g.add(solid(p));
+        }
+        sx = Math.max(sx, gp.b);
+      }
+      if (sx < r.x1) {
+        const p = box(r.x1 - sx, 1.1, 0.08, M.glass);
+        p.position.set((sx + r.x1) / 2, y + 0.55, zz);
+        g.add(solid(p));
+      }
     }
     for (let x = r.x0 + 6; x < r.x1 - 3; x += 18) {
       const c = box(0.5, y, 0.5, M.column);
@@ -204,8 +235,32 @@ export function footbridge() {
       g.add(solid(c));
     }
   };
-  mk(BRIDGE.spine);
+  // stair mouth on the spine's south edge beside the east tower
+  const STAIR_X = 66.5;
+  mk(BRIDGE.spine, [{ side: 'z1', a: STAIR_X - 1.7, b: STAIR_X + 1.7 }]);
   mk(BRIDGE.connector);
+
+  // G -> U1 stair: drops 8 m south of the deck onto the ground slab
+  const fbRun = {
+    x1: STAIR_X, z1: BRIDGE.spine.z1, y1: y,
+    x2: STAIR_X, z2: BRIDGE.spine.z1 + 14.6, y2: 0, w: 3,
+  };
+  g.add(stairRun(fbRun));
+  registerStair(fbRun, 'U1', 'G');
+
+  // planters along the spine parapet + a bench on the connector deck
+  for (const px of [-64, -32, 20, 44]) {
+    const pot = box(1.6, 0.55, 0.7, M.signPost);
+    pot.position.set(px, y + 0.27, BRIDGE.spine.z1 - 0.55);
+    const bush = box(1.5, 0.4, 0.6, planterMat);
+    bush.position.set(px, y + 0.72, BRIDGE.spine.z1 - 0.55);
+    g.add(solid(pot), bush);
+  }
+  const bench = box(2.4, 0.12, 0.55, M.steel);
+  bench.position.set(15, y + 0.46, -32.7);
+  const benchLegs = box(2.2, 0.42, 0.4, M.signPost);
+  benchLegs.position.set(15, y + 0.21, -32.7);
+  g.add(solid(bench), solid(benchLegs));
 
   for (const tx of BRIDGE.towers) {
     const tz = (BRIDGE.spine.z0 + BRIDGE.spine.z1) / 2;

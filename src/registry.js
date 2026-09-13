@@ -19,5 +19,10 @@ export const GATES = [];
 // { [levelId]: { doorSets:[{doors,xs,y,z,face,track,level,terminus}] } }
 export const FITTINGS = {};
 
+// static stair runs pedestrians can use (world space):
+// {top:{x,z,y}, bot:{x,z,y}, ux,uz (unit top→bot), horiz, drop, slope, from, to}
+// `from` = level at the TOP end, `to` = level at the BOTTOM end
+export const STAIR_RUNS = [];
+
 export function solid(mesh) { mesh.userData.solid = true; SOLIDS.push(mesh); return mesh; }
 export function walkable(mesh, data = {}) { mesh.userData.walkable = data; WALKABLES.push(mesh); return mesh; }

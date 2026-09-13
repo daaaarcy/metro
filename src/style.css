@@ -16,8 +16,8 @@ canvas { display: block; }
   position: absolute; top: 16px; left: 18px;
   display: flex; gap: 12px; align-items: center;
 }
-.mtr-badge {
-  display: flex; align-items: center; padding: 4px;
+img.mtr-badge {
+  height: 34px; width: auto; display: block;
   filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4));
 }
 #masthead h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
@@ -50,11 +50,14 @@ canvas { display: block; }
 input[type="range"] { width: 100%; margin-top: 6px; accent-color: #4299e1; }
 input[type="range"]:disabled { opacity: 0.3; }
 
+.sec-hint {
+  font-size: 10px; line-height: 1.45; opacity: 0.5; margin-top: 7px;
+}
+
 .lvl-row {
   display: flex; align-items: center; gap: 6px;
   padding: 3px 0; font-size: 12px;
 }
-.lvl-row input { accent-color: #4299e1; }
 .lvl-row .lvl-id { font-weight: 700; width: 24px; }
 .lvl-row .lvl-name { flex: 1; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lvl-row .go {
@@ -96,6 +99,13 @@ input[type="range"]:disabled { opacity: 0.3; }
 #ticker .t-plat { font-weight: 800; width: 20px; }
 #ticker .t-dest { flex: 1; opacity: 0.9; }
 #ticker .t-state { opacity: 0.6; font-size: 10px; }
+#ticker .t-live { font-size: 9.5px; opacity: 0.75; letter-spacing: 0.4px; margin-bottom: 3px; }
+#ticker .live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #3ddc74;
+  display: inline-block; margin-right: 2px; align-self: center;
+  animation: livepulse 2s infinite;
+}
+@keyframes livepulse { 50% { opacity: 0.35; } }
 
 #hint {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);

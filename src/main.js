@@ -153,13 +153,30 @@ rig.initColliders();
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
+// walk mode is the default — spawn at street level facing the exit pavilions
+const WALK_HOME = new THREE.Vector3(-30, 1.62, 26);
+const WALK_LOOK = new THREE.Vector3(-10, 1, -6);
 rig.orbit.target.copy(HOME_TARGET);
+camera.position.copy(WALK_HOME);
+camera.lookAt(WALK_LOOK);
+rig.setMode('walk');
 
 let peopleOn = true;
 buildUI({
   onMode: m => {
     rig.setMode(m);
-    if (m === 'orbit') rig.teleport(HOME_POS, HOME_TARGET);
+    if (m === 'orbit') { rig.teleport(HOME_POS, HOME_TARGET); return; }
+    if (m === 'walk') {
+      // land on whatever surface is under the camera; over a void, go home
+      const fl = rig.floorAt(camera.position.x, camera.position.z, camera.position.y + 0.5);
+      const dir = new THREE.Vector3();
+      camera.getWorldDirection(dir); dir.y = 0;
+      if (dir.lengthSq() < 0.01) dir.set(0, 0, -1); else dir.normalize();
+      const pos = fl.y > -Infinity && camera.position.y - fl.y < 30
+        ? new THREE.Vector3(camera.position.x, fl.y + 1.62, camera.position.z)
+        : WALK_HOME.clone();
+      rig.teleport(pos, pos.clone().add(dir));
+    }
   },
   onClip: applyClip,
   onLevelVisible: (id, v) => {
@@ -178,7 +195,7 @@ buildUI({
   onAudio: v => { v ? audio.enable() : audio.disable(); },
   onPeople: v => {
     peopleOn = v;
-    passengers.bodies.visible = passengers.heads.visible = v;
+    passengers.group.visible = v;
   },
 });
 
@@ -226,7 +243,7 @@ function tick() {
   } else showPrompt(null);
 
   tickerT += dt;
-  if (tickerT > 0.5) { tickerT = 0; updateTicker(trainSim.services); }
+  if (tickerT > 0.5) { tickerT = 0; updateTicker(trainSim.services, trainSim.tt.live); }
 
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);

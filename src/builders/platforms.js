@@ -4,10 +4,33 @@ import { FLOOR_H, SLAB_T, BED_HALF, TRACK_Z, SIDE_TRACK_Z, PLATFORMS } from '../
 import { solid } from '../registry.js';
 import { box } from './structure.js';
 import { track } from './tracks.js';
+import { canvasTex } from './decor.js';
 
 const INTERIOR_H = FLOOR_H - SLAB_T - 0.5; // clear interior height ≈ 5.5
 const DOOR_PITCH = 2.45;
 const BAY = 1.7;                            // clear opening at each doorway
+
+// shared floor decal: queue arrows + "mind the gap" strip in front of a bay
+const decalMat = new THREE.MeshBasicMaterial({
+  map: canvasTex(256, 96, (ctx, w, h) => {
+    ctx.fillStyle = '#43484f'; ctx.fillRect(0, 0, w, h);      // strip base
+    ctx.fillStyle = '#e8c21e'; ctx.fillRect(0, 0, w, 14);     // yellow edge band
+    ctx.fillStyle = '#e8c21e';
+    // outward queue arrows at both flanks (passengers exit through the middle)
+    for (const [ax, dir] of [[w * 0.22, -1], [w * 0.78, 1]]) {
+      ctx.beginPath();
+      ctx.moveTo(ax + dir * 26, h * 0.36);
+      ctx.lineTo(ax + dir * 6, h * 0.52); ctx.lineTo(ax + dir * 6, h * 0.44);
+      ctx.lineTo(ax - dir * 14, h * 0.44); ctx.lineTo(ax - dir * 14, h * 0.62);
+      ctx.lineTo(ax + dir * 6, h * 0.62); ctx.lineTo(ax + dir * 6, h * 0.56);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#e8c21e';
+    ctx.font = '600 17px "PingFang HK",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('請先落後上', w / 2, h * 0.78);
+  }),
+});
 
 // Full-height platform screen doors (signature MTR look):
 // fixed glass panels with REAL openings at each door bay, mullions,
@@ -64,6 +87,18 @@ function screenDoors(x0, x1, z, y, faceDir) {
     }
   }
   g.add(doors);
+
+  // floor decals: queue arrows + gap-warning strip on the platform side
+  const decals = new THREE.InstancedMesh(new THREE.PlaneGeometry(BAY + 0.25, 0.62), decalMat, n);
+  const flip = new THREE.Matrix4().makeRotationY(Math.PI);
+  for (let i = 0; i < n; i++) {
+    m4.makeRotationX(-Math.PI / 2);
+    if (faceDir < 0) m4.premultiply(flip);   // canvas top always faces the track
+    m4.setPosition(xs[i], y + 0.015, z + faceDir * 1.05);
+    decals.setMatrixAt(i, m4);
+  }
+  g.add(decals);
+
   return { group: g, doorSet: { doors, xs, leafX, leafDir, y: y + (INTERIOR_H - 0.8) / 2, z: z + faceDir * 0.03 } };
 }
 
@@ -127,6 +162,7 @@ export function platformLevel(levelDef, rect) {
       trackRects.push(tr);
       g.add(track(tr, y));
       addFace(tr, s * (SIDE_TRACK_Z + BED_HALF) + s * 0.06, s, spec.faces[i]);
+      g.add(benches(rect.x0 + 12, rect.x1 - 12, s * 11.2, y));
     }
   }
   return { fittings: g, trackRects, doorSets };

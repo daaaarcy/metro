@@ -1,5 +1,9 @@
 // Station audio: generated WebAudio FX + speechSynthesis announcements.
 // Everything is gated behind `enabled` — browsers require a user gesture first.
+import { LINES } from './station-data.js';
+
+const pick = arr => arr[(Math.random() * arr.length) | 0];
+
 export class StationAudio {
   constructor() {
     this.ctx = null;
@@ -91,18 +95,42 @@ export class StationAudio {
 
   announce(zh, en) {
     if (!this.enabled) return;
+    // drop the PA rather than let several platforms' messages pile up
+    if (speechSynthesis.pending) return;
     this._speak(zh, 'zh-HK');
     this._speak(en, 'en-HK');
   }
 
+  // Per-platform PA keyed to the service's route + platform number, with a
+  // few phrasings so consecutive trains don't sound identical.
   announceArrive(face) {
-    this.announce(
-      `前往${face.to.zh.replace('往', '')}的列車即將到達`,
-      `The train ${face.to.en.replace('to ', 'to ')} is arriving`
-    );
+    if (Math.random() < 0.15) return;
+    const dZh = face.to.zh.replace(/^往/, ''), dEn = face.to.en.replace(/^to /, '');
+    const ln = LINES[face.line];
+    this.announce(...pick([
+      [`前往${dZh}的列車即將到達`, `The train to ${dEn} is arriving`],
+      [`往${dZh}列車即將進入${face.num}號月台`, `The train to ${dEn} is approaching platform ${face.num}`],
+      [`${ln.zh}往${dZh}方向的列車即將到站`, `A ${ln.en} train bound for ${dEn} is now arriving`],
+    ]));
+  }
+
+  // mid-dwell: alighting / mind-the-gap messages, line-specific terminus flavour
+  announceDwell(face) {
+    if (Math.random() < 0.45) return;
+    const dZh = face.to.zh.replace(/^往/, ''), dEn = face.to.en.replace(/^to /, '');
+    this.announce(...pick([
+      ['請先讓乘客落車', 'Please let passengers alight first'],
+      ['請小心月台與車廂之間的空隙', 'Please mind the gap between the train and the platform'],
+      [`本班列車前往${dZh}，請先落後上`, `This train is for ${dEn}. Please let passengers exit before boarding`],
+    ]));
   }
 
   announceDepart(face) {
-    this.announce('請勿靠近車門', 'Please stand back from the train doors');
+    const dZh = face.to.zh.replace(/^往/, ''), dEn = face.to.en.replace(/^to /, '');
+    this.announce(...pick([
+      ['請勿靠近車門', 'Please stand back from the train doors'],
+      [`往${dZh}列車即將開出，請勿靠近車門`, `The train to ${dEn} is about to depart. Please stand back from the doors`],
+      ['車門即將關閉', 'The train doors are closing'],
+    ]));
   }
 }

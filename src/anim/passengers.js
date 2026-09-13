@@ -1,11 +1,13 @@
 import * as THREE from 'three';
-import { ESC_RUNS, GATES } from '../registry.js';
+import { ESC_RUNS, GATES, STAIR_RUNS } from '../registry.js';
 import { WALK_RECTS, BOXES, levelById, boxToWorld, worldToBox } from '../station-data.js';
 import { pointInRects, worldRectToLocal } from '../builders/structure.js';
 import { openGate } from './gates.js';
+import { rollAppearance, PART_GEO } from '../builders/people.js';
 
-const N_LEVELS = { L1: 62, L2: 46, L3: 46, L4: 26, L5: 26, L6: 20 };
+const N_LEVELS = { U1: 14, G: 16, L1: 58, L2: 44, L3: 44, L4: 24, L5: 24, L6: 18 };
 const SPEED = [0.9, 1.5];   // walk speed range m/s
+const IDBOX = { cx: 0, cz: 0, rot: 0 };   // U1 bridge coords are already world axes
 
 // cheap point-in-rect for a sampled segment
 function pathClear(x0, z0, x1, z1, holes) {
@@ -16,16 +18,30 @@ function pathClear(x0, z0, x1, z1, holes) {
   return true;
 }
 
+// articulated instanced body: pivot points in unit-person space (~1.7 m tall,
+// faces +Z). Parts swing about their pivot via a local rotation.
+const PART_DEFS = {
+  legL:  { geo: 'leg',   pivot: [-0.105, 0.88, 0] },
+  legR:  { geo: 'leg',   pivot: [0.105, 0.88, 0] },
+  armL:  { geo: 'arm',   pivot: [-0.235, 1.35, 0] },
+  armR:  { geo: 'arm',   pivot: [0.235, 1.35, 0] },
+  torso: { geo: 'torso', pivot: [0, 0.84, 0] },
+  head:  { geo: 'head',  pivot: [0, 1.44, 0] },
+  hair:  { geo: 'hair',  pivot: [0, 1.44, 0] },
+  bun:   { geo: 'bun',   pivot: [0, 1.6, -0.09] },
+  skirt: { geo: 'skirt', pivot: [0, 0.88, 0] },
+};
+
 export class Passengers {
   constructor(scene, openings) {
     // per-level holes in LOCAL frame (for path checks)
     this.holes = {};
     for (const id of Object.keys(N_LEVELS)) {
-      const bx = BOXES[levelById(id).box];
+      const bx = BOXES[levelById(id).box] || IDBOX;
       this.holes[id] = (openings[id] || []).map(wr => worldRectToLocal(bx, wr));
     }
     this.boxOf = {};
-    for (const id of Object.keys(N_LEVELS)) this.boxOf[id] = BOXES[levelById(id).box];
+    for (const id of Object.keys(N_LEVELS)) this.boxOf[id] = BOXES[levelById(id).box] || IDBOX;
     this.hidden = new Set();
 
     this.list = [];
@@ -33,44 +49,62 @@ export class Passengers {
       for (let i = 0; i < n; i++) this.list.push(this.spawn(lvl));
     }
 
-    this.max = 320;
-    const bodyGeo = new THREE.CylinderGeometry(0.17, 0.2, 1.18, 6);
-    const headGeo = new THREE.SphereGeometry(0.15, 8, 6);
-    this.bodies = new THREE.InstancedMesh(bodyGeo,
-      new THREE.MeshStandardMaterial({ roughness: 0.8 }), this.max);
-    this.heads = new THREE.InstancedMesh(headGeo,
-      new THREE.MeshStandardMaterial({ color: 0xd8b49a, roughness: 0.7 }), this.max);
-    this.bodies.frustumCulled = this.heads.frustumCulled = false;
-    this.bodies.count = this.heads.count = this.list.length;
-    const palette = [0x3a6ea5, 0xc65b4e, 0x4e8a5a, 0x8a6db0, 0xbf9b30, 0x555b62, 0x9e5f7e, 0x2e8a8a];
-    for (let i = 0; i < this.max; i++) {
-      this.bodies.setColorAt(i, new THREE.Color(palette[i % palette.length]));
-    }
-    this.bodies.instanceColor.needsUpdate = true;
-    scene.add(this.bodies, this.heads);
-
+    this.max = 340;
     this._m4 = new THREE.Matrix4();
+    this._lm = new THREE.Matrix4();
+    this._pm = new THREE.Matrix4();
     this._q = new THREE.Quaternion();
+    this._qh = new THREE.Quaternion();
     this._up = new THREE.Vector3(0, 1, 0);
+    this._x = new THREE.Vector3(1, 0, 0);
     this._p = new THREE.Vector3();
-    this._s = new THREE.Vector3(1, 1, 1);
+    this._s = new THREE.Vector3();
+    this._ps = new THREE.Vector3();
+    this._c = new THREE.Color();
     this._zero = new THREE.Matrix4().makeScale(0, 0, 0);
+
+    this.group = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
+    this.parts = {};
+    for (const [name, def] of Object.entries(PART_DEFS)) {
+      const im = new THREE.InstancedMesh(PART_GEO[def.geo], mat, this.max);
+      im.frustumCulled = false;
+      im.castShadow = name !== 'hair' && name !== 'bun';
+      this.parts[name] = im;
+      this.group.add(im);
+    }
+    scene.add(this.group);
   }
 
   spawn(level, x, z) {
     const rects = WALK_RECTS[level];
     const r = rects[Math.floor(Math.random() * rects.length)];
+    const a = rollAppearance();
     return {
       level,
       x: x ?? THREE.MathUtils.lerp(r.x0 + 1, r.x1 - 1, Math.random()),
       z: z ?? THREE.MathUtils.lerp(r.z0 + 1, r.z1 - 1, Math.random()),
-      tx: 0, tz: 0, speed: THREE.MathUtils.lerp(...SPEED, Math.random()),
+      tx: 0, tz: 0, speed: THREE.MathUtils.lerp(...SPEED, Math.random()) * a.speedK,
       state: 'idle', wait: Math.random() * 2, run: null, s: 0, gate: null,
       hideT: 0, yaw: Math.random() * Math.PI * 2, svc: null,
+      px: x, pz: z, moving: 0, phase: Math.random() * 7, wy: null, dirty: true,
+      ...a,
     };
   }
 
   setLevelVisible(id, v) { v ? this.hidden.delete(id) : this.hidden.add(id); }
+
+  // per-instance colours, written when a (re)spawn changes appearance
+  paint(i) {
+    const p = this.list[i];
+    if (!p) return;
+    const set = (part, c) => this.parts[part].setColorAt(i, this._c.set(c));
+    set('legL', p.skirted ? p.skin : p.pants); set('legR', p.skirted ? p.skin : p.pants);
+    set('armL', p.shirt); set('armR', p.shirt);
+    set('torso', p.shirt); set('head', p.skin);
+    set('hair', p.hair); set('bun', p.hair); set('skirt', p.skirt);
+    for (const im of Object.values(this.parts)) im.instanceColor.needsUpdate = true;
+  }
 
   // pick a destination: mostly wander; sometimes ride an escalator or cross a gate
   choose(p) {
@@ -99,6 +133,33 @@ export class Passengers {
         p.gate = g; p.gateSide = approach;
         p.tx = g.x; p.tz = g.z + approach * 1.7;
         p.state = 'toGate';
+        return;
+      }
+    }
+    // street traffic: descend an exit stair into L1, or climb to the footbridge
+    if (lvl === 'G' && roll < 0.55) {
+      const down = STAIR_RUNS.filter(r => r.from === 'G');
+      const up = STAIR_RUNS.filter(r => r.to === 'G');
+      const pick = Math.random() < 0.7 ? down : up;
+      if (pick.length) {
+        const r = pick[Math.floor(Math.random() * pick.length)];
+        const goingDown = r.from === 'G';
+        const a = goingDown ? r.top : r.bot;
+        const sgn = goingDown ? -1 : 1;
+        const l = worldToBox(this.boxOf.G, a.x + r.ux * 1.4 * sgn, a.z + r.uz * 1.4 * sgn);
+        p.stair = { r, down: goingDown };
+        p.tx = l.x; p.tz = l.z; p.state = 'toStair';
+        return;
+      }
+    }
+    // people leaving: L1 -> G via an exit stair, U1 -> G via the footbridge stair
+    if ((lvl === 'L1' || lvl === 'U1') && roll < 0.08) {
+      const up = STAIR_RUNS.filter(r => r.to === lvl);
+      if (up.length) {
+        const r = up[Math.floor(Math.random() * up.length)];
+        const l = worldToBox(this.boxOf[lvl], r.bot.x + r.ux * 1.4, r.bot.z + r.uz * 1.4);
+        p.stair = { r, down: false };
+        p.tx = l.x; p.tz = l.z; p.state = 'toStair';
         return;
       }
     }
@@ -135,7 +196,7 @@ export class Passengers {
     // so anyone farther than ~20 m would never make it before departure
     const localOut = out.map(d => worldToBox(this.boxOf[lvl], d.x, d.z));
     const near = this.list.filter(p => p.level === lvl &&
-      !['aboard', 'esc', 'board', 'boarding', 'toEsc', 'throughGate'].includes(p.state) &&
+      !['aboard', 'esc', 'board', 'boarding', 'toEsc', 'throughGate', 'toStair', 'stair', 'toGate'].includes(p.state) &&
       localOut.some(d => Math.hypot(p.x - d.x, p.z - d.z) < 20));
     for (let i = 0; i < Math.min(6, near.length); i++) {
       const p = near[Math.floor(Math.random() * near.length)];
@@ -159,9 +220,9 @@ export class Passengers {
   }
 
   update(dt, t, trainSim, audio) {
-    const m4 = this._m4, q = this._q, pv = this._p;
+    const m4 = this._m4, lm = this._lm, pm = this._pm, q = this._q, pv = this._p;
     const count = Math.min(this.list.length, this.max);
-    this.bodies.count = this.heads.count = count;
+    for (const im of Object.values(this.parts)) im.count = count;
 
     for (let i = 0; i < count; i++) {
       const p = this.list[i];
@@ -196,6 +257,29 @@ export class Passengers {
           if (this.stepTo(p, dt, p.gate.x)) { p.state = 'seek'; }
           break;
         }
+        case 'toStair': {
+          if (this.stepTo(p, dt)) {
+            p.state = 'stair';
+            p.s = p.stair.down ? 0 : p.stair.r.slope;
+          }
+          break;
+        }
+        case 'stair': {
+          // walk the ramp at ~60% pace — slower than flat ground like real stairs
+          const st = p.stair, r = st.r;
+          p.s += (st.down ? 1 : -1) * p.speed * 0.6 * dt;
+          const f = THREE.MathUtils.clamp(p.s / r.slope, 0, 1);
+          const l = worldToBox(this.boxOf[p.level],
+            r.top.x + r.ux * r.horiz * f, r.top.z + r.uz * r.horiz * f);
+          p.x = l.x; p.z = l.z;
+          p.wy = r.top.y - r.drop * f;
+          p.yaw = Math.atan2(st.down ? r.ux : -r.ux, st.down ? r.uz : -r.uz);
+          if (f <= 0 || f >= 1) {
+            p.level = st.down ? r.to : r.from;
+            p.state = 'seek'; p.stair = null; p.wy = null;
+          }
+          break;
+        }
         case 'toEsc': {
           if (this.stepTo(p, dt)) {
             p.state = 'esc';
@@ -213,10 +297,11 @@ export class Passengers {
           const wx = run.x1 + run.dx * hx, wz = run.z1 + run.dz * hx;
           const l = worldToBox(this.boxOf[p.level], wx, wz);
           p.x = l.x; p.z = l.z;
-          p.yaw = -Math.atan2(run.dz * d, run.dx * d);
+          p.wy = run.y1 - (hx / run.len) * run.drop;   // ride the ramp down/up
+          p.yaw = Math.atan2(run.dx * d, run.dz * d);
           if (done) {
             p.level = p.rideTop ? run.to : run.from;
-            p.state = 'seek'; p.run = null;
+            p.state = 'seek'; p.run = null; p.wy = null;
           }
           break;
         }
@@ -244,24 +329,64 @@ export class Passengers {
           if (this.stepTo(p, dt)) { p.state = 'idle'; p.wait = 0.5 + Math.random() * 2.5; }
       }
 
+      if (p.dirty) { this.paint(i); p.dirty = false; }
+
       if (!visible) {
-        this.bodies.setMatrixAt(i, this._zero);
-        this.heads.setMatrixAt(i, this._zero);
+        for (const im of Object.values(this.parts)) im.setMatrixAt(i, this._zero);
         continue;
       }
+
+      // walk-cycle amount eases toward 1 while moving, 0 when standing
+      const moved = Math.hypot(p.x - (p.px ?? p.x), p.z - (p.pz ?? p.z));
+      const movingTgt = p.state === 'esc' ? 0 : moved > 0.002 ? 1 : 0;
+      p.moving += (movingTgt - p.moving) * Math.min(1, dt * 8);
+      p.px = p.x; p.pz = p.z;
+      if (p.moving > 0.02) p.phase += moved / 0.38 * Math.PI;
+
       const bx = this.boxOf[p.level];
       const w = boxToWorld(bx, p.x, p.z);
-      const wy = levelById(p.level).y;
+      const wy = p.wy ?? levelById(p.level).y;
+      const s = p.scale;
+      const swing = 0.52 * p.moving;
+      const bob = Math.abs(Math.sin(p.phase)) * 0.035 * p.moving * s;
+
       q.setFromAxisAngle(this._up, p.yaw);
-      pv.set(w.x, wy + 0.62, w.z);
+      if (p.hunch) { this._qh.setFromAxisAngle(this._x, p.hunch); q.multiply(this._qh); }
+      pv.set(w.x, wy + bob, w.z);
+      this._s.set(s, s, s);
       m4.compose(pv, q, this._s);
-      this.bodies.setMatrixAt(i, m4);
-      pv.y = wy + 1.42;
-      m4.compose(pv, q, this._s);
-      this.heads.setMatrixAt(i, m4);
+
+      const ph = p.phase;
+      const legSwing = Math.sin(ph) * swing;
+      const armSwing = -Math.sin(ph) * swing * 0.75;
+
+      this.writePart(i, 'legL', legSwing, 1, 1, 1);
+      this.writePart(i, 'legR', -legSwing, 1, 1, 1);
+      this.writePart(i, 'armL', armSwing, 1, 1, 1);
+      this.writePart(i, 'armR', -armSwing, 1, 1, 1);
+      this.writePart(i, 'torso', 0,
+        p.kind === 'woman' ? 0.86 : 1, 1, p.kind === 'woman' ? 0.9 : 1);
+      this.writePart(i, 'head', 0, p.kind === 'child' ? 1.16 : 1, 1, p.kind === 'child' ? 1.16 : 1);
+      const hs = p.kind === 'woman' ? [1.02, 1.45, 1.08] : p.kind === 'elder' ? [0.95, 0.82, 0.95] : [1, 1, 1];
+      this.writePart(i, 'hair', 0, hs[0], hs[1], hs[2]);
+      this.writePart(i, 'bun', 0, p.bun ? 1 : 0, p.bun ? 1 : 0, p.bun ? 1 : 0);
+      this.writePart(i, 'skirt', 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0);
     }
-    this.bodies.instanceMatrix.needsUpdate = true;
-    this.heads.instanceMatrix.needsUpdate = true;
+    for (const im of Object.values(this.parts)) {
+      im.instanceMatrix.needsUpdate = true;
+      if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    }
+  }
+
+  // part matrix = personBase * T(pivot) * R(swing about X) * S(partScale)
+  writePart(i, name, swing, sx, sy, sz) {
+    const def = PART_DEFS[name];
+    this._qh.setFromAxisAngle(this._x, swing);
+    this._p.set(def.pivot[0], def.pivot[1], def.pivot[2]);
+    this._ps.set(sx, sy, sz);
+    this._lm.compose(this._p, this._qh, this._ps);
+    this._pm.multiplyMatrices(this._m4, this._lm);
+    this.parts[name].setMatrixAt(i, this._pm);
   }
 
   // move local (x,z) toward (tx,tz); returns true on arrival
@@ -272,7 +397,7 @@ export class Passengers {
     if (d < 0.25) return true;
     const v = p.speed * dt;
     p.x += dx / d * v; p.z += dz / d * v;
-    p.yaw = -Math.atan2(dz, dx) + Math.PI / 2;   // body cylinder axis-aligned; face travel dir
+    p.yaw = Math.atan2(dx, dz);   // figure faces +Z
     return false;
   }
 }

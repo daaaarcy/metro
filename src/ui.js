@@ -22,7 +22,7 @@ function viewpoints() {
   return v;
 }
 
-export function buildUI({ onMode, onClip, onLevelVisible, onGoto, onLabels, onAudio, onPeople }) {
+export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople }) {
   const vp = viewpoints();
 
   // mode buttons
@@ -47,18 +47,16 @@ export function buildUI({ onMode, onClip, onLevelVisible, onGoto, onLabels, onAu
     if (axis && axis !== 'none') onClip(axis, parseFloat(slider.value));
   });
 
-  // level list: visibility checkbox + goto
+  // level list: label + jump-to viewpoint (all levels are always shown)
   const list = document.getElementById('level-list');
   for (const lvl of LEVELS) {
     const row = document.createElement('div');
     row.className = 'lvl-row';
     row.innerHTML = `
-      <input type="checkbox" checked data-id="${lvl.id}" />
       <span class="lvl-id">${lvl.id}</span>
       <span class="lvl-name">${lvl.zh} ${lvl.en}</span>
       <button class="go" data-id="${lvl.id}">go</button>`;
     list.appendChild(row);
-    row.querySelector('input').addEventListener('change', e => onLevelVisible(lvl.id, e.target.checked));
     row.querySelector('.go').addEventListener('click', () => onGoto(lvl.id, vp[lvl.id]));
   }
 
@@ -90,17 +88,24 @@ export function showPrompt(html) {
   el.classList.add('show');
 }
 
-// live departures board, top-right
-const tickerRows = new Map();
-export function updateTicker(services) {
+// live departures board, top-right — real next-train countdowns when the
+// data.gov.hk feed is up, generic states otherwise
+export function updateTicker(services, live) {
   const el = document.getElementById('ticker');
   const label = { away: '—', arrive: '進站 arriving', dwell: '上落客 boarding', depart: '離站 departing' };
-  let html = '';
+  let html = live
+    ? `<div class="t-row t-live"><span class="live-dot"></span>實時到站 LIVE · data.gov.hk</div>`
+    : '';
   for (const s of services) {
     const f = s.ds.face;
+    let state = label[s.state];
+    if (s.state === 'away' && s.nextAt) {
+      const m = Math.round((s.nextAt - Date.now()) / 60000);
+      state = m <= 0 ? '即將 due' : s.terminus ? `開出 dep ${m} min` : `${m} min`;
+    }
     html += `<div class="t-row"><span class="t-plat" style="color:${s.color}">${f.num}</span>` +
             `<span class="t-dest">${f.to.zh} ${f.to.en}</span>` +
-            `<span class="t-state">${label[s.state]}</span></div>`;
+            `<span class="t-state">${state}</span></div>`;
   }
   el.innerHTML = html;
 }

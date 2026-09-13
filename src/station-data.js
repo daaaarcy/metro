@@ -164,6 +164,9 @@ export const RESTAURANTS = [
 ];
 export const MALL = { x: 2.5, side: -1, zh: '港鐵商場', en: 'MTR Malls', mark: 'mtr' };
 
+// Dedicated 7-Eleven unit on the north row (detailed interior + real branding)
+export const SEVEN = { x: -19.5, side: -1, zh: '7-Eleven', en: '7-Eleven' };
+
 // Trains per line: compressed headways (sec), dwell, car count
 export const TRAIN_SPEC = {
   TWL: { headway: 46, dwell: 13, cars: 8, carLen: 18.5 },
@@ -173,7 +176,18 @@ export const TRAIN_SPEC = {
 };
 
 // Where passengers may wander, per level, in that level's LOCAL frame.
+// U1 has no box frame — its coords are plain world axes (identity).
 export const WALK_RECTS = {
+  U1: [
+    // spine deck, split around the stair/lift towers at x = -58, -6, 62
+    { x0: -70, z0: -39, x1: -60, z1: -34 },
+    { x0: -56, z0: -39, x1: -8, z1: -34 },
+    { x0: -4, z0: -39, x1: 60, z1: -34 },
+    { x0: 64, z0: -39, x1: 72, z1: -34 },
+    // connector deck toward the concourse roof
+    { x0: -28, z0: -32, x1: 58, z1: -21 },
+  ],
+  G: [{ x0: -88, z0: -28, x1: 88, z1: 28 }],   // pavement, kept off the road strip
   L1: [{ x0: -80, z0: -19, x1: 80, z1: 19 }],
   L2: [{ x0: -74, z0: -4.9, x1: 74, z1: 4.9 }],
   L3: [{ x0: -74, z0: -4.9, x1: 74, z1: 4.9 }],

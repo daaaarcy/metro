@@ -3,6 +3,7 @@ import { FITTINGS } from '../registry.js';
 import { TRAIN_SPEC, LINES, BOXES, levelById, boxToWorld } from '../station-data.js';
 import { M } from '../builders/materials.js';
 import { box } from '../builders/structure.js';
+import { Timetable } from './timetable.js';
 
 const ARR_T = 13, DEP_T = 11;          // seconds to run in/out of the platform
 const DOOR_T = 0.7;                     // door slide time
@@ -67,6 +68,10 @@ class Service {
     this.doorSide = doorSet.kind === 'island' ? -face.side : face.side;
     this.color = LINES[face.line].color;
     this.dir = face.dir;                                   // +1/-1 along local X
+    this.plat = face.num;                                  // MTR platform number (matches the API)
+    this.terminus = !!doorSet.terminus;
+    this.nextAt = null;                                    // next real scheduled time (ms)
+    this.consumed = 0;                                     // last schedule already used
     const t = buildTrain(face.line, this.spec.cars, this.spec.carLen, this.doorSide);
     this.train = t.group;
     this.leaves = t.leaves;
@@ -119,17 +124,32 @@ class Service {
     }
   }
 
-  update(dt, audio) {
+  beginArrive(audio) {
+    this.state = 'arrive'; this.t = ARR_T;
+    this.events.push({ type: 'arrive', face: this.ds.face, level: this.ds.level });
+    audio?.announceArrive(this.ds.face, this.ds.level);
+  }
+
+  update(dt, audio, tt) {
     this.t -= dt;
     switch (this.state) {
-      case 'away':
+      case 'away': {
         this.setDoors(false, dt);
-        if (this.t <= 0) {
-          this.state = 'arrive'; this.t = ARR_T;
-          this.events.push({ type: 'arrive', face: this.ds.face, level: this.ds.level });
-          audio?.announceArrive(this.ds.face, this.ds.level);
+        const sched = tt?.next(this.plat, this.consumed) ?? null;
+        this.nextAt = sched;
+        if (sched != null) {
+          // API `time` = arrival at through platforms, departure at termini —
+          // start the run-in early enough to be at the platform when due
+          const leadS = this.terminus ? ARR_T + this.spec.dwell + 8 : ARR_T;
+          if (sched - Date.now() <= leadS * 1000) {
+            this.consumed = sched;   // never let one schedule fire twice
+            this.beginArrive(audio);
+          }
+        } else if (this.t <= 0) {
+          this.beginArrive(audio);   // no live data — synthetic headway
         }
         break;
+      }
       case 'arrive': {
         const p = 1 - Math.max(this.t, 0) / ARR_T;
         this.place(THREE.MathUtils.lerp(this.enterX, this.stopX, easeOut(p)));
@@ -142,9 +162,13 @@ class Service {
       case 'dwell': {
         const closing = this.t < 1.6;
         this.setDoors(!closing, dt);
+        if (!this._dwelled && this.t < this.spec.dwell * 0.55) {
+          this._dwelled = true;
+          audio?.announceDwell(this.ds.face);
+        }
         if (closing && !this._chimed) { this._chimed = true; audio?.doorChime(); }
         if (this.t <= 0) {
-          this._chimed = false;
+          this._chimed = false; this._dwelled = false;
           this.state = 'depart'; this.t = DEP_T;
           this.events.push({ type: 'depart', face: this.ds.face, level: this.ds.level, service: this });
           audio?.announceDepart(this.ds.face, this.ds.level);
@@ -185,12 +209,14 @@ export class TrainSim {
         this.services.push(new Service(scene, ds));
       }
     }
+    this.tt = new Timetable();
   }
 
   update(dt, audio) {
+    this.tt.update(dt);
     const events = [];
     for (const s of this.services) {
-      s.update(dt, audio);
+      s.update(dt, audio, this.tt);
       if (s.events.length) { events.push(...s.events); s.events.length = 0; }
     }
     return events;
