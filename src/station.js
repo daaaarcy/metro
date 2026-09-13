@@ -26,17 +26,22 @@ export function computeOpenings() {
   const add = (key, r) => (open[key] ??= []).push(r);
 
   for (const e of ESCALATORS) {
-    // lateral kerbs on both sides; the run's boarding end stays open to walk on,
-    // and the far end gets a kerb too — there the ramp is already ~7 m below the
-    // upper floor, so an open edge would be a hidden drop
-    const lat = Math.abs(e.dir[0]) >= Math.abs(e.dir[1]) ? ['z0', 'z1'] : ['x0', 'x1'];
+    // one open well per bank (union of the lanes' footprints) — kerbs on the
+    // outer edges + the deep end only; the boarding end stays open to walk on.
+    // Per-lane slots left cement strips + double kerbs between lanes, which
+    // read as a solid wall from the side.
+    const horiz = Math.abs(e.dir[0]) >= Math.abs(e.dir[1]);
+    const lat = horiz ? ['z0', 'z1'] : ['x0', 'x1'];
+    const u = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
+    let deepEnd = null;
     for (const r of escalatorRuns(e)) {
-      const deepEnd = Math.abs(e.dir[0]) >= Math.abs(e.dir[1])
-        ? (r.x2 > r.x1 ? 'x1' : 'x0')
-        : (r.z2 > r.z1 ? 'z1' : 'z0');
-      add(e.from, { ...runWorldRect(r), sides: [...lat, deepEnd] });
-      add(e.to + ':ceil', { ...runWorldRect(r), sides: lat });
+      const wr = runWorldRect(r);
+      u.x0 = Math.min(u.x0, wr.x0); u.x1 = Math.max(u.x1, wr.x1);
+      u.z0 = Math.min(u.z0, wr.z0); u.z1 = Math.max(u.z1, wr.z1);
+      deepEnd = horiz ? (r.x2 > r.x1 ? 'x1' : 'x0') : (r.z2 > r.z1 ? 'z1' : 'z0');
     }
+    add(e.from, { ...u, sides: [...lat, deepEnd] });
+    add(e.to + ':ceil', { ...u, sides: lat });
   }
   for (const ex of EXITS) {
     const dir = ex.side, cz = ex.side * EXIT_Z, half = ESC.runLen / 2;
@@ -167,14 +172,16 @@ export function buildStation() {
     }
 
     if (lvl.type === 'concourse') {
-      // paid (blue) / unpaid (yellow) floor tint like the diagram
-      const paid = box(rect.x1 - rect.x0 - 4, 0.02, 18, M.paid);
-      paid.position.set(0, 0.02, 0);
-      g.add(paid);
+      // paid (blue) / unpaid (yellow) floor tint like the diagram — tiled
+      // around the floor openings so it doesn't bridge the escalator wells
+      const tint = (r, mat) => {
+        const t = box(r.x1 - r.x0, 0.02, r.z1 - r.z0, mat);
+        t.position.set((r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2);
+        g.add(t);
+      };
+      for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -9, z1: 9 }, floorHoles)) tint(r, M.paid);
       for (const s of [-1, 1]) {
-        const un = box(rect.x1 - rect.x0 - 4, 0.02, 9.5, M.unpaid);
-        un.position.set(0, 0.02, s * 15.4);
-        g.add(un);
+        for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: s * 15.4 - 4.75, z1: s * 15.4 + 4.75 }, floorHoles)) tint(r, M.unpaid);
         g.add(shops(rect.x0 + 8, rect.x1 - 10, s * 19.6, 0, -s));
       }
       for (const r of GATE_ROWS) g.add(gateBank(r.x0, r.x1, r.z, 0));
@@ -232,10 +239,13 @@ export function buildStation() {
     }
 
     if (lvl.type === 'lobby') {
-      // paid transfer corridor tint + wall accent bands so the lobby isn't bare
-      const paid = box(rect.x1 - rect.x0 - 4, 0.02, 22, M.paid);
-      paid.position.set(0, 0.02, 0);
-      g.add(paid);
+      // paid transfer corridor tint + wall accent bands so the lobby isn't
+      // bare — tiled around floor openings like the concourse tints
+      for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -11, z1: 11 }, floorHoles)) {
+        const t = box(r.x1 - r.x0, 0.02, r.z1 - r.z0, M.paid);
+        t.position.set((r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2);
+        g.add(t);
+      }
       for (const s of [-1, 1]) {
         const band = box(rect.x1 - rect.x0 - 1, 1.1, 0.08, lineMat(LINES.EAL.color));
         band.position.set(0, 2.6, s * (Math.abs(rect.z1) - 0.55));
