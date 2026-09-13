@@ -48,6 +48,10 @@ sun.shadow.bias = -0.0004;
 scene.add(sun);
 const ambient = new THREE.AmbientLight(0x50565e, 1.0);
 scene.add(ambient);
+// constant interior fill — stations are lit 24/7, so the underground stack
+// stays readable in the zoomed-out view even at HK night (not weather-driven)
+const interiorFill = new THREE.HemisphereLight(0xd7e3ee, 0x3f3a35, 0.55);
+scene.add(interiorFill);
 
 // ---------- station ----------
 const { root, levelGroups, togglables, labels } = buildStation();
@@ -56,9 +60,17 @@ root.updateMatrixWorld(true);
 // one collision world shared by the player rig and the pedestrians
 const colliders = buildColliders();
 
-// ground context
+// ground context — a big dark disc with a rectangular excavation hole over
+// the station footprint, so orbit views show the underground stack instead
+// of an opaque lid. Shape XY maps to world X,-Z after the -90° X rotation.
+const groundShape = new THREE.Shape();
+groundShape.absarc(0, 0, 500, 0, Math.PI * 2);
+const dig = new THREE.Path();
+dig.moveTo(-105, -49); dig.lineTo(105, -49);
+dig.lineTo(105, 41); dig.lineTo(-105, 41); dig.closePath();
+groundShape.holes.push(dig);
 const ground = new THREE.Mesh(
-  new THREE.CircleGeometry(500, 48),
+  new THREE.ShapeGeometry(groundShape, 48),
   new THREE.MeshStandardMaterial({ color: 0x171b21, roughness: 1 })
 );
 ground.rotation.x = -Math.PI / 2;
