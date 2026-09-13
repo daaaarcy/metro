@@ -102,7 +102,8 @@ headways in `TRAIN_SPEC`.
 1. `npm run build` must exit 0 (the >500 kB chunk warning is known/OK).
 2. Drive it in a browser (`npm run dev` + Playwright). Exposed globals for
    checks: `window.__rig` (mode, feetY, floorAt, teleport), `window.__cam`,
-   `window.__trains` (services, `tt.byPlat`), `window.__people.list`.
+   `window.__trains` (services, `tt.byPlat`), `window.__people.list`,
+   `window.__renderer` (`renderer.info.render.calls` for draw-call counts).
 3. Standard regression: all 8 level `go` buttons land on the right floor;
    walk collision holds at walls/gates/PSDs/escalator-well kerbs; a train
    dwells with open doors and passengers board; the ticker shows live

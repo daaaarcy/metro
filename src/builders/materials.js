@@ -33,6 +33,11 @@ export const M = {
   signPost:   new THREE.MeshStandardMaterial({ color: 0x22262b, roughness: 0.6, metalness: 0.4 }),
 };
 
+// line colours repeat across every level — share one material instance per
+// colour so identical bands merge instead of staying separate draw calls
+const lineCache = new Map();
 export function lineMat(hex) {
-  return new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.55 });
+  let m = lineCache.get(hex);
+  if (!m) lineCache.set(hex, m = new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.55 }));
+  return m;
 }

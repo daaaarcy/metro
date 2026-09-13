@@ -11,6 +11,8 @@ import { updateGates, gateBlocks } from './anim/gates.js';
 import { StationAudio } from './audio.js';
 import { buildColliders } from './colliders.js';
 import { Weather } from './weather.js';
+import { mergeStation } from './merge.js';
+import { GATES } from './registry.js';
 
 // ---------- renderer ----------
 const app = document.getElementById('app');
@@ -59,6 +61,9 @@ scene.add(root);
 root.updateMatrixWorld(true);
 // one collision world shared by the player rig and the pedestrians
 const colliders = buildColliders();
+// collapse ~3.5k static meshes into one draw call per material per level —
+// colliders are already snapshotted; instanced/dynamic meshes are untouched
+mergeStation(scene, root, levelGroups, togglables);
 
 // ground context — a big dark disc with a rectangular excavation hole over
 // the station footprint, so orbit views show the underground stack instead
@@ -86,6 +91,15 @@ const passengers = new Passengers(scene, computeOpenings(), colliders);
 const audio = new StationAudio();
 // live Hong Kong weather drives the above-ground sky, light and rain
 const weather = new Weather(scene, sun, hemi, ambient, ground);
+
+// the sun rides the sky dome slowly — rebake the shadow map only when it
+// actually moves instead of re-rendering ~2.6k casters every frame.
+// Instanced meshes are the dynamic things (crowd, PSD leaves, esc steps) —
+// a throttled map would freeze their shadows mid-motion, so they don't cast.
+renderer.shadowMap.autoUpdate = false;
+scene.traverse(o => { if (o.isInstancedMesh) o.castShadow = false; });
+for (const g of GATES) for (const f of g.flaps) f.pivot.traverse(o => { o.castShadow = false; });
+const lastSun = new THREE.Vector3(Infinity, Infinity, Infinity);
 
 // ---------- CSS2D labels ----------
 const labelObjs = [];
@@ -202,7 +216,7 @@ function applyClip(axis, t) {
 const rig = new CameraRig(camera, renderer.domElement);
 rig.audio = audio;
 rig.initColliders(colliders);
-window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers; window.__weather = weather;
+window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers; window.__weather = weather; window.__renderer = renderer;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
 // walk mode is the default — spawn at street level facing the exit pavilions
@@ -310,6 +324,10 @@ function tick() {
   // sim
   escSteps.update(t);
   weather.update(dt, t);
+  if (sun.position.distanceToSquared(lastSun) > 4) {   // sun moved — rebake shadows
+    renderer.shadowMap.needsUpdate = true;
+    lastSun.copy(sun.position);
+  }
   passengers.hurry = weather.rainAmt > 0.25;   // people hurry on the street in rain
   audio.setRain?.(weather.rainAmt * (camera.position.y > -3 ? 1 : 0.12));
   const events = trainSim.update(dt, audio);
