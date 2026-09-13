@@ -89,12 +89,29 @@ input[type="range"]:disabled { opacity: 0.3; }
 }
 #prompt.show { opacity: 1; }
 
+#board { position: absolute; top: 16px; right: 18px; pointer-events: none; }
 #ticker {
-  position: absolute; top: 16px; right: 18px;
   background: rgba(13,17,23,0.85); border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px; padding: 8px 14px; font-size: 11.5px;
-  min-width: 210px; pointer-events: none;
+  min-width: 210px;
 }
+#weather {
+  margin-top: 6px;
+  background: rgba(13,17,23,0.85); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: 6px 14px; font-size: 11px;
+  display: flex; gap: 7px; align-items: center;
+}
+#weather .w-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  background: #9aa4ae;
+}
+#weather .w-dot.clear    { background: #ffd34d; }
+#weather .w-dot.cloudy   { background: #9aa4ae; }
+#weather .w-dot.overcast { background: #7d8894; }
+#weather .w-dot.drizzle  { background: #6fb7dd; }
+#weather .w-dot.rain     { background: #4d9fd8; }
+#weather .w-dot.storm    { background: #b678e0; }
+#weather .w-off { opacity: 0.5; }
 #ticker .t-row { display: flex; gap: 8px; align-items: baseline; padding: 1.5px 0; }
 #ticker .t-plat { font-weight: 800; width: 20px; }
 #ticker .t-dest { flex: 1; opacity: 0.9; }

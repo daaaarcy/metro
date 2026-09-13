@@ -109,3 +109,19 @@ export function updateTicker(services, live) {
   }
   el.innerHTML = html;
 }
+
+// live Hong Kong weather chip under the ticker (HKO open data)
+export function updateWeatherChip(w) {
+  const el = document.getElementById('weather');
+  if (!el) return;
+  if (!w?.live) {
+    el.innerHTML = `<span class="w-off">香港天氣 offline</span>`;
+    return;
+  }
+  const bits = [
+    w.tempC != null ? `${Math.round(w.tempC)}°C` : null,
+    w.rh != null ? `${Math.round(w.rh)}%` : null,
+    `${w.zh} ${w.en}`,
+  ].filter(Boolean);
+  el.innerHTML = `<span class="w-dot ${w.kind}"></span>香港 ${bits.join(' · ')}`;
+}

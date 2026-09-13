@@ -50,6 +50,25 @@ export class StationAudio {
     src.connect(lp).connect(gain).connect(ctx.destination);
     src.start();
     this._amb = gain;
+
+    // rain hiss — white noise through a bandpass, gain driven by live weather
+    const buf2 = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d2 = buf2.getChannelData(0);
+    for (let i = 0; i < len; i++) d2[i] = Math.random() * 2 - 1;
+    const rsrc = ctx.createBufferSource();
+    rsrc.buffer = buf2; rsrc.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 0.35;
+    const rg = ctx.createGain();
+    rg.gain.value = 0;
+    rsrc.connect(bp).connect(rg).connect(ctx.destination);
+    rsrc.start();
+    this._rain = rg;
+  }
+
+  // k = rain intensity 0..1 (call each frame; no-op until audio is enabled)
+  setRain(k) {
+    if (this._rain) this._rain.gain.value = k * 0.055;
   }
 
   _tone(freq, t0, dur, type = 'sine', vol = 0.18) {

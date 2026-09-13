@@ -460,7 +460,9 @@ export class Passengers {
     const dx = gx - p.x, dz = gz - p.z;
     const d = Math.hypot(dx, dz);
     if (d < 0.25) return true;
-    const v = p.speed * dt;
+    // street-level pedestrians hurry when it's raining
+    const hurry = this.hurry && (p.level === 'G' || p.level === 'U1') ? 1.4 : 1;
+    const v = p.speed * hurry * dt;
     p.x += dx / d * v; p.z += dz / d * v;
     p.yaw = Math.atan2(dx, dz);   // figure faces +Z
     return false;

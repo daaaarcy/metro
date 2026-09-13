@@ -10,6 +10,7 @@ import { Passengers } from './anim/passengers.js';
 import { updateGates, gateBlocks } from './anim/gates.js';
 import { StationAudio } from './audio.js';
 import { buildColliders } from './colliders.js';
+import { Weather } from './weather.js';
 
 // ---------- renderer ----------
 const app = document.getElementById('app');
@@ -36,7 +37,8 @@ const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 12
 camera.position.set(105, 55, 118);
 
 // ---------- lights ----------
-scene.add(new THREE.HemisphereLight(0xbfd0e0, 0x4a4640, 1.5));
+const hemi = new THREE.HemisphereLight(0xbfd0e0, 0x4a4640, 1.5);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0dd, 1.6);
 sun.position.set(90, 160, 60);
 sun.castShadow = true;
@@ -44,7 +46,8 @@ sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -160, right: 160, top: 160, bottom: -160, far: 400 });
 sun.shadow.bias = -0.0004;
 scene.add(sun);
-scene.add(new THREE.AmbientLight(0x50565e, 1.0));
+const ambient = new THREE.AmbientLight(0x50565e, 1.0);
+scene.add(ambient);
 
 // ---------- station ----------
 const { root, levelGroups, togglables, labels } = buildStation();
@@ -69,6 +72,8 @@ scene.add(escSteps.mesh);
 const trainSim = new TrainSim(scene);
 const passengers = new Passengers(scene, computeOpenings(), colliders);
 const audio = new StationAudio();
+// live Hong Kong weather drives the above-ground sky, light and rain
+const weather = new Weather(scene, sun, hemi, ambient, ground);
 
 // ---------- CSS2D labels ----------
 const labelObjs = [];
@@ -153,7 +158,7 @@ function applyClip(axis, t) {
 const rig = new CameraRig(camera, renderer.domElement);
 rig.audio = audio;
 rig.initColliders(colliders);
-window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
+window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers; window.__weather = weather;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
 // walk mode is the default — spawn at street level facing the exit pavilions
@@ -234,6 +239,9 @@ function tick() {
 
   // sim
   escSteps.update(t);
+  weather.update(dt, t);
+  passengers.hurry = weather.rainAmt > 0.25;   // people hurry on the street in rain
+  audio.setRain?.(weather.rainAmt * (camera.position.y > -3 ? 1 : 0.12));
   const events = trainSim.update(dt, audio);
   for (const ev of events) passengers.onTrainEvent(ev, audio);
   if (peopleOn) passengers.update(dt, t, trainSim, audio);
