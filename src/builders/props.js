@@ -133,22 +133,23 @@ function shelf(g, goods, x, z, y, w, palette, faceDir = 0) {
   }
 }
 
-// back-wall shelving strip (pharmacy/bookstore style)
-function wallShelves(g, goods, x, z, y, w, inw, palette, books = false) {
+// back-wall shelving strip (pharmacy/bookstore style) — z is the wall's
+// interior face; the unit extends faceDir (toward the shop front) from it
+function wallShelves(g, goods, x, z, y, w, faceDir, palette, books = false) {
   const frame = box(w, 2.1, 0.35, M.wallDark);
-  frame.position.set(x, y + 1.05, z + inw * 0.18);
+  frame.position.set(x, y + 1.05, z + faceDir * 0.18);
   g.add(solid(frame));
   for (let t = 0; t < 3; t++) {
     const ty = y + 0.6 + t * 0.62;
     const board = box(w - 0.1, 0.05, 0.3, M.ceiling);
-    board.position.set(x, ty - 0.03, z + inw * 0.18);
+    board.position.set(x, ty - 0.03, z + faceDir * 0.18);
     g.add(board);
     const n = Math.max(2, Math.floor(w / (books ? 0.12 : 0.26)));
     for (let i = 0; i < n; i++) {
       goods.push({
         x: x - w / 2 + 0.14 + i * (w - 0.28) / (n - 1),
         y: ty + (books ? 0.13 : 0.11),
-        z: z + inw * 0.18 + (Math.random() - 0.5) * 0.1,
+        z: z + faceDir * 0.18 + (Math.random() - 0.5) * 0.1,
         sx: books ? 0.07 : 0.16, sy: books ? 0.26 : 0.18 + Math.random() * 0.1, sz: 0.18,
         color: pickC(palette),
       });
@@ -181,18 +182,19 @@ function atmRow(g, x, z, y, faceDir, n = 2) {
   }
 }
 
-// glass-door chiller bank (convenience store drinks wall)
-function chillerWall(g, goods, x, z, y, w, inw) {
+// glass-door chiller bank (convenience store drinks wall) — z is the wall's
+// interior face; the unit extends faceDir (toward the shop front) from it
+function chillerWall(g, goods, x, z, y, w, faceDir) {
   const frame = box(w, 2.3, 0.55, M.signPost);
-  frame.position.set(x, y + 1.15, z + inw * 0.27);
+  frame.position.set(x, y + 1.15, z + faceDir * 0.28);
   g.add(solid(frame));
   const glow = box(w - 0.2, 1.9, 0.06, coolMat);
-  glow.position.set(x, y + 1.15, z + inw * 0.52);
+  glow.position.set(x, y + 1.15, z + faceDir * 0.57);
   g.add(glow);
   const nDoor = Math.max(2, Math.round(w / 0.9));
   for (let i = 0; i <= nDoor; i++) {
     const mull = box(0.06, 1.9, 0.1, M.signPost);
-    mull.position.set(x - w / 2 + 0.1 + i * (w - 0.2) / nDoor, y + 1.15, z + inw * 0.55);
+    mull.position.set(x - w / 2 + 0.1 + i * (w - 0.2) / nDoor, y + 1.15, z + faceDir * 0.6);
     g.add(mull);
   }
   // bottle rows visible on the lit face
@@ -201,7 +203,7 @@ function chillerWall(g, goods, x, z, y, w, inw) {
       goods.push({
         x: x - w / 2 + 0.25 + i * (w - 0.5) / (nDoor * 4 - 1),
         y: y + 0.45 + t * 0.45,
-        z: z + inw * 0.5,
+        z: z + faceDir * 0.52,
         sx: 0.09, sy: 0.22, sz: 0.08, color: pickC(DRINKS),
       });
     }
@@ -240,7 +242,7 @@ function shopShell(g, cx, z, y, faceDir, w = 7.5, d = 2.2, h = 3.4) {
   roofB.position.set(cx, y + h - 0.25, mid);
   g.add(roofB);
   const strip = box(w - 0.8, 0.08, 0.4, glowMat);
-  strip.position.set(cx, y + h - 0.55, mid);
+  strip.position.set(cx, y + h - 0.58, mid);
   g.add(strip);
   return { front, back, inw, mid };
 }
@@ -254,65 +256,67 @@ const SHOP_KIND = {
 
 function shopInterior(g, kind, cx, z, y, faceDir, sh) {
   const goods = [];
-  const { back, inw } = sh;
-  const inner = back + inw * 0.1;      // just inside the back wall
+  // interior face of the back wall; at(d) = d metres in front of it
+  const wallZ = sh.back + faceDir * 0.2;
+  const at = d => wallZ + faceDir * d;
+  const faceFront = faceDir > 0 ? 0 : Math.PI;   // yaw facing the shop front
   switch (kind) {
     case 'bank': {
-      atmRow(g, cx - 2.4, inner + inw * 0.45, y, faceDir, 2);
+      atmRow(g, cx - 2.4, at(0.55), y, faceDir, 2);
       const c = box(2.6, 1.0, 0.5, M.booth);
-      c.position.set(cx + 1.8, y + 0.5, inner + inw * 0.5);
+      c.position.set(cx + 1.8, y + 0.5, at(0.8));
       const glassTop = box(2.6, 0.8, 0.06, glassCase);
-      glassTop.position.set(cx + 1.8, y + 1.45, inner + inw * 0.5);
+      glassTop.position.set(cx + 1.8, y + 1.45, at(0.8));
       g.add(solid(c), glassTop);
-      g.add(fig('stand', { x: cx + 1.8, z: inner + inw * 0.95 }, Math.PI * faceDir));
-      g.add(fig('stand', { x: cx - 2.4, z: inner + inw * 1.1 }, -faceDir * Math.PI));
+      g.add(fig('stand', { x: cx + 1.8, z: at(0.4) }, faceFront));
+      g.add(fig('stand', { x: cx - 2.4, z: at(1.2) }, faceFront));
       break;
     }
     case 'diner': {
-      counterUnit(g, cx - 2.2, inner + inw * 0.45, y, 2.6, faceDir);
+      counterUnit(g, cx - 2.2, at(0.55), y, 2.6, faceDir);
       const menu = box(2.4, 0.7, 0.05, glowMat);
-      menu.position.set(cx - 2.2, y + 2.2, inner + inw * 0.08);
+      menu.position.set(cx - 2.2, y + 2.2, at(0.05));
       g.add(menu);
-      cafeTable(g, cx + 1.2, z - inw * 0.1, y);
-      cafeTable(g, cx + 2.9, z - inw * 0.05, y);
-      g.add(fig('sit', { x: cx + 1.2 - 0.95, z: z - inw * 0.45 }, Math.PI / 2));
-      g.add(fig('sit', { x: cx + 2.9 + 0.95, z: z - inw * 0.4 }, -Math.PI / 2));
-      g.add(fig('stand', { x: cx - 2.2, z: inner + inw * 1.0 }, -faceDir * Math.PI));
+      cafeTable(g, cx + 1.2, z + faceDir * 0.1, y);
+      cafeTable(g, cx + 2.9, z + faceDir * 0.05, y);
+      g.add(fig('sit', { x: cx + 1.2 - 0.95, z: z + faceDir * 0.45 }, Math.PI / 2));
+      g.add(fig('sit', { x: cx + 2.9 + 0.95, z: z + faceDir * 0.4 }, -Math.PI / 2));
+      g.add(fig('stand', { x: cx - 2.2, z: at(1.0) }, faceFront));
       break;
     }
     case 'bakery': {
-      wallShelves(g, goods, cx, inner, y, 6.4, inw, BREADS);
-      bakeryCase(g, goods, cx - 1.2, z + inw * -0.1, y);
-      g.add(fig('stand', { x: cx + 1.8, z: inner + inw * 0.9 }, -faceDir * Math.PI));
+      wallShelves(g, goods, cx, wallZ, y, 6.4, faceDir, BREADS);
+      bakeryCase(g, goods, cx - 1.2, z + faceDir * 0.1, y);
+      g.add(fig('stand', { x: cx + 1.8, z: at(1.0) }, faceFront));
       break;
     }
     case 'cafe': {
-      counterUnit(g, cx - 1.8, inner + inw * 0.45, y, 3.0, faceDir);
+      counterUnit(g, cx - 1.8, at(0.55), y, 3.0, faceDir);
       const machine = box(0.6, 0.5, 0.4, M.signPost);
-      machine.position.set(cx - 0.9, y + 1.25, inner + inw * 0.45);
+      machine.position.set(cx - 0.9, y + 1.25, at(0.55));
       g.add(machine);
-      cafeTable(g, cx + 2.2, z - inw * 0.15, y);
-      g.add(fig('sit', { x: cx + 2.2 + 0.95, z: z - inw * 0.5 }, -Math.PI / 2));
+      cafeTable(g, cx + 2.2, z + faceDir * 0.15, y);
+      g.add(fig('sit', { x: cx + 2.2 + 0.95, z: z + faceDir * 0.5 }, -Math.PI / 2));
       break;
     }
     case 'books': {
-      wallShelves(g, goods, cx, inner, y, 6.4, inw, BOOKS, true);
-      shelf(g, goods, cx - 0.5, z + inw * -0.2, y, 3.0, BOOKS);
-      g.add(fig('stand', { x: cx - 0.5, z: z + inw * -0.9 }, faceDir * Math.PI));
+      wallShelves(g, goods, cx, wallZ, y, 6.4, faceDir, BOOKS, true);
+      shelf(g, goods, cx - 0.5, z + faceDir * 0.2, y, 3.0, BOOKS);
+      g.add(fig('stand', { x: cx - 0.5, z: z + faceDir * 0.9 }, faceFront));
       break;
     }
     case 'convenience': {
-      chillerWall(g, goods, cx, inner, y, 6.4, inw);
-      shelf(g, goods, cx - 0.8, z + inw * -0.25, y, 3.4, SNACKS);
-      counterUnit(g, cx + 2.6, z + inw * -0.4, y, 1.6, faceDir);
-      g.add(fig('stand', { x: cx + 2.6, z: inner + inw * 0.8 }, -faceDir * Math.PI));
-      g.add(fig('stand', { x: cx - 0.8, z: z + inw * -1.0 }, faceDir * Math.PI));
+      chillerWall(g, goods, cx, wallZ, y, 6.4, faceDir);
+      shelf(g, goods, cx - 0.8, z + faceDir * 0.25, y, 3.4, SNACKS);
+      counterUnit(g, cx + 2.6, z + faceDir * 0.4, y, 1.6, faceDir);
+      g.add(fig('stand', { x: cx + 2.6, z: at(0.9) }, faceFront));
+      g.add(fig('stand', { x: cx - 0.8, z: z + faceDir * 1.0 }, faceFront));
       break;
     }
     default: {   // 'shelves' (pharmacy)
-      wallShelves(g, goods, cx, inner, y, 6.4, inw, SNACKS);
-      shelf(g, goods, cx - 0.6, z + inw * -0.2, y, 3.2, SNACKS);
-      counterUnit(g, cx + 2.5, inner + inw * 0.45, y, 1.6, faceDir);
+      wallShelves(g, goods, cx, wallZ, y, 6.4, faceDir, SNACKS);
+      shelf(g, goods, cx - 0.6, z + faceDir * 0.2, y, 3.2, SNACKS);
+      counterUnit(g, cx + 2.5, at(0.55), y, 1.6, faceDir);
     }
   }
   const gm = goodsMesh(goods);
@@ -346,7 +350,7 @@ export function shops(x0, x1, z, y, faceDir) {
     const sh = shopShell(g, cx, z, y, faceDir);
     shopInterior(g, SHOP_KIND[name.en] || 'shelves', cx, z, y, faceDir, sh);
     const fas = fasciaSign(name, 7.0, 0.75);
-    fas.position.set(cx, y + 3.05, z + faceDir * 1.16);
+    fas.position.set(cx, y + 3.05, z + faceDir * 1.22);
     if (faceDir < 0) fas.rotation.y = Math.PI;
     g.add(fas);
   }
@@ -367,10 +371,10 @@ export function kiosk(x, z, y, i = 0) {
   roof.position.set(x, y + 2.7, z);
   g.add(roof);
   const fas = fasciaSign(name, 2.8, 0.6);
-  fas.position.set(x, y + 2.2, z + 1.66);
+  fas.position.set(x, y + 2.2, z + 1.72);
   g.add(fas);
   const fas2 = fasciaSign(name, 2.8, 0.6);
-  fas2.position.set(x, y + 2.2, z - 1.66);
+  fas2.position.set(x, y + 2.2, z - 1.72);
   fas2.rotation.y = Math.PI;
   g.add(fas2);
   return g;
@@ -538,7 +542,7 @@ export function restaurant(r, z, y, faceDir) {
   g.add(fig('sit', { x: cx + 1.6 - 0.95, z: mid - inw * 0.65 }, Math.PI / 2));
   g.add(fig('sit', { x: cx + 3.6 + 0.95, z: mid + inw * 0.28 }, -Math.PI / 2));
   g.add(fig('sit', { x: cx + 3.6 - 0.95, z: mid - inw * 0.38 }, Math.PI / 2));
-  g.add(fig('stand', { x: cx - 2.5, z: back - inw * 1.1 }, Math.PI));
+  g.add(fig('stand', { x: cx - 2.5, z: back - inw * 1.1 }, faceDir > 0 ? 0 : Math.PI));
 
   // brand touches: McDonald's self-order kiosks, Genki conveyor belt,
   // dim-sum steamer stack
@@ -566,7 +570,7 @@ export function restaurant(r, z, y, faceDir) {
   }
 
   const fas = brandFascia(r, w - 0.3, 0.85);
-  fas.position.set(cx, y + 3.0, front + faceDir * 0.08);
+  fas.position.set(cx, y + 3.0, front + faceDir * 0.12);
   if (faceDir < 0) fas.rotation.y = Math.PI;
   g.add(fas);
   return g;
@@ -642,8 +646,10 @@ export function sevenEleven(x, z, y, faceDir) {
   g.add(strip);
 
   // interior: chiller wall across the back, two snack gondolas, cashier counter
+  const wallZ = back + faceDir * 0.2;      // interior face of the back wall
+  const faceFront = faceDir > 0 ? 0 : Math.PI;
   const goods = [];
-  chillerWall(g, goods, cx, back, y, w - 1.2, inw);
+  chillerWall(g, goods, cx, wallZ, y, w - 1.2, faceDir);
   shelf(g, goods, cx - 2.2, mid + inw * 0.15, y, 3.6, SNACKS);
   shelf(g, goods, cx + 1.2, mid + inw * 0.15, y, 3.0, SNACKS);
   counterUnit(g, cx + 4.0, mid + inw * 0.3, y, 1.8, faceDir);
@@ -654,18 +660,18 @@ export function sevenEleven(x, z, y, faceDir) {
   const gm = goodsMesh(goods);
   if (gm) g.add(gm);
   // cashier + a browsing customer
-  g.add(fig('stand', { x: cx + 4.0, z: back + inw * 1.15 }, Math.PI));
-  g.add(fig('stand', { x: cx - 2.2, z: mid + inw * 0.75 }, Math.PI * 0.9));
+  g.add(fig('stand', { x: cx + 4.0, z: mid + inw * 0.7 }, faceFront));
+  g.add(fig('stand', { x: cx - 2.2, z: mid - inw * 0.6 }, faceFront + 0.3));
 
   // fascia: white sign + tri-colour stripe band across the whole width
   const fas = sevenFascia(w - 0.4, 0.9);
-  fas.position.set(cx, y + 3.0, front + faceDir * 0.08);
+  fas.position.set(cx, y + 3.0, front + faceDir * 0.12);
   if (faceDir < 0) fas.rotation.y = Math.PI;
   g.add(fas);
   const stripes = ['#f47a20', '#ee3524', '#007a5e'];
   stripes.forEach((c, i) => {
     const b = box(w - 0.2, 0.13, 0.06, new THREE.MeshStandardMaterial({ color: new THREE.Color(c), roughness: 0.5 }));
-    b.position.set(cx, y + 2.32 - i * 0.13, front + faceDir * 0.04);
+    b.position.set(cx, y + 2.32 - i * 0.13, front + faceDir * 0.08);
     g.add(b);
   });
   return g;
@@ -715,7 +721,7 @@ export function mallEntrance(x, z, y, faceDir) {
   }
 
   const sign = brandFascia(MALL, w - 0.4, 1.05);
-  sign.position.set(cx, y + 3.15, front + faceDir * 0.09);
+  sign.position.set(cx, y + 3.15, front + faceDir * 0.13);
   if (faceDir < 0) sign.rotation.y = Math.PI;
   g.add(sign);
   return g;

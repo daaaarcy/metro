@@ -210,18 +210,43 @@ buildUI({
 // ---------- level hover info ----------
 const ray = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+const crossPt = new THREE.Vector3();
+let dragging = false;
 renderer.domElement.addEventListener('pointermove', e => {
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
 });
+renderer.domElement.addEventListener('pointerdown', () => { dragging = true; showInfo(null); });
+addEventListener('pointerup', () => { dragging = false; });
+addEventListener('pointercancel', () => { dragging = false; });
 let hoverT = 0;
 function updatePick(dt) {
   hoverT += dt;
-  if (hoverT < 0.12 || rig.mode !== 'orbit') { if (rig.mode !== 'orbit') showInfo(null); return; }
+  if (rig.mode !== 'orbit' || dragging || hoverT < 0.12) {
+    if (rig.mode !== 'orbit' || dragging) showInfo(null);
+    return;
+  }
   hoverT = 0;
   ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects(pickMeshes, false)[0];
-  if (!hit) { showInfo(null); return; }
-  const l = hit.object.userData.level;
+  // pick volumes are stacked boxes that overlap in screen space — the level
+  // is decided by the hit point's height band, not by which box was hit.
+  // With a section cut the visible surface sits ON the clip plane, so the
+  // ray/plane crossing (nearer than any kept box face) wins.
+  const plane = clipAxis !== 'none' ? clipPlanes[clipAxis] : null;
+  let kept = null;
+  for (const h of ray.intersectObjects(pickMeshes, false)) {
+    if (plane && plane.distanceToPoint(h.point) < -0.01) continue;
+    kept = h;
+    break;
+  }
+  let pt = null;
+  if (plane && kept) {
+    const c = ray.ray.intersectPlane(plane, crossPt);
+    if (c && ray.ray.origin.distanceTo(c) < kept.distance) pt = c;
+  }
+  if (!pt && kept) pt = kept.point;
+  if (!pt) { showInfo(null); return; }
+  const l = LEVELS.find(l => l.id === levelAtY(pt.y));
+  if (!l) { showInfo(null); return; }
   showInfo(`<span class="zh">${l.id} ${l.zh}</span><span class="en">${l.en}</span>`);
 }
 
