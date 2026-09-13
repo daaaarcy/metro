@@ -32,19 +32,28 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople })
     onMode(b.dataset.mode);
   }));
 
-  // clip axis buttons + slider
+  // clip axis buttons + slider — cuts only exist in the orbit view, so any
+  // section interaction from walk mode switches there first
   const clipBtns = document.querySelectorAll('#clip-buttons button');
   const slider = document.getElementById('clip-slider');
+  const ensureOrbit = () => {
+    if (document.querySelector('#mode-buttons button.active')?.dataset.mode !== 'orbit')
+      document.querySelector('#mode-buttons button[data-mode=orbit]').click();
+  };
   clipBtns.forEach(b => b.addEventListener('click', () => {
     clipBtns.forEach(x => x.classList.toggle('active', x === b));
     const axis = b.dataset.clip;
     slider.disabled = axis === 'none';
-    slider.value = 1;
-    onClip(axis, 1);
+    if (axis === 'none') { onClip('none', 1); return; }
+    ensureOrbit();
+    // a freshly-picked cut should actually cut: slider max means "full", so
+    // drop it to a mid sweep; a mid-drag position is kept across axes
+    if (parseFloat(slider.value) >= 1) slider.value = 0.5;
+    onClip(axis, parseFloat(slider.value));
   }));
   slider.addEventListener('input', () => {
     const axis = document.querySelector('#clip-buttons button.active')?.dataset.clip;
-    if (axis && axis !== 'none') onClip(axis, parseFloat(slider.value));
+    if (axis && axis !== 'none') { ensureOrbit(); onClip(axis, parseFloat(slider.value)); }
   });
 
   // level list: label + jump-to viewpoint (all levels are always shown)

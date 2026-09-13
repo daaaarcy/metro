@@ -186,8 +186,10 @@ function syncClipPlanes() {
     ? [clipPlanes[clipAxis]] : [];
 }
 function applyClip(axis, t) {
-  clipAxis = axis;
-  if (axis === 'none') { syncClipPlanes(); clipConst = Infinity; return; }
+  // slider max is the full view, not a cut at the far edge — collapse it to
+  // 'none' so labels, picking and planes all follow the no-cut rules
+  clipAxis = (axis === 'none' || t >= 1) ? 'none' : axis;
+  if (clipAxis === 'none') { syncClipPlanes(); clipConst = Infinity; return; }
   const p = clipPlanes[axis];
   p.constant = axis === 'y'
     ? THREE.MathUtils.lerp(clipRange.y[1], clipRange.y[0], t)
