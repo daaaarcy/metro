@@ -1,0 +1,242 @@
+import * as THREE from 'three';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { buildStation, computeOpenings } from './station.js';
+import { LEVELS, BOXES } from './station-data.js';
+import { CameraRig } from './controls.js';
+import { buildUI, showInfo, showPrompt, updateTicker } from './ui.js';
+import { EscalatorSteps } from './anim/escalators.js';
+import { TrainSim } from './anim/trains.js';
+import { Passengers } from './anim/passengers.js';
+import { updateGates, gateBlocks } from './anim/gates.js';
+import { StationAudio } from './audio.js';
+
+// ---------- renderer ----------
+const app = document.getElementById('app');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.localClippingEnabled = true;
+app.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:5;';
+document.body.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x11151c);
+scene.fog = new THREE.Fog(0x11151c, 320, 720);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 1200);
+camera.position.set(105, 55, 118);
+
+// ---------- lights ----------
+scene.add(new THREE.HemisphereLight(0xbfd0e0, 0x4a4640, 1.5));
+const sun = new THREE.DirectionalLight(0xfff0dd, 1.6);
+sun.position.set(90, 160, 60);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -160, right: 160, top: 160, bottom: -160, far: 400 });
+sun.shadow.bias = -0.0004;
+scene.add(sun);
+scene.add(new THREE.AmbientLight(0x50565e, 1.0));
+
+// ---------- station ----------
+const { root, levelGroups, togglables, labels } = buildStation();
+scene.add(root);
+root.updateMatrixWorld(true);
+
+// ground context
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(500, 48),
+  new THREE.MeshStandardMaterial({ color: 0x171b21, roughness: 1 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.05;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ---------- simulation ----------
+const escSteps = new EscalatorSteps();
+scene.add(escSteps.mesh);
+const trainSim = new TrainSim(scene);
+const passengers = new Passengers(scene, computeOpenings());
+const audio = new StationAudio();
+
+// ---------- CSS2D labels ----------
+const labelObjs = [];
+let labelsOn = true;
+for (const l of labels) {
+  const div = document.createElement('div');
+  div.className = `lbl ${l.cls}`;
+  if (l.css) div.style.cssText = l.css;
+  div.innerHTML = l.html;
+  const o = new CSS2DObject(div);
+  o.position.copy(l.pos);
+  o.userData.level = l.level;
+  root.add(o);
+  labelObjs.push(o);
+}
+
+// Label visibility rules:
+//  orbit, no section  → only exterior labels (U1/G level tags + exit tags);
+//                       a level's labels also appear once a higher level is hidden
+//  orbit + x/z section → labels of all visible levels (the cut exposes them)
+//  orbit + y section   → labels below the peel plane only
+//  walk/fly            → labels on the level the camera is inside
+const sortedLevels = [...LEVELS].sort((a, b) => b.y - a.y);
+function levelAtY(y) {
+  for (const l of sortedLevels) if (y >= l.y - 1.2) return l.id;
+  return sortedLevels[sortedLevels.length - 1].id;
+}
+function exposedLevel(id) {
+  const lvl = LEVELS.find(l => l.id === id);
+  if (!lvl) return true;
+  return LEVELS.some(l => l.y > lvl.y + 1 && levelGroups[l.id] && !levelGroups[l.id].visible);
+}
+function updateLabels() {
+  const camLvl = levelAtY(camera.position.y);
+  for (const o of labelObjs) {
+    const lvl = o.userData.level;
+    if (!labelsOn || (lvl && levelGroups[lvl] && !levelGroups[lvl].visible)) { o.visible = false; continue; }
+    if (!lvl) { o.visible = true; continue; }
+    if (rig.mode !== 'orbit') { o.visible = lvl === camLvl; continue; }
+    if (clipAxis === 'y') { o.visible = o.position.y < clipConst; continue; }
+    if (clipAxis === 'x' || clipAxis === 'z') { o.visible = true; continue; }
+    o.visible = lvl === 'U1' || lvl === 'G' || exposedLevel(lvl);
+  }
+}
+
+// ---------- invisible pick proxies per level (cheap raycast) ----------
+const pickMeshes = [];
+for (const lvl of LEVELS) {
+  if (!lvl.box) continue;
+  const bx = BOXES[lvl.box];
+  const geo = new THREE.BoxGeometry(bx.len, 7, bx.wid);
+  const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(bx.cx, lvl.y + 3, bx.cz);
+  m.rotation.y = bx.rot;
+  m.userData.level = lvl;
+  m.renderOrder = -1;
+  scene.add(m);
+  pickMeshes.push(m);
+}
+
+// ---------- clipping planes ----------
+const clipPlanes = {
+  x: new THREE.Plane(new THREE.Vector3(-1, 0, 0), 200),
+  y: new THREE.Plane(new THREE.Vector3(0, -1, 0), 200),
+  z: new THREE.Plane(new THREE.Vector3(0, 0, -1), 200),
+};
+const clipRange = { x: 130, y: [50, -55], z: 95 };
+let clipAxis = 'none', clipConst = Infinity;
+function applyClip(axis, t) {
+  clipAxis = axis;
+  if (axis === 'none') { renderer.clippingPlanes = []; clipConst = Infinity; return; }
+  const p = clipPlanes[axis];
+  p.constant = axis === 'y'
+    ? THREE.MathUtils.lerp(clipRange.y[1], clipRange.y[0], t)
+    : THREE.MathUtils.lerp(-clipRange[axis], clipRange[axis], t);
+  clipConst = p.constant;
+  renderer.clippingPlanes = [p];
+}
+
+// ---------- controls ----------
+const rig = new CameraRig(camera, renderer.domElement);
+rig.audio = audio;
+rig.initColliders();
+window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
+const HOME_POS = new THREE.Vector3(105, 55, 118);
+const HOME_TARGET = new THREE.Vector3(5, -16, 12);
+rig.orbit.target.copy(HOME_TARGET);
+
+let peopleOn = true;
+buildUI({
+  onMode: m => {
+    rig.setMode(m);
+    if (m === 'orbit') rig.teleport(HOME_POS, HOME_TARGET);
+  },
+  onClip: applyClip,
+  onLevelVisible: (id, v) => {
+    if (levelGroups[id]) levelGroups[id].visible = v;
+    (togglables[id] || []).forEach(o => (o.visible = v));
+    escSteps.setLevelVisible(id, v);
+    passengers.setLevelVisible(id, v);
+    for (const s of trainSim.services) if (s.ds.level === id) s.train.visible = v;
+  },
+  onGoto: (id, vp) => {
+    if (!vp) return;
+    if (rig.mode === 'orbit') rig.orbit.target.copy(vp.look);
+    rig.teleport(vp.pos, vp.look);
+  },
+  onLabels: v => { labelsOn = v; },
+  onAudio: v => { v ? audio.enable() : audio.disable(); },
+  onPeople: v => {
+    peopleOn = v;
+    passengers.bodies.visible = passengers.heads.visible = v;
+  },
+});
+
+// ---------- level hover info ----------
+const ray = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+renderer.domElement.addEventListener('pointermove', e => {
+  mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+});
+let hoverT = 0;
+function updatePick(dt) {
+  hoverT += dt;
+  if (hoverT < 0.12 || rig.mode !== 'orbit') { if (rig.mode !== 'orbit') showInfo(null); return; }
+  hoverT = 0;
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(pickMeshes, false)[0];
+  if (!hit) { showInfo(null); return; }
+  const l = hit.object.userData.level;
+  showInfo(`<span class="zh">${l.id} ${l.zh}</span><span class="en">${l.en}</span>`);
+}
+
+// ---------- loop ----------
+const timer = new THREE.Timer();
+let tickerT = 0;
+function tick() {
+  timer.update();
+  const dt = Math.min(timer.getDelta(), 0.05);
+  const t = timer.getElapsed();
+
+  rig.update(dt);
+  updatePick(dt);
+  updateLabels();
+
+  // sim
+  escSteps.update(t);
+  const events = trainSim.update(dt, audio);
+  for (const ev of events) passengers.onTrainEvent(ev, audio);
+  if (peopleOn) passengers.update(dt, t, trainSim, audio);
+  updateGates(dt);
+
+  // gate prompt + ticker refresh
+  if (rig.mode === 'walk') {
+    showPrompt(rig.nearGate && gateBlocks(rig.nearGate)
+      ? '拍卡進站 · Tap Octopus card — press <b>E</b>' : null);
+  } else showPrompt(null);
+
+  tickerT += dt;
+  if (tickerT > 0.5) { tickerT = 0; updateTicker(trainSim.services); }
+
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+});
