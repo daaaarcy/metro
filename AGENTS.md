@@ -4,7 +4,7 @@
 
 An interactive, schematic 3D viewer of **Admiralty MTR Station** (金鐘站) built
 with Three.js — exterior orbit view, first-person walk mode with collision,
-free-fly mode, section clipping, animated trains/escalators/gates/passengers,
+section clipping, animated trains/escalators/gates/passengers,
 and a live departures feed from the real MTR Open Data API.
 
 This is an architectural *schematic*, not a surveyed model. Favour legibility
@@ -29,7 +29,7 @@ index.html            app shell: masthead, control panel, ticker, hint bar
 public/mtr-logo.webp  MTR logo asset used in the masthead
 src/
   main.js             renderer, lights, scene, labels, clipping, sim loop, UI wiring
-  controls.js         CameraRig: orbit/walk/fly, gravity, floor snap,
+  controls.js         CameraRig: orbit/walk, gravity, floor snap,
                       circle-vs-OBB collision, gate proximity, escalator carry
   ui.js               panel wiring, hover info, departures ticker
   audio.js            WebAudio FX (octopus beep, door chime, HVAC rumble)

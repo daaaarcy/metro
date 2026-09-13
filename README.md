@@ -15,5 +15,4 @@ npm run dev
 
 - **Orbit**: drag to rotate, scroll to zoom
 - **Walk**: WASD + drag to look, E to tap Octopus at gates
-- **Fly**: WASD + E/Q for vertical, scroll to adjust speed
-- Section cuts, per-level visibility, labels, sound, and passenger toggles in the left panel
+- Section cuts, labels, sound, and passenger toggles in the left panel

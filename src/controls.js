@@ -9,7 +9,6 @@ const EYE = 1.62, RADIUS = 0.35, STEP_MAX = 0.42, GRAVITY = 22;
 // Camera modes:
 //  'orbit' — OrbitControls exterior view
 //  'walk'  — first-person with gravity, collision, escalator riding
-//  'fly'   — free-fly inside the model (no collision)
 export class CameraRig {
   constructor(camera, dom) {
     this.camera = camera;
@@ -26,7 +25,6 @@ export class CameraRig {
 
     this.yaw = 0; this.pitch = 0;
     this.keys = new Set();
-    this.speed = 9;              // fly speed
     this.vy = 0;
     this.feetY = camera.position.y - EYE;
     this._drag = null;
@@ -58,10 +56,6 @@ export class CameraRig {
       }
     });
     window.addEventListener('keyup', e => this.keys.delete(e.code));
-    dom.addEventListener('wheel', e => {
-      if (this.mode !== 'fly') return;
-      this.speed = THREE.MathUtils.clamp(this.speed * (e.deltaY < 0 ? 1.15 : 0.87), 2, 40);
-    }, { passive: true });
   }
 
   // Build/attach static collision data — call once after the station is in
@@ -218,20 +212,6 @@ export class CameraRig {
     if (k.has('KeyS') || k.has('ArrowDown')) v.z += 1;
     if (k.has('KeyA') || k.has('ArrowLeft')) v.x -= 1;
     if (k.has('KeyD') || k.has('ArrowRight')) v.x += 1;
-
-    if (this.mode === 'fly') {
-      if (k.has('Space') || k.has('KeyE')) v.y += 1;
-      if (k.has('KeyC') || k.has('KeyQ')) v.y -= 1;
-      if (v.lengthSq() > 0) {
-        v.normalize();
-        const boost = k.has('ShiftLeft') || k.has('ShiftRight') ? 3 : 1;
-        const move = new THREE.Vector3(v.x, 0, v.z).applyQuaternion(this.camera.quaternion);
-        move.y = 0; move.normalize();
-        this.camera.position.addScaledVector(move, this.speed * boost * dt);
-        this.camera.position.y += v.y * this.speed * boost * dt;
-      }
-      return;
-    }
 
     // ---- walk ----
     const boost = k.has('ShiftLeft') || k.has('ShiftRight') ? 1.9 : 1;

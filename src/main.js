@@ -95,7 +95,7 @@ for (const l of labels) {
 //                       a level's labels also appear once a higher level is hidden
 //  orbit + x/z section → labels of all visible levels (the cut exposes them)
 //  orbit + y section   → labels below the peel plane only
-//  walk/fly            → labels on the level the camera is inside
+//  walk                → labels on the level the camera is inside
 const sortedLevels = [...LEVELS].sort((a, b) => b.y - a.y);
 function levelAtY(y) {
   for (const l of sortedLevels) if (y >= l.y - 1.2) return l.id;
