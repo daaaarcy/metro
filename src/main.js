@@ -9,6 +9,7 @@ import { TrainSim } from './anim/trains.js';
 import { Passengers } from './anim/passengers.js';
 import { updateGates, gateBlocks } from './anim/gates.js';
 import { StationAudio } from './audio.js';
+import { buildColliders } from './colliders.js';
 
 // ---------- renderer ----------
 const app = document.getElementById('app');
@@ -49,6 +50,8 @@ scene.add(new THREE.AmbientLight(0x50565e, 1.0));
 const { root, levelGroups, togglables, labels } = buildStation();
 scene.add(root);
 root.updateMatrixWorld(true);
+// one collision world shared by the player rig and the pedestrians
+const colliders = buildColliders();
 
 // ground context
 const ground = new THREE.Mesh(
@@ -64,7 +67,7 @@ scene.add(ground);
 const escSteps = new EscalatorSteps();
 scene.add(escSteps.mesh);
 const trainSim = new TrainSim(scene);
-const passengers = new Passengers(scene, computeOpenings());
+const passengers = new Passengers(scene, computeOpenings(), colliders);
 const audio = new StationAudio();
 
 // ---------- CSS2D labels ----------
@@ -149,7 +152,7 @@ function applyClip(axis, t) {
 // ---------- controls ----------
 const rig = new CameraRig(camera, renderer.domElement);
 rig.audio = audio;
-rig.initColliders();
+rig.initColliders(colliders);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);

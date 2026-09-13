@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { ESC_RUNS, GATES, STAIR_RUNS } from '../registry.js';
 import { WALK_RECTS, BOXES, levelById, boxToWorld, worldToBox } from '../station-data.js';
 import { pointInRects, worldRectToLocal } from '../builders/structure.js';
-import { openGate } from './gates.js';
+import { openGate, gateBlocks } from './gates.js';
+import { resolvePed } from '../colliders.js';
 import { rollAppearance, PART_GEO } from '../builders/people.js';
 
 const N_LEVELS = { U1: 14, G: 16, L1: 58, L2: 44, L3: 44, L4: 24, L5: 24, L6: 18 };
@@ -32,8 +33,15 @@ const PART_DEFS = {
   skirt: { geo: 'skirt', pivot: [0, 0.88, 0] },
 };
 
+// states where the scripted path deliberately crosses a collider face —
+// the gate lane, the open PSD bay, a ramp — so collision is skipped
+const NOCLIP = new Set(['esc', 'stair', 'aboard', 'board', 'boarding', 'throughGate', 'alight']);
+// states that are actively stepping somewhere (stall detection applies)
+const MOVING = new Set(['walk', 'toGate', 'throughGate', 'toEsc', 'toStair', 'board', 'boarding', 'alight']);
+
 export class Passengers {
-  constructor(scene, openings) {
+  constructor(scene, openings, colliders) {
+    this.col = colliders;
     // per-level holes in LOCAL frame (for path checks)
     this.holes = {};
     for (const id of Object.keys(N_LEVELS)) {
@@ -76,14 +84,27 @@ export class Passengers {
     scene.add(this.group);
   }
 
+  // is a local point inside (or clipping) a collider?
+  insideSolid(lvl, x, z) {
+    const w = boxToWorld(this.boxOf[lvl], x, z);
+    const [rx, rz] = resolvePed(this.col, w.x, w.z, levelById(lvl).y, 1.7);
+    return Math.hypot(rx - w.x, rz - w.z) > 0.05;
+  }
+
   spawn(level, x, z) {
     const rects = WALK_RECTS[level];
-    const r = rects[Math.floor(Math.random() * rects.length)];
+    if (x == null || z == null) {
+      for (let t = 0; t < 10; t++) {
+        const r = rects[Math.floor(Math.random() * rects.length)];
+        x = THREE.MathUtils.lerp(r.x0 + 1, r.x1 - 1, Math.random());
+        z = THREE.MathUtils.lerp(r.z0 + 1, r.z1 - 1, Math.random());
+        if (!pointInRects(x, z, this.holes[level]) && !this.insideSolid(level, x, z)) break;
+      }
+    }
     const a = rollAppearance();
     return {
       level,
-      x: x ?? THREE.MathUtils.lerp(r.x0 + 1, r.x1 - 1, Math.random()),
-      z: z ?? THREE.MathUtils.lerp(r.z0 + 1, r.z1 - 1, Math.random()),
+      x, z,
       tx: 0, tz: 0, speed: THREE.MathUtils.lerp(...SPEED, Math.random()) * a.speedK,
       state: 'idle', wait: Math.random() * 2, run: null, s: 0, gate: null,
       hideT: 0, yaw: Math.random() * Math.PI * 2, svc: null,
@@ -171,6 +192,7 @@ export class Passengers {
       const tz = THREE.MathUtils.lerp(r.z0 + 1, r.z1 - 1, Math.random());
       if (pointInRects(tx, tz, this.holes[lvl])) continue;
       if (!pathClear(p.x, p.z, tx, tz, this.holes[lvl])) continue;
+      if (this.insideSolid(lvl, tx, tz)) continue;
       p.tx = tx; p.tz = tz; p.state = 'walk';
       return;
     }
@@ -188,7 +210,7 @@ export class Passengers {
       const li = worldToBox(this.boxOf[lvl], inside[i % inside.length].x, inside[i % inside.length].z);
       const lo = worldToBox(this.boxOf[lvl], out[i % out.length].x, out[i % out.length].z);
       const p = this.spawn(lvl, li.x, li.z);
-      p.tx = lo.x; p.tz = lo.z; p.state = 'walk';
+      p.tx = lo.x; p.tz = lo.z; p.state = 'alight';
       p.wait = 0;
       this.list.push(p);
     }
@@ -196,7 +218,7 @@ export class Passengers {
     // so anyone farther than ~20 m would never make it before departure
     const localOut = out.map(d => worldToBox(this.boxOf[lvl], d.x, d.z));
     const near = this.list.filter(p => p.level === lvl &&
-      !['aboard', 'esc', 'board', 'boarding', 'toEsc', 'throughGate', 'toStair', 'stair', 'toGate'].includes(p.state) &&
+      !['aboard', 'esc', 'board', 'boarding', 'toEsc', 'throughGate', 'toStair', 'stair', 'toGate', 'alight'].includes(p.state) &&
       localOut.some(d => Math.hypot(p.x - d.x, p.z - d.z) < 20));
     for (let i = 0; i < Math.min(6, near.length); i++) {
       const p = near[Math.floor(Math.random() * near.length)];
@@ -325,8 +347,45 @@ export class Passengers {
           }
           break;
         }
-        default:   // 'walk' / 'seek'
+        case 'alight': {
+          // step out of the car through the open bay, then join the crowd
+          if (this.stepTo(p, dt)) { p.state = 'seek'; }
+          break;
+        }
+        case 'seek':
+          // just arrived somewhere (off an escalator, stair, or train) — pick
+          // a fresh destination; walking on toward the stale target would push
+          // the ped across walls/balustrades
+          this.choose(p);
+          break;
+        default:   // 'walk'
           if (this.stepTo(p, dt)) { p.state = 'idle'; p.wait = 0.5 + Math.random() * 2.5; }
+      }
+
+      // physical collision: pedestrians slide along walls, glass, furniture
+      // like the player does — only scripted crossings skip it
+      if (!NOCLIP.has(p.state)) {
+        const bx0 = this.boxOf[p.level];
+        const w0 = boxToWorld(bx0, p.x, p.z);
+        const wy0 = p.wy ?? levelById(p.level).y;
+        let [rx, rz] = resolvePed(this.col, w0.x, w0.z, wy0, 1.7);
+        // closed Octopus flaps block the lane (dynamic — not in SOLIDS)
+        if (wy0 < -6.4 && wy0 > -7.8) {
+          for (const g of GATES) {
+            if (!gateBlocks(g)) continue;
+            const s = g.rect;
+            const nx = Math.max(s.x0, Math.min(rx, s.x1));
+            const nz = Math.max(s.z0, Math.min(rz, s.z1));
+            const dx = rx - nx, dz = rz - nz, d2 = dx * dx + dz * dz;
+            if (d2 >= 0.09 || d2 < 1e-9) continue;
+            const d = Math.sqrt(d2);
+            rx = nx + dx / d * 0.3; rz = nz + dz / d * 0.3;
+          }
+        }
+        if (rx !== w0.x || rz !== w0.z) {
+          const l = worldToBox(bx0, rx, rz);
+          p.x = l.x; p.z = l.z;
+        }
       }
 
       if (p.dirty) { this.paint(i); p.dirty = false; }
@@ -341,6 +400,12 @@ export class Passengers {
       const movingTgt = p.state === 'esc' ? 0 : moved > 0.002 ? 1 : 0;
       p.moving += (movingTgt - p.moving) * Math.min(1, dt * 8);
       p.px = p.x; p.pz = p.z;
+
+      // pressed against a collider with no progress → give up and re-choose
+      if (MOVING.has(p.state) && moved < 0.004) {
+        p.stuck = (p.stuck || 0) + dt;
+        if (p.stuck > 2.5) { p.state = 'idle'; p.wait = 0.3 + Math.random() * 0.9; p.stuck = 0; }
+      } else p.stuck = 0;
       if (p.moving > 0.02) p.phase += moved / 0.38 * Math.PI;
 
       const bx = this.boxOf[p.level];

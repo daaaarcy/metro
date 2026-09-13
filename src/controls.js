@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SOLIDS, WALKABLES, GATES } from './registry.js';
+import { GATES } from './registry.js';
+import { buildColliders } from './colliders.js';
 import { gateBlocks, nearestGate, openGate } from './anim/gates.js';
 
 const EYE = 1.62, RADIUS = 0.35, STEP_MAX = 0.42, GRAVITY = 22;
@@ -63,63 +64,15 @@ export class CameraRig {
     }, { passive: true });
   }
 
-  // Build static collision data — call once after the station is in the scene.
-  // Meshes in the rotated extension box (L5/L6) must NOT use world-space AABBs:
-  // a rotated thin wall's AABB sweeps a huge diagonal swath and swallows the
-  // platform. Rotated solids/ramps become OBBs (circle-vs-OBB in resolve/floorAt).
-  initColliders() {
-    const b = new THREE.Box3();
-    const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
-    const e = new THREE.Euler(), lc = new THREE.Vector3(), sz = new THREE.Vector3();
-
-    const obbOf = m => {
-      // local bounds → OBB in the XZ plane (meshes only ever yaw-rotate)
-      let lb;
-      if (m.isInstancedMesh) {
-        if (!m.boundingBox && m.computeBoundingBox) m.computeBoundingBox();
-        lb = m.boundingBox;
-      } else if (m.geometry) {
-        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
-        lb = m.geometry.boundingBox;
-      }
-      if (!lb) return null;
-      m.matrixWorld.decompose(p, q, s);
-      const yaw = e.setFromQuaternion(q, 'YXZ').y;
-      lc.copy(lb.getCenter(sz)).applyMatrix4(m.matrixWorld);
-      lb.getSize(sz);
-      return {
-        cx: lc.x, cz: lc.z,
-        hx: Math.abs(sz.x * s.x) / 2 + 1e-3, hz: Math.abs(sz.z * s.z) / 2 + 1e-3,
-        cos: Math.cos(yaw), sin: Math.sin(yaw),
-      };
-    };
-
-    for (const m of SOLIDS) {
-      m.updateWorldMatrix(true, false);
-      if (m.isInstancedMesh && !m.boundingBox && m.computeBoundingBox) m.computeBoundingBox();
-      b.setFromObject(m);
-      if (b.isEmpty()) continue;
-      m.matrixWorld.decompose(p, q, s);
-      const yaw = e.setFromQuaternion(q, 'YXZ').y;
-      if (Math.abs(Math.sin(2 * yaw)) < 0.03) {           // ~axis-aligned: keep the cheap AABB
-        this.solidAABBs.push({ x0: b.min.x, z0: b.min.z, x1: b.max.x, z1: b.max.z, y0: b.min.y, y1: b.max.y });
-      } else {
-        const o = obbOf(m);
-        if (o) this.solidOBBs.push({ ...o, y0: b.min.y, y1: b.max.y });
-        else this.solidAABBs.push({ x0: b.min.x, z0: b.min.z, x1: b.max.x, z1: b.max.z, y0: b.min.y, y1: b.max.y });
-      }
-    }
-    for (const m of WALKABLES) {
-      m.updateWorldMatrix(true, false);
-      b.setFromObject(m);
-      if (b.isEmpty()) continue;
-      const w = m.userData.walkable || {};
-      if (w.esc || w.ramp) {
-        this.ramps.push({ run: w.esc || w.ramp, ...obbOf(m), carry: !!w.esc });
-      } else {
-        this.floors.push({ x0: b.min.x, z0: b.min.z, x1: b.max.x, z1: b.max.z, top: b.max.y });
-      }
-    }
+  // Build/attach static collision data — call once after the station is in
+  // the scene. Shares the world built in colliders.js (callers may inject a
+  // prebuilt index so pedestrians resolve against the same data).
+  initColliders(col = buildColliders()) {
+    this.solidAABBs = col.solidAABBs;
+    this.solidOBBs = col.solidOBBs;
+    this.floors = col.floors;
+    this.ramps = col.ramps;
+    this.colliders = col;
   }
 
   rampY(r, x, z) {
