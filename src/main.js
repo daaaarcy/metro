@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { buildStation, computeOpenings } from './station.js';
-import { LEVELS, BOXES } from './station-data.js';
+import { LEVELS, BOXES, worldToBox } from './station-data.js';
 import { CameraRig } from './controls.js';
 import { buildUI, showInfo, showPrompt, updateTicker } from './ui.js';
 import { EscalatorSteps } from './anim/escalators.js';
@@ -103,15 +103,29 @@ for (const l of labels) {
 }
 
 // Label visibility rules:
-//  orbit, no section  → only exterior labels (U1/G level tags + exit tags);
-//                       a level's labels also appear once a higher level is hidden
-//  orbit + x/z section → labels of all visible levels (the cut exposes them)
+//  orbit, no section, camera outside → only exterior labels (U1/G level tags +
+//                       exit tags); a level's labels also appear once a higher
+//                       level is hidden
+//  orbit, no section, camera inside a level box → only that level's labels
+//                       (otherwise G/exit tags float mid-air underground)
+//  orbit + x/z section → labels on the kept side of the cut plane
 //  orbit + y section   → labels below the peel plane only
 //  walk                → labels on the level the camera is inside
 const sortedLevels = [...LEVELS].sort((a, b) => b.y - a.y);
 function levelAtY(y) {
   for (const l of sortedLevels) if (y >= l.y - 1.2) return l.id;
   return sortedLevels[sortedLevels.length - 1].id;
+}
+// which level's box (if any) contains the point — handles rotated boxes
+function levelBoxAt(p) {
+  for (const lvl of LEVELS) {
+    const bx = BOXES[lvl.box];
+    if (!bx) continue;
+    if (p.y < lvl.y - 0.3 || p.y > lvl.y + 6.9) continue;
+    const l = worldToBox(bx, p.x, p.z);
+    if (Math.abs(l.x) < bx.len / 2 && Math.abs(l.z) < bx.wid / 2) return lvl.id;
+  }
+  return null;
 }
 function exposedLevel(id) {
   const lvl = LEVELS.find(l => l.id === id);
@@ -120,14 +134,23 @@ function exposedLevel(id) {
 }
 function updateLabels() {
   const camLvl = levelAtY(camera.position.y);
+  const inside = rig.mode === 'orbit' ? levelBoxAt(camera.position) : null;
   for (const o of labelObjs) {
     const lvl = o.userData.level;
     if (!labelsOn || (lvl && levelGroups[lvl] && !levelGroups[lvl].visible)) { o.visible = false; continue; }
     if (!lvl) { o.visible = true; continue; }
     if (rig.mode !== 'orbit') { o.visible = lvl === camLvl; continue; }
-    if (clipAxis === 'y') { o.visible = o.position.y < clipConst; continue; }
-    if (clipAxis === 'x' || clipAxis === 'z') { o.visible = true; continue; }
-    o.visible = lvl === 'U1' || lvl === 'G' || exposedLevel(lvl);
+    if (clipAxis === 'y') {
+      // a level is only exposed once the slab covering it is cut — the floor
+      // of the next level up. U1/G (i<2) have nothing above them.
+      const i = sortedLevels.findIndex(l => l.id === lvl);
+      const coverY = i > 1 ? sortedLevels[i - 1].y : Infinity;
+      o.visible = clipConst < coverY && o.position.y < clipConst + 0.5;
+      continue;
+    }
+    if (clipAxis === 'x') { o.visible = o.position.x < clipConst; continue; }
+    if (clipAxis === 'z') { o.visible = o.position.z < clipConst; continue; }
+    o.visible = inside ? lvl === inside : (lvl === 'U1' || lvl === 'G' || exposedLevel(lvl));
   }
 }
 
@@ -155,15 +178,22 @@ const clipPlanes = {
 };
 const clipRange = { x: 130, y: [50, -55], z: 95 };
 let clipAxis = 'none', clipConst = Infinity;
+// section cuts are an orbit-mode inspection tool — in walk mode the planes
+// would decapitate street-level geometry, so they're suppressed (the UI
+// selection is kept and re-applied on return to orbit)
+function syncClipPlanes() {
+  renderer.clippingPlanes = (rig.mode === 'orbit' && clipAxis !== 'none')
+    ? [clipPlanes[clipAxis]] : [];
+}
 function applyClip(axis, t) {
   clipAxis = axis;
-  if (axis === 'none') { renderer.clippingPlanes = []; clipConst = Infinity; return; }
+  if (axis === 'none') { syncClipPlanes(); clipConst = Infinity; return; }
   const p = clipPlanes[axis];
   p.constant = axis === 'y'
     ? THREE.MathUtils.lerp(clipRange.y[1], clipRange.y[0], t)
     : THREE.MathUtils.lerp(-clipRange[axis], clipRange[axis], t);
   clipConst = p.constant;
-  renderer.clippingPlanes = [p];
+  syncClipPlanes();
 }
 
 // ---------- controls ----------
@@ -185,6 +215,7 @@ let peopleOn = true;
 buildUI({
   onMode: m => {
     rig.setMode(m);
+    syncClipPlanes();
     if (m === 'orbit') { rig.teleport(HOME_POS, HOME_TARGET); return; }
     if (m === 'walk') {
       // land on whatever surface is under the camera; over a void, go home
