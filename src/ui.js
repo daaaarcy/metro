@@ -8,7 +8,7 @@ function viewpoints() {
   const v = {
     U1: { pos: new THREE.Vector3(-70, 9.6, -36), look: new THREE.Vector3(60, 8, -36) },
     G:  { pos: new THREE.Vector3(-30, 1.8, 26),  look: new THREE.Vector3(0, 2, -14) },
-    L1: { pos: new THREE.Vector3(-30, -7 + eye, -15.5), look: new THREE.Vector3(40, -7.5, -9) },
+    L1: { pos: new THREE.Vector3(-21, -7 + eye, -12.3), look: new THREE.Vector3(-14, -6.6, -9.4) },
     L2: { pos: new THREE.Vector3(-70, -14 + eye, 0), look: new THREE.Vector3(60, -14.5, 0) },
     L3: { pos: new THREE.Vector3(70, -21 + eye, 0),  look: new THREE.Vector3(-60, -21.5, 0) },
     L4: { pos: new THREE.Vector3(-5, -28 + eye, 16), look: new THREE.Vector3(60, -30, 28) },
