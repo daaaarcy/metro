@@ -18,7 +18,11 @@ canvas { display: block; }
 }
 img.mtr-badge {
   height: 34px; width: auto; display: block;
-  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4));
+  /* transparent mark on a dark masthead — white halo keeps the navy
+     wordmark legible */
+  filter:
+    drop-shadow(0 0 1.6px rgba(255,255,255,0.95))
+    drop-shadow(0 0 6px rgba(255,255,255,0.45));
 }
 #masthead h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
 #masthead h1 span { font-weight: 400; opacity: 0.75; }

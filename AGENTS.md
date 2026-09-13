@@ -26,7 +26,7 @@ No test suite — verify by building + driving the app in a browser
 
 ```
 index.html            app shell: masthead, control panel, ticker, hint bar
-public/mtr-logo.webp  MTR logo asset used in the masthead
+public/mtr-logo.svg   MTR logo asset used in the masthead (white glow for dark bg)
 src/
   main.js             renderer, lights, scene, labels, clipping, sim loop, UI wiring
   controls.js         CameraRig: orbit/walk, gravity, floor snap,
