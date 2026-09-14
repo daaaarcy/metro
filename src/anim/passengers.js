@@ -24,8 +24,8 @@ function pathClear(x0, z0, x1, z1, holes) {
 const PART_DEFS = {
   legL:  { geo: 'leg',   pivot: [-0.105, 0.88, 0] },
   legR:  { geo: 'leg',   pivot: [0.105, 0.88, 0] },
-  armL:  { geo: 'arm',   pivot: [-0.235, 1.35, 0] },
-  armR:  { geo: 'arm',   pivot: [0.235, 1.35, 0] },
+  armL:  { geo: 'arm',   pivot: [-0.185, 1.35, 0] },
+  armR:  { geo: 'arm',   pivot: [0.185, 1.35, 0] },
   torso: { geo: 'torso', pivot: [0, 0.84, 0] },
   head:  { geo: 'head',  pivot: [0, 1.44, 0] },
   hair:  { geo: 'hair',  pivot: [0, 1.44, 0] },

@@ -86,8 +86,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_torso, a.shirt, 0, 0.42, 0, a.hunch));
     parts.push(coloredPart(_head, a.skin, 0, 1.02, 0, a.hunch * 0.6));
     parts.push(coloredPart(_hair, a.hair, 0, 1.02, 0, a.hunch * 0.6));
-    parts.push(coloredPart(_arm, a.shirt, -0.24, 0.98, 0.05, -0.5));
-    parts.push(coloredPart(_arm, a.shirt, 0.24, 0.98, 0.05, -0.5));
+    parts.push(coloredPart(_arm, a.shirt, -0.185, 0.98, 0.05, -0.5));
+    parts.push(coloredPart(_arm, a.shirt, 0.185, 0.98, 0.05, -0.5));
     if (a.bun) parts.push(coloredPart(_bun, a.hair, 0, 1.14, -0.1));
   } else {
     parts.push(coloredPart(_leg, legC, -0.105, 0.88, 0));
@@ -95,8 +95,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_torso, a.shirt, 0, 0.84, 0, a.hunch));
     parts.push(coloredPart(_head, a.skin, 0, 1.44, 0, a.hunch * 0.7));
     parts.push(coloredPart(_hair, a.hair, 0, 1.44, 0, a.hunch * 0.7));
-    parts.push(coloredPart(_arm, a.shirt, -0.235, 1.35, 0, a.hunch));
-    parts.push(coloredPart(_arm, a.shirt, 0.235, 1.35, 0, a.hunch));
+    parts.push(coloredPart(_arm, a.shirt, -0.185, 1.35, 0, a.hunch));
+    parts.push(coloredPart(_arm, a.shirt, 0.185, 1.35, 0, a.hunch));
     if (a.skirted) parts.push(coloredPart(_skirt, a.skirt, 0, 0.88, 0));
     if (a.bun) parts.push(coloredPart(_bun, a.hair, 0, 1.6, -0.09));
   }
