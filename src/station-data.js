@@ -146,8 +146,8 @@ export const GATE_PITCH = 2.4;
 export const SHOP_NAMES = [
   { zh: '便利店', en: '7-Eleven', color: '#e8722a' },
   { zh: '茶餐廳', en: 'Cha Chaan Teng', color: '#3f7d54' },
-  { zh: '西餅店', en: 'Bakery', color: '#b3543f' },
-  { zh: '咖啡店', en: 'Coffee Shop', color: '#6b4a8a' },
+  { zh: '英王麵包店', en: 'A1 Bakery', color: '#b3543f' },
+  { zh: '咖啡店', en: 'Cafe', color: '#6b4a8a' },
   { zh: '藥房', en: 'Pharmacy', color: '#3f6db3' },
   { zh: '快餐店', en: 'Fast Food', color: '#c7a23a' },
   { zh: '書店', en: 'Bookstore', color: '#8a4a6e' },

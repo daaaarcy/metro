@@ -249,8 +249,8 @@ function shopShell(g, cx, z, y, faceDir, w = 7.5, d = 2.2, h = 3.4) {
 
 // interior fittings per shop type (en name drives the kind)
 const SHOP_KIND = {
-  '7-Eleven': 'convenience', 'Cha Chaan Teng': 'diner', 'Bakery': 'bakery',
-  'Coffee Shop': 'cafe', 'Pharmacy': 'shelves', 'Fast Food': 'diner',
+  '7-Eleven': 'convenience', 'Cha Chaan Teng': 'diner', 'A1 Bakery': 'bakery',
+  'Cafe': 'cafe', 'Pharmacy': 'shelves', 'Fast Food': 'diner',
   'Bookstore': 'books', 'Bank': 'bank',
 };
 
