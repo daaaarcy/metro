@@ -81,6 +81,19 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople })
   document.getElementById('toggle-labels').addEventListener('change', e => onLabels(e.target.checked));
   document.getElementById('toggle-audio').addEventListener('change', e => onAudio(e.target.checked));
   document.getElementById('toggle-people').addEventListener('change', e => onPeople(e.target.checked));
+
+  // panel collapse — the × button, the ☰ chip, or the H key
+  const panel = document.getElementById('panel');
+  const chip = document.getElementById('panel-open');
+  const setPanel = show => {
+    panel.classList.toggle('hidden', !show);
+    chip.classList.toggle('show', !show);
+  };
+  document.getElementById('panel-close').addEventListener('click', () => setPanel(false));
+  chip.addEventListener('click', () => setPanel(true));
+  window.addEventListener('keydown', e => {
+    if (e.code === 'KeyH' && !e.repeat) setPanel(panel.classList.contains('hidden'));
+  });
 }
 
 export function showInfo(html) {

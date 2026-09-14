@@ -35,6 +35,21 @@ img.mtr-badge {
   padding: 12px 14px; pointer-events: auto;
   max-height: calc(100% - 110px); overflow-y: auto;
 }
+#panel.hidden { display: none; }
+#panel-close {
+  position: absolute; top: 6px; right: 8px;
+  background: none; border: none; color: #cfd6df; opacity: 0.5;
+  font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px;
+}
+#panel-close:hover { opacity: 1; }
+#panel-open {
+  position: absolute; top: 84px; left: 18px; display: none;
+  background: rgba(13,17,23,0.85); color: #cfd6df;
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+  padding: 6px 12px; font-size: 11px; cursor: pointer; pointer-events: auto;
+}
+#panel-open:hover { background: rgba(255,255,255,0.12); }
+#panel-open.show { display: block; }
 #panel section { margin-bottom: 14px; }
 #panel h2 {
   font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
