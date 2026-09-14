@@ -46,9 +46,25 @@ _hair.translate(0, 0.14, -0.015);
 const _bun = new THREE.SphereGeometry(0.06, 8, 6);
 const _skirt = new THREE.CylinderGeometry(0.19, 0.27, 0.44, 8); _skirt.translate(0, -0.2, 0);
 
+// face features baked into head-pivot space — head centre sits +0.13 above the
+// pivot with r=0.115, so these offsets land features on the sphere's surface
+const _faceDark = mergeGeometries([
+  new THREE.BoxGeometry(0.024, 0.026, 0.014).translate(0.047, 0.15, 0.099),   // eyes
+  new THREE.BoxGeometry(0.024, 0.026, 0.014).translate(-0.047, 0.15, 0.099),
+  new THREE.BoxGeometry(0.05, 0.012, 0.014).translate(0, 0.062, 0.09),        // mouth
+]);
+const _faceSkin = mergeGeometries([
+  new THREE.BoxGeometry(0.02, 0.032, 0.024).translate(0, 0.105, 0.114),       // nose
+  new THREE.BoxGeometry(0.02, 0.038, 0.028).translate(0.112, 0.115, 0),       // ears
+  new THREE.BoxGeometry(0.02, 0.038, 0.028).translate(-0.112, 0.115, 0),
+]);
+const FACE_DARK = 0x2a2019;
+
 export const PART_GEO = {
   leg: _leg, arm: _arm, torso: _torso, head: _head, hair: _hair, bun: _bun, skirt: _skirt,
+  faceDark: _faceDark, faceSkin: _faceSkin,
 };
+export { FACE_DARK };
 
 const _m = new THREE.Matrix4();
 const _e = new THREE.Euler();
@@ -86,6 +102,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_torso, a.shirt, 0, 0.42, 0, a.hunch));
     parts.push(coloredPart(_head, a.skin, 0, 1.02, 0, a.hunch * 0.6));
     parts.push(coloredPart(_hair, a.hair, 0, 1.02, 0, a.hunch * 0.6));
+    parts.push(coloredPart(_faceDark, FACE_DARK, 0, 1.02, 0, a.hunch * 0.6));
+    parts.push(coloredPart(_faceSkin, a.skin, 0, 1.02, 0, a.hunch * 0.6));
     parts.push(coloredPart(_arm, a.shirt, -0.185, 0.98, 0.05, -0.5));
     parts.push(coloredPart(_arm, a.shirt, 0.185, 0.98, 0.05, -0.5));
     if (a.bun) parts.push(coloredPart(_bun, a.hair, 0, 1.14, -0.1));
@@ -95,6 +113,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_torso, a.shirt, 0, 0.84, 0, a.hunch));
     parts.push(coloredPart(_head, a.skin, 0, 1.44, 0, a.hunch * 0.7));
     parts.push(coloredPart(_hair, a.hair, 0, 1.44, 0, a.hunch * 0.7));
+    parts.push(coloredPart(_faceDark, FACE_DARK, 0, 1.44, 0, a.hunch * 0.7));
+    parts.push(coloredPart(_faceSkin, a.skin, 0, 1.44, 0, a.hunch * 0.7));
     parts.push(coloredPart(_arm, a.shirt, -0.185, 1.35, 0, a.hunch));
     parts.push(coloredPart(_arm, a.shirt, 0.185, 1.35, 0, a.hunch));
     if (a.skirted) parts.push(coloredPart(_skirt, a.skirt, 0, 0.88, 0));

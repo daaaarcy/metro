@@ -4,7 +4,7 @@ import { WALK_RECTS, BOXES, levelById, boxToWorld, worldToBox } from '../station
 import { pointInRects, worldRectToLocal } from '../builders/structure.js';
 import { openGate, gateBlocks } from './gates.js';
 import { resolvePed } from '../colliders.js';
-import { rollAppearance, PART_GEO } from '../builders/people.js';
+import { rollAppearance, PART_GEO, FACE_DARK } from '../builders/people.js';
 
 const N_LEVELS = { U1: 14, G: 16, L1: 58, L2: 44, L3: 44, L4: 24, L5: 24, L6: 18 };
 const SPEED = [0.9, 1.5];   // walk speed range m/s
@@ -31,6 +31,8 @@ const PART_DEFS = {
   hair:  { geo: 'hair',  pivot: [0, 1.44, 0] },
   bun:   { geo: 'bun',   pivot: [0, 1.6, -0.09] },
   skirt: { geo: 'skirt', pivot: [0, 0.88, 0] },
+  faceD: { geo: 'faceDark', pivot: [0, 1.44, 0] },
+  faceS: { geo: 'faceSkin', pivot: [0, 1.44, 0] },
 };
 
 // states where the scripted path deliberately crosses a collider face —
@@ -80,7 +82,7 @@ export class Passengers {
     for (const [name, def] of Object.entries(PART_DEFS)) {
       const im = new THREE.InstancedMesh(PART_GEO[def.geo], mat, this.max);
       im.frustumCulled = false;
-      im.castShadow = name !== 'hair' && name !== 'bun';
+      im.castShadow = name !== 'hair' && name !== 'bun' && name !== 'faceD' && name !== 'faceS';
       this.parts[name] = im;
       this.group.add(im);
     }
@@ -127,6 +129,7 @@ export class Passengers {
     set('armL', p.shirt); set('armR', p.shirt);
     set('torso', p.shirt); set('head', p.skin);
     set('hair', p.hair); set('bun', p.hair); set('skirt', p.skirt);
+    set('faceD', FACE_DARK); set('faceS', p.skin);
     for (const im of Object.values(this.parts)) im.instanceColor.needsUpdate = true;
   }
 
@@ -435,6 +438,8 @@ export class Passengers {
       this.writePart(i, 'torso', 0,
         p.kind === 'woman' ? 0.86 : 1, 1, p.kind === 'woman' ? 0.9 : 1);
       this.writePart(i, 'head', 0, p.kind === 'child' ? 1.16 : 1, 1, p.kind === 'child' ? 1.16 : 1);
+      this.writePart(i, 'faceD', 0, p.kind === 'child' ? 1.16 : 1, 1, p.kind === 'child' ? 1.16 : 1);
+      this.writePart(i, 'faceS', 0, p.kind === 'child' ? 1.16 : 1, 1, p.kind === 'child' ? 1.16 : 1);
       const hs = p.kind === 'woman' ? [1.02, 1.45, 1.08] : p.kind === 'elder' ? [0.95, 0.82, 0.95] : [1, 1, 1];
       this.writePart(i, 'hair', 0, hs[0], hs[1], hs[2]);
       this.writePart(i, 'bun', 0, p.bun ? 1 : 0, p.bun ? 1 : 0, p.bun ? 1 : 0);
