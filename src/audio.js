@@ -64,6 +64,39 @@ export class StationAudio {
     rsrc.connect(bp).connect(rg).connect(ctx.destination);
     rsrc.start();
     this._rain = rg;
+    this._startCrowd();
+  }
+
+  // crowd murmur — bandpassed noise beds whose gains wobble at speech-ish
+  // rates, so a group of passengers reads as indistinct chatter
+  _startCrowd() {
+    const ctx = this.ctx;
+    const len = ctx.sampleRate * 2;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    this._crowd = ctx.createGain();
+    this._crowd.gain.value = 0;
+    for (const [f, lfo] of [[390, 2.3], [640, 3.7], [980, 5.3]]) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 1.2;
+      const g = ctx.createGain(); g.gain.value = 0.22;
+      const osc = ctx.createOscillator();
+      osc.frequency.value = lfo;
+      const og = ctx.createGain(); og.gain.value = 0.16;
+      osc.connect(og).connect(g.gain);
+      src.connect(bp).connect(g).connect(this._crowd);
+      osc.start();
+    }
+    this._crowd.connect(ctx.destination);
+    src.start();
+  }
+
+  // k = crowd density 0..1 near the listener (call each frame)
+  setCrowd(k) {
+    if (this._crowd) this._crowd.gain.value = k * 0.05;
   }
 
   // k = rain intensity 0..1 (call each frame; no-op until audio is enabled)
@@ -114,8 +147,17 @@ export class StationAudio {
 
   announce(zh, en) {
     if (!this.enabled) return;
-    // drop the PA rather than let several platforms' messages pile up
-    if (speechSynthesis.pending) return;
+    // drop the PA rather than let several platforms' messages pile up —
+    // but Chrome can wedge `pending` true forever; clear it if it's stuck
+    if (speechSynthesis.pending) {
+      if (this._pendingSince && performance.now() - this._pendingSince > 6000) {
+        speechSynthesis.cancel();
+        this._pendingSince = 0;
+      } else {
+        this._pendingSince ??= performance.now();
+        return;
+      }
+    } else this._pendingSince = 0;
     this._speak(zh, 'zh-HK');
     this._speak(en, 'en-HK');
   }

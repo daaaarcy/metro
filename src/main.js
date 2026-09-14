@@ -267,6 +267,14 @@ buildUI({
   },
 });
 
+// browsers gate audio behind a user gesture — flip Sound on at the first one
+const wakeAudio = () => {
+  const cb = document.getElementById('toggle-audio');
+  if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+};
+window.addEventListener('pointerdown', wakeAudio, { once: true });
+window.addEventListener('keydown', wakeAudio, { once: true });
+
 // ---------- level hover info ----------
 const ray = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -331,6 +339,9 @@ function tick() {
   }
   passengers.hurry = weather.rainAmt > 0.25;   // people hurry on the street in rain
   audio.setRain?.(weather.rainAmt * (camera.position.y > -3 ? 1 : 0.12));
+  audio.setCrowd?.(rig.mode === 'walk'
+    ? Math.min(passengers.countNear(camera.position.x, rig.feetY, camera.position.z) / 12, 1)
+    : 0);
   const events = trainSim.update(dt, audio);
   for (const ev of events) passengers.onTrainEvent(ev, audio);
   if (peopleOn) passengers.update(dt, t, trainSim, audio);

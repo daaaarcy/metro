@@ -57,6 +57,9 @@ export class Passengers {
       for (let i = 0; i < n; i++) this.list.push(this.spawn(lvl));
     }
 
+    this._wyOf = {};                                  // level id -> floor y
+    for (const id of Object.keys(N_LEVELS)) this._wyOf[id] = levelById(id).y;
+
     this.max = 340;
     this._m4 = new THREE.Matrix4();
     this._lm = new THREE.Matrix4();
@@ -437,6 +440,21 @@ export class Passengers {
       this.writePart(i, 'bun', 0, p.bun ? 1 : 0, p.bun ? 1 : 0, p.bun ? 1 : 0);
       this.writePart(i, 'skirt', 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0);
     }
+    this.flushParts();
+  }
+
+  // passengers within `r` metres of a world-space point — feeds crowd audio
+  countNear(wx, wy, wz, r = 16) {
+    let n = 0;
+    for (const p of this.list) {
+      if (Math.abs((p.wy ?? this._wyOf[p.level]) - wy) > 4) continue;
+      const w = boxToWorld(this.boxOf[p.level], p.x, p.z);
+      if (Math.hypot(w.x - wx, w.z - wz) < r) n++;
+    }
+    return n;
+  }
+
+  flushParts() {
     for (const im of Object.values(this.parts)) {
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
