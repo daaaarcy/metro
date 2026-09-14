@@ -26,6 +26,8 @@ const PART_DEFS = {
   legR:  { geo: 'leg',   pivot: [0.105, 0.88, 0] },
   armL:  { geo: 'arm',   pivot: [-0.185, 1.35, 0] },
   armR:  { geo: 'arm',   pivot: [0.185, 1.35, 0] },
+  handL: { geo: 'hand',  pivot: [-0.185, 1.35, 0] },
+  handR: { geo: 'hand',  pivot: [0.185, 1.35, 0] },
   torso: { geo: 'torso', pivot: [0, 0.84, 0] },
   head:  { geo: 'head',  pivot: [0, 1.44, 0] },
   hair:  { geo: 'hair',  pivot: [0, 1.44, 0] },
@@ -82,7 +84,7 @@ export class Passengers {
     for (const [name, def] of Object.entries(PART_DEFS)) {
       const im = new THREE.InstancedMesh(PART_GEO[def.geo], mat, this.max);
       im.frustumCulled = false;
-      im.castShadow = name !== 'hair' && name !== 'bun' && name !== 'faceD' && name !== 'faceS';
+      im.castShadow = !['hair', 'bun', 'faceD', 'faceS', 'handL', 'handR'].includes(name);
       this.parts[name] = im;
       this.group.add(im);
     }
@@ -127,6 +129,7 @@ export class Passengers {
     const set = (part, c) => this.parts[part].setColorAt(i, this._c.set(c));
     set('legL', p.skirted ? p.skin : p.pants); set('legR', p.skirted ? p.skin : p.pants);
     set('armL', p.shirt); set('armR', p.shirt);
+    set('handL', p.skin); set('handR', p.skin);
     set('torso', p.shirt); set('head', p.skin);
     set('hair', p.hair); set('bun', p.hair); set('skirt', p.skirt);
     set('faceD', FACE_DARK); set('faceS', p.skin);
@@ -435,6 +438,8 @@ export class Passengers {
       this.writePart(i, 'legR', -legSwing, 1, 1, 1);
       this.writePart(i, 'armL', armSwing, 1, 1, 1);
       this.writePart(i, 'armR', -armSwing, 1, 1, 1);
+      this.writePart(i, 'handL', armSwing, 1, 1, 1);
+      this.writePart(i, 'handR', -armSwing, 1, 1, 1);
       this.writePart(i, 'torso', 0,
         p.kind === 'woman' ? 0.86 : 1, 1, p.kind === 'woman' ? 0.9 : 1);
       this.writePart(i, 'head', 0, p.kind === 'child' ? 1.16 : 1, 1, p.kind === 'child' ? 1.16 : 1);

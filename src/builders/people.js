@@ -39,6 +39,7 @@ export function rollAppearance() {
 // ---- shared part geometries (unit person, ~1.7 m, faces +Z) -----------------
 const _leg = new THREE.BoxGeometry(0.13, 0.88, 0.15);   _leg.translate(0, -0.44, 0);
 const _arm = new THREE.BoxGeometry(0.09, 0.6, 0.11);    _arm.translate(0, -0.28, 0);
+const _hand = new THREE.BoxGeometry(0.08, 0.11, 0.1);   _hand.translate(0, -0.6, 0);
 const _torso = new THREE.CylinderGeometry(0.155, 0.19, 0.6, 8); _torso.translate(0, 0.3, 0);
 const _head = new THREE.SphereGeometry(0.115, 10, 8);   _head.translate(0, 0.13, 0);
 const _hair = new THREE.SphereGeometry(0.128, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.62);
@@ -62,7 +63,7 @@ const FACE_DARK = 0x2a2019;
 
 export const PART_GEO = {
   leg: _leg, arm: _arm, torso: _torso, head: _head, hair: _hair, bun: _bun, skirt: _skirt,
-  faceDark: _faceDark, faceSkin: _faceSkin,
+  faceDark: _faceDark, faceSkin: _faceSkin, hand: _hand,
 };
 export { FACE_DARK };
 
@@ -106,6 +107,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_faceSkin, a.skin, 0, 1.02, 0, a.hunch * 0.6));
     parts.push(coloredPart(_arm, a.shirt, -0.185, 0.98, 0.05, -0.5));
     parts.push(coloredPart(_arm, a.shirt, 0.185, 0.98, 0.05, -0.5));
+    parts.push(coloredPart(_hand, a.skin, -0.185, 0.98, 0.05, -0.5));
+    parts.push(coloredPart(_hand, a.skin, 0.185, 0.98, 0.05, -0.5));
     if (a.bun) parts.push(coloredPart(_bun, a.hair, 0, 1.14, -0.1));
   } else {
     parts.push(coloredPart(_leg, legC, -0.105, 0.88, 0));
@@ -117,6 +120,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_faceSkin, a.skin, 0, 1.44, 0, a.hunch * 0.7));
     parts.push(coloredPart(_arm, a.shirt, -0.185, 1.35, 0, a.hunch));
     parts.push(coloredPart(_arm, a.shirt, 0.185, 1.35, 0, a.hunch));
+    parts.push(coloredPart(_hand, a.skin, -0.185, 1.35, 0, a.hunch));
+    parts.push(coloredPart(_hand, a.skin, 0.185, 1.35, 0, a.hunch));
     if (a.skirted) parts.push(coloredPart(_skirt, a.skirt, 0, 0.88, 0));
     if (a.bun) parts.push(coloredPart(_bun, a.hair, 0, 1.6, -0.09));
   }
