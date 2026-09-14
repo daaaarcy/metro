@@ -93,7 +93,7 @@ export function posters(x0, x1, z, y, ry = 0, step = 24) {
 export function postersEnd(rect, y, side, z0, z1, step = 22) {
   const g = new THREE.Group();
   const geo = new THREE.PlaneGeometry(1.3, 1.85);
-  const wx = side > 0 ? rect.x1 - 0.26 : rect.x0 + 0.26;
+  const wx = side > 0 ? rect.x1 - 0.56 : rect.x0 + 0.56;
   let i = side > 0 ? 2 : 0;
   for (let z = z0 + step / 2; z < z1 - 1; z += step, i++) {
     const f = box(1.5, 2.0, 0.1, M.signPost);
@@ -138,42 +138,22 @@ export function fireCabinets(x0, x1, z, y, step = 44) {
 }
 
 // ---- MTR system map lightbox ------------------------------------------------
-export function mapBoard(x, z, y, ry = 0) {
-  const tex = canvasTex(640, 400, (ctx, w, h) => {
-    ctx.fillStyle = '#f4f4f2'; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#101c26'; ctx.fillRect(0, 0, w, 54);
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = '700 30px "PingFang HK","PingFang SC",sans-serif';
-    ctx.fillText('港鐵路綫圖', 20, 28);
-    ctx.font = '400 22px sans-serif';
-    ctx.fillText('MTR System Map', 220, 30);
-    // stylised lines crossing at Admiralty
-    const lines = [
-      { c: '#E2231A', y: h * 0.42 },   // TWL
-      { c: '#0071CE', y: h * 0.58 },   // ISL
-      { c: '#53B7E8', y: h * 0.72 },   // EAL
-      { c: '#B5BD00', y: h * 0.30 },   // SIL
-    ];
-    for (const l of lines) {
-      ctx.strokeStyle = l.c; ctx.lineWidth = 10;
-      ctx.beginPath(); ctx.moveTo(30, l.y); ctx.lineTo(w - 30, l.y); ctx.stroke();
-      for (let sx = 60; sx < w - 30; sx += 70) {
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx, l.y, 7, 0, 7); ctx.fill();
-        ctx.strokeStyle = l.c; ctx.lineWidth = 3; ctx.stroke();
-      }
-    }
-    // Admiralty interchange blob
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111';
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(w * 0.46, h * 0.5, 16, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#111'; ctx.font = '700 22px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('金鐘 Admiralty', w * 0.46, h * 0.5 + 34);
-  });
+// Official MTR route map (港鐵路綫圖), rasterised from the published PDF:
+//   https://www.mtr.com.hk/archive/en/services/routemap.pdf
+// Served locally from public/mtr-system-map.jpg — a remote URL would taint the
+// WebGL texture.
+const systemMapTex = new THREE.TextureLoader().load('/mtr-system-map.jpg');
+systemMapTex.colorSpace = THREE.SRGBColorSpace;
+systemMapTex.anisotropy = 8;
+const systemMapMat = new THREE.MeshBasicMaterial({ map: systemMapTex });
+const MAP_ASPECT = 2000 / 1347;
+export function mapBoard(x, z, y, ry = 0, cy = 2.3) {
+  const w = 2.9, h = w / MAP_ASPECT;
   const g = new THREE.Group();
-  const frame = box(2.9, 1.9, 0.12, M.signPost);
-  frame.position.set(0, 2.3, 0);
-  const p = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.7), new THREE.MeshBasicMaterial({ map: tex }));
-  p.position.set(0, 2.3, 0.07);
+  const frame = box(w + 0.2, h + 0.2, 0.12, M.signPost);
+  frame.position.set(0, cy, 0);
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), systemMapMat);
+  p.position.set(0, cy, 0.07);
   g.add(solid(frame), p);
   g.position.set(x, y, z);
   g.rotation.y = ry;

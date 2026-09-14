@@ -165,6 +165,10 @@ export function buildStation() {
       for (const s of [-1, 1]) {
         g.add(posters(rect.x0 + 34, rect.x1 - 34, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 38));
         g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 56));
+        // system map lightboxes high on the side walls, clear of the colour band
+        for (const mx of [rect.x0 + 20, rect.x1 - 20]) {
+          g.add(mapBoard(mx, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 4.25));
+        }
       }
       for (const bx of [-50, -20, 10, 40]) {
         g.add(binPair(bx, spec.kind === 'island' ? 1.5 : 10.9, 0));
@@ -199,6 +203,8 @@ export function buildStation() {
       g.add(postersEnd(rect, 0, -1, rect.z0 + 4, rect.z1 - 4, 12));
       g.add(postersEnd(rect, 0, 1, rect.z0 + 4, 0, 12));
       g.add(mapBoard(rect.x1 - 0.7, 9, 0, -Math.PI / 2));
+      g.add(mapBoard(rect.x1 - 0.7, -4, 0, -Math.PI / 2));
+      g.add(mapBoard(rect.x0 + 0.7, 8, 0, Math.PI / 2));
       for (const s of [-1, 1]) {
         g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 60));
         for (const bx of [-56, -4, 56]) g.add(binPair(bx, s * 11.8, 0));
@@ -256,6 +262,8 @@ export function buildStation() {
       g.add(serviceBooth(-35, 13, 0));
       g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -35, 3.0, 13));
       g.add(posters(rect.x0 + 8, rect.x1 - 8, rect.z1 - 0.62, 0, Math.PI, 20));
+      g.add(mapBoard(rect.x0 + 0.7, -10, 0, Math.PI / 2));
+      g.add(mapBoard(rect.x0 + 0.7, 10, 0, Math.PI / 2));
       for (const bx of [-30, 0, 30, 60]) g.add(binPair(bx, -15.2, 0));
       for (const [i, x] of [-12, 30].entries()) g.add(kiosk(x, -13.4, 0, i + 9));
       g.add(columns(rect, 0, [-9, 9], 16, floorHoles));
