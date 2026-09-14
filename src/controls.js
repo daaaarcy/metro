@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GATES } from './registry.js';
 import { buildColliders } from './colliders.js';
 import { gateBlocks, nearestGate, openGate } from './anim/gates.js';
+import { worldToBox, boxToWorld, levelById } from './station-data.js';
+import { BAY } from './builders/platforms.js';
 
 const EYE = 1.62, RADIUS = 0.35, STEP_MAX = 0.42, GRAVITY = 22;
 
@@ -17,6 +19,8 @@ export class CameraRig {
     this.audio = null;           // injected by main for gate beeps
     this.onGateTap = null;
     this.nearGate = null;
+    this.trains = null;            // TrainSim — injected by main for boarding
+    this._aboard = null;           // service whose car the player is inside
 
     this.orbit = new OrbitControls(camera, dom);
     this.orbit.enableDamping = true;
@@ -162,6 +166,81 @@ export class CameraRig {
     return [px, pz];
   }
 
+  // Dynamic train/platform-door constraints — runs in each service's local
+  // box frame (u = signed distance from track centre, + = platform side):
+  //  · aboard a car: floor + walls + end caps; carried by the train's motion
+  //  · doorway corridor: floored only while the train dwells with doors open
+  //  · otherwise the bays seal and hold the player on the platform side
+  constrainTrains(px, pz) {
+    let floor = -Infinity;
+    if (!this.trains) return [px, pz, floor];
+    let sawAboard = false;
+    for (const svc of this.trains.services) {
+      const ds = svc.ds;
+      const lvlY = levelById(ds.level).y;
+      if (Math.abs(this.feetY - lvlY) > 2.5 && this._aboard !== svc) continue;
+      const zc = svc.zc, dSide = svc.doorSide, halfLen = svc.trainLen / 2;
+      const INNER = 1.2, OUTER = 1.5;
+      const psdU = (ds.z - zc) * dSide;
+      const open = svc.state === 'dwell' && svc.open > 0.55;
+      const inBay = x => ds.xs.some(b => Math.abs(x - b) < BAY / 2 + 0.05);
+      const put = () => { const w = boxToWorld(svc.bx, lp.x, lp.z); px = w.x; pz = w.z; };
+
+      let lp = worldToBox(svc.bx, px, pz);
+      let relX = lp.x - svc.tx;
+      let u = (lp.z - zc) * dSide;
+      if (Math.abs(relX) > halfLen + 4 || u < -2.5 || u > psdU + 3) continue;
+
+      // ended up on the track bed — recover to the platform edge
+      if (this.feetY < lvlY - 0.5) {
+        lp.z = zc + dSide * (psdU + RADIUS + 0.3);
+        floor = Math.max(floor, lvlY);
+        put();
+        continue;
+      }
+
+      const inX = Math.abs(relX) < halfLen - 0.45;
+      if (this._aboard === svc && inX && Math.abs(u) < INNER + 0.15) {
+        sawAboard = true;
+        // carried by the train (incl. its repositioning between runs)
+        if (svc.dtx) {
+          const c = Math.cos(svc.bx.rot), s = Math.sin(svc.bx.rot);
+          px += svc.dtx * c; pz += svc.dtx * -s;
+          lp = worldToBox(svc.bx, px, pz);
+          relX = lp.x - svc.tx; u = (lp.z - zc) * dSide;
+        }
+        floor = Math.max(floor, lvlY + 0.08);
+        const maxX = halfLen - 0.55;
+        if (relX > maxX) lp.x = svc.tx + maxX;
+        else if (relX < -maxX) lp.x = svc.tx - maxX;
+        const lim = INNER - RADIUS + 0.12;
+        if (Math.abs(lp.z - zc) > lim && !(open && u > 0 && inBay(lp.x))) {
+          lp.z = zc + Math.sign(lp.z - zc) * lim;
+        }
+        put();
+        continue;
+      }
+
+      // doorway corridor: floored only while a stopped train dwells with
+      // doors open — every other state seals the corridor to platform side
+      const inCorridor = u > INNER - RADIUS && u <= psdU + RADIUS + 0.15;
+      if (inCorridor && open && inX) {
+        floor = Math.max(floor, lvlY + 0.08);
+        if (u <= INNER - RADIUS + 0.12 && inBay(lp.x)) this._aboard = svc;
+        else if (!inBay(lp.x) && u <= OUTER + RADIUS) {
+          lp.z = zc + dSide * (OUTER + RADIUS);
+          put();
+        }
+      } else if (inCorridor) {
+        lp.z = zc + dSide * (psdU + RADIUS + 0.02);
+        put();
+      }
+      if (this._aboard === svc) sawAboard = u <= psdU + RADIUS;
+    }
+    if (this._aboard && !sawAboard) this._aboard = null;
+    return [px, pz, floor];
+  }
+
   setMode(mode) {
     this.mode = mode;
     this.orbit.enabled = mode === 'orbit';
@@ -235,17 +314,20 @@ export class CameraRig {
     let px = this.camera.position.x + mx;
     let pz = this.camera.position.z + mz;
     [px, pz] = this.resolve(px, pz, this.feetY, 1.7);
+    const tc = this.constrainTrains(px, pz);
+    px = tc[0]; pz = tc[1];
     this.camera.position.x = px;
     this.camera.position.z = pz;
 
-    // floor snap + gravity
+    // floor snap + gravity (train interior/corridor adds dynamic floors)
     const fl = this.floorAt(px, pz, this.feetY + STEP_MAX);
-    if (fl.y > -Infinity && this.feetY <= fl.y + 0.08 && this.vy <= 0) {
-      this.feetY = fl.y; this.vy = 0;
+    const floorY = Math.max(fl.y, tc[2]);
+    if (floorY > -Infinity && this.feetY <= floorY + 0.08 && this.vy <= 0) {
+      this.feetY = floorY; this.vy = 0;
     } else {
       this.vy -= GRAVITY * dt;
       this.feetY += this.vy * dt;
-      if (fl.y > -Infinity && this.feetY < fl.y) { this.feetY = fl.y; this.vy = 0; }
+      if (floorY > -Infinity && this.feetY < floorY) { this.feetY = floorY; this.vy = 0; }
       if (this.feetY < -60) {                    // fell out of the world — back to concourse
         this.feetY = -7; this.vy = 0;
         this.camera.position.set(-20, -7 + EYE, 0);

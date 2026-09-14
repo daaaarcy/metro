@@ -13,6 +13,9 @@ const easeIn = p => p * p * p;
 const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc9ced4, roughness: 0.35, metalness: 0.6 });
 const winMat  = new THREE.MeshStandardMaterial({ color: 0x18222e, roughness: 0.2, metalness: 0.3 });
 const doorMat = new THREE.MeshStandardMaterial({ color: 0xb4bac2, roughness: 0.4, metalness: 0.5 });
+// interior shell renders its inner faces too — from outside it still reads as
+// a dark interior through the windows, from aboard it becomes the car walls
+const innerMat = new THREE.MeshStandardMaterial({ color: 0x18222e, roughness: 0.2, metalness: 0.3, side: THREE.BackSide });
 const headMat = new THREE.MeshStandardMaterial({ color: 0xfff6cc, emissive: 0xffedb0, emissiveIntensity: 2.2 });
 
 function buildTrain(line, cars, carLen, doorSide) {
@@ -30,7 +33,7 @@ function buildTrain(line, cars, carLen, doorSide) {
     const str = box(carLen, 0.28, W + 0.06, stripe);
     str.position.set(x0, 1.45, 0);
     // dark interior visible through the open doors
-    const inner = box(carLen - 0.7, H - 0.7, W - 0.6, winMat);
+    const inner = box(carLen - 0.7, H - 0.7, W - 0.6, innerMat);
     inner.position.set(x0, 2.0, 0);
     g.add(body, win, str, inner);
     // 3 door pairs per car on the platform side
@@ -91,6 +94,8 @@ class Service {
     this.t = 2 + Math.random() * this.spec.headway;         // staggered first arrivals
     this.open = 0;                                          // door open fraction
     this.tx = this.enterX;
+    this.dtx = 0;                                           // local-x moved this frame (carries riders)
+    this._ptx = this.enterX;
     this.doorXs = doorSet.xs;                               // PSD leaf positions (local)
     this._m4 = new THREE.Matrix4();
     this.events = [];                                       // {type:'arrive'|'dwell'|'depart'}
@@ -186,6 +191,8 @@ class Service {
         break;
       }
     }
+    this.dtx = this.tx - this._ptx;
+    this._ptx = this.tx;
   }
 
   // world positions of a few PSD door bays. off>0 = platform side (approach),

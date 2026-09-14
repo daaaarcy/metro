@@ -214,6 +214,7 @@ function applyClip(axis, t) {
 
 // ---------- controls ----------
 const rig = new CameraRig(camera, renderer.domElement);
+rig.trains = trainSim;              // lets the player board dwelling trains
 rig.audio = audio;
 rig.initColliders(colliders);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers; window.__weather = weather; window.__renderer = renderer;

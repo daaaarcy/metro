@@ -8,7 +8,7 @@ import { canvasTex } from './decor.js';
 
 const INTERIOR_H = FLOOR_H - SLAB_T - 0.5; // clear interior height ≈ 5.5
 const DOOR_PITCH = 2.45;
-const BAY = 1.7;                            // clear opening at each doorway
+export const BAY = 1.7;                     // clear opening at each doorway
 
 // shared floor decal: queue arrows + "mind the gap" strip in front of a bay
 const decalMat = new THREE.MeshBasicMaterial({
@@ -49,19 +49,17 @@ function screenDoors(x0, x1, z, y, faceDir) {
   const xs = [];
   for (let i = 0; i < n; i++) xs.push(x0 + 1.22 + i * DOOR_PITCH);
 
-  // fixed glass panels between bays — the bays are genuine gaps
+  // fixed glass panels between bays — per-panel solids so the door bays are
+  // genuine gaps in the collision world (the train sim gates who may pass)
   const m4 = new THREE.Matrix4();
-  const fixed = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(1, INTERIOR_H - 0.7, 0.1), M.glass, n + 1);
   for (let i = 0; i <= n; i++) {
     const l = i === 0 ? x0 : xs[i - 1] + BAY / 2;
     const r = i === n ? x1 : xs[i] - BAY / 2;
     const w = Math.max(r - l, 0.05);
-    m4.makeScale(w, 1, 1).setPosition((l + r) / 2, y + (INTERIOR_H - 0.7) / 2, z);
-    fixed.setMatrixAt(i, m4);
+    const p = box(w, INTERIOR_H - 0.7, 0.1, M.glass);
+    p.position.set((l + r) / 2, y + (INTERIOR_H - 0.7) / 2, z);
+    g.add(solid(p));
   }
-  // one AABB spans the whole wall incl. bays — the player never crosses a PSD
-  g.add(solid(fixed));
 
   // mullions between bays
   const mulGeo = new THREE.BoxGeometry(0.09, INTERIOR_H - 0.7, 0.14);
