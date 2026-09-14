@@ -297,6 +297,7 @@ function shopInterior(g, kind, cx, z, y, faceDir, sh) {
       g.add(machine);
       cafeTable(g, cx + 2.2, z + faceDir * 0.15, y);
       g.add(fig('sit', { x: cx + 2.2 + 0.95, z: z + faceDir * 0.5 }, -Math.PI / 2));
+      g.add(fig('stand', { x: cx - 1.8, z: at(0.95) }, faceFront));
       break;
     }
     case 'books': {
@@ -317,6 +318,7 @@ function shopInterior(g, kind, cx, z, y, faceDir, sh) {
       wallShelves(g, goods, cx, wallZ, y, 6.4, faceDir, SNACKS);
       shelf(g, goods, cx - 0.6, z + faceDir * 0.2, y, 3.2, SNACKS);
       counterUnit(g, cx + 2.5, at(0.55), y, 1.6, faceDir);
+      g.add(fig('stand', { x: cx + 2.5, z: at(0.95) }, faceFront));
     }
   }
   const gm = goodsMesh(goods);
@@ -377,6 +379,8 @@ export function kiosk(x, z, y, i = 0) {
   fas2.position.set(x, y + 2.2, z - 1.72);
   fas2.rotation.y = Math.PI;
   g.add(fas2);
+  // vendor at the serving side, facing the concourse
+  g.add(fig('stand', { x: x + 0.9, z: z - Math.sign(z) * 2.35 }, Math.sign(z) > 0 ? Math.PI : 0));
   return g;
 }
 
@@ -390,6 +394,10 @@ export function serviceBooth(x, z, y) {
   const roof = box(5.6, 0.25, 3.6, M.signPost);
   roof.position.set(x, y + 2.75, z);
   g.add(solid(base), solid(glass), roof);
+  // staff inside the glazed booth, facing the concourse
+  const face = Math.sign(z) > 0 ? Math.PI : 0;
+  g.add(fig('stand', { x: x - 1.2, z }, face));
+  g.add(fig('stand', { x: x + 1.2, z }, face));
   return g;
 }
 
