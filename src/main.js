@@ -3,7 +3,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 import { buildStation, computeOpenings } from './station.js';
 import { LEVELS, BOXES, worldToBox } from './station-data.js';
 import { CameraRig } from './controls.js';
-import { buildUI, showInfo, showPrompt, updateTicker } from './ui.js';
+import { buildUI, showInfo, showPrompt, updateTicker, updateClock } from './ui.js';
 import { EscalatorSteps } from './anim/escalators.js';
 import { TrainSim } from './anim/trains.js';
 import { Passengers } from './anim/passengers.js';
@@ -33,9 +33,9 @@ document.body.appendChild(labelRenderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11151c);
-scene.fog = new THREE.Fog(0x11151c, 320, 720);
+scene.fog = new THREE.Fog(0x11151c, 500, 2600);
 
-const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 1200);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2600);
 camera.position.set(105, 55, 118);
 
 // ---------- lights ----------
@@ -65,15 +65,20 @@ const colliders = buildColliders();
 // colliders are already snapshotted; instanced/dynamic meshes are untouched
 mergeStation(scene, root, levelGroups, togglables);
 
-// ground context — a big dark disc with a rectangular excavation hole over
-// the station footprint, so orbit views show the underground stack instead
-// of an opaque lid. Shape XY maps to world X,-Z after the -90° X rotation.
+// ground context — a big dark disc spanning all three stations with a
+// rectangular excavation hole over each station footprint, so orbit views
+// show the underground stacks instead of an opaque lid. Shape XY maps to
+// world X,-Z after the -90° X rotation.
 const groundShape = new THREE.Shape();
-groundShape.absarc(0, 0, 500, 0, Math.PI * 2);
-const dig = new THREE.Path();
-dig.moveTo(-105, -49); dig.lineTo(105, -49);
-dig.lineTo(105, 41); dig.lineTo(-105, 41); dig.closePath();
-groundShape.holes.push(dig);
+groundShape.absarc(-650, 0, 1450, 0, Math.PI * 2);
+for (const [x0, x1, z0, z1] of [[-105, 105, -49, 41],       // Admiralty
+                                [-1150, -950, -57, 57],     // Central
+                                [-1615, -1345, -67, 67]]) { // Hong Kong
+  const dig = new THREE.Path();
+  dig.moveTo(x0, -z1); dig.lineTo(x1, -z1);
+  dig.lineTo(x1, -z0); dig.lineTo(x0, -z0); dig.closePath();
+  groundShape.holes.push(dig);
+}
 const ground = new THREE.Mesh(
   new THREE.ShapeGeometry(groundShape, 48),
   new THREE.MeshStandardMaterial({ color: 0x171b21, roughness: 1 })
@@ -126,9 +131,11 @@ for (const l of labels) {
 //  orbit + y section   → labels below the peel plane only
 //  walk                → labels on the level the camera is inside
 const sortedLevels = [...LEVELS].sort((a, b) => b.y - a.y);
+const TYPE_OF = {}; for (const l of LEVELS) TYPE_OF[l.uid] = l.type;
+const EXT_TYPES = new Set(['ground', 'checkin', 'bridge']);
 function levelAtY(y) {
-  for (const l of sortedLevels) if (y >= l.y - 1.2) return l.id;
-  return sortedLevels[sortedLevels.length - 1].id;
+  for (const l of sortedLevels) if (y >= l.y - 1.2) return l.uid;
+  return sortedLevels[sortedLevels.length - 1].uid;
 }
 // which level's box (if any) contains the point — handles rotated boxes
 function levelBoxAt(p) {
@@ -137,14 +144,16 @@ function levelBoxAt(p) {
     if (!bx) continue;
     if (p.y < lvl.y - 0.3 || p.y > lvl.y + 6.9) continue;
     const l = worldToBox(bx, p.x, p.z);
-    if (Math.abs(l.x) < bx.len / 2 && Math.abs(l.z) < bx.wid / 2) return lvl.id;
+    if (Math.abs(l.x) < bx.len / 2 && Math.abs(l.z) < bx.wid / 2) return lvl.uid;
   }
   return null;
 }
-function exposedLevel(id) {
-  const lvl = LEVELS.find(l => l.id === id);
+// a level is "exposed" once a level above it *at the same station* is hidden
+function exposedLevel(uid) {
+  const lvl = LEVELS.find(l => l.uid === uid);
   if (!lvl) return true;
-  return LEVELS.some(l => l.y > lvl.y + 1 && levelGroups[l.id] && !levelGroups[l.id].visible);
+  return LEVELS.some(l => l.station === lvl.station && l.y > lvl.y + 1
+    && levelGroups[l.uid] && !levelGroups[l.uid].visible);
 }
 function updateLabels() {
   const camLvl = levelAtY(camera.position.y);
@@ -156,15 +165,15 @@ function updateLabels() {
     if (rig.mode !== 'orbit') { o.visible = lvl === camLvl; continue; }
     if (clipAxis === 'y') {
       // a level is only exposed once the slab covering it is cut — the floor
-      // of the next level up. U1/G (i<2) have nothing above them.
-      const i = sortedLevels.findIndex(l => l.id === lvl);
-      const coverY = i > 1 ? sortedLevels[i - 1].y : Infinity;
+      // of the next level up *at that station*. Top levels have no cover.
+      const me = LEVELS.find(l => l.uid === lvl);
+      const coverY = me ? Math.min(...LEVELS.filter(l => l.station === me.station && l.y > me.y + 1).map(l => l.y), Infinity) : Infinity;
       o.visible = clipConst < coverY && o.position.y < clipConst + 0.5;
       continue;
     }
     if (clipAxis === 'x') { o.visible = o.position.x < clipConst; continue; }
     if (clipAxis === 'z') { o.visible = o.position.z < clipConst; continue; }
-    o.visible = inside ? lvl === inside : (lvl === 'U1' || lvl === 'G' || exposedLevel(lvl));
+    o.visible = inside ? lvl === inside : (EXT_TYPES.has(TYPE_OF[lvl]) || exposedLevel(lvl));
   }
 }
 
@@ -190,7 +199,7 @@ const clipPlanes = {
   y: new THREE.Plane(new THREE.Vector3(0, -1, 0), 200),
   z: new THREE.Plane(new THREE.Vector3(0, 0, -1), 200),
 };
-const clipRange = { x: 130, y: [50, -55], z: 95 };
+const clipRange = { x: 1700, y: [50, -55], z: 300 };
 let clipAxis = 'none', clipConst = Infinity;
 // section cuts are an orbit-mode inspection tool — in walk mode the planes
 // would decapitate street-level geometry, so they're suppressed (the UI
@@ -220,6 +229,10 @@ rig.initColliders(colliders);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers; window.__weather = weather; window.__renderer = renderer;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
+// orbit "home" frames all three stations — Admiralty near field, Central and
+// Hong Kong stretching west down the harbour line
+const NET_POS = new THREE.Vector3(200, 520, 780);
+const NET_TARGET = new THREE.Vector3(-650, -20, 0);
 // walk mode is the default — spawn at street level facing the exit pavilions
 const WALK_HOME = new THREE.Vector3(-30, 1.62, 26);
 const WALK_LOOK = new THREE.Vector3(-10, 1, -6);
@@ -263,7 +276,7 @@ buildUI({
   onMode: m => {
     rig.setMode(m);
     syncClipPlanes();
-    if (m === 'orbit') { rig.teleport(HOME_POS, HOME_TARGET); return; }
+    if (m === 'orbit') { rig.teleport(NET_POS, NET_TARGET); return; }
     if (m === 'walk') {
       // land on whatever surface is under the camera; over a void, go home
       const fl = rig.floorAt(camera.position.x, camera.position.z, camera.position.y + 0.5);
@@ -282,7 +295,7 @@ buildUI({
     (togglables[id] || []).forEach(o => (o.visible = v));
     escSteps.setLevelVisible(id, v);
     passengers.setLevelVisible(id, v);
-    for (const s of trainSim.services) if (s.ds.level === id) s.train.visible = v;
+    for (const s of trainSim.services) if (s.ds?.level === id) s.train.visible = v;
   },
   onGoto: (id, vp) => {
     if (!vp) return;
@@ -295,6 +308,7 @@ buildUI({
     peopleOn = v;
     passengers.group.visible = v;
   },
+  onSpeed: v => { speed = v; },
 });
 
 // keep the mode buttons honest after a restored pose
@@ -347,25 +361,33 @@ function updatePick(dt) {
   }
   if (!pt && kept) pt = kept.point;
   if (!pt) { showInfo(null); return; }
-  const l = LEVELS.find(l => l.id === levelAtY(pt.y));
+  const l = LEVELS.find(l => l.uid === levelAtY(pt.y));
   if (!l) { showInfo(null); return; }
-  showInfo(`<span class="zh">${l.id} ${l.zh}</span><span class="en">${l.en}</span>`);
+  showInfo(`<span class="zh">${l.station === 'ADM' ? '' : l.station + ' · '}${l.id} ${l.zh}</span><span class="en">${l.en}</span>`);
 }
 
 // ---------- loop ----------
+// sim clock: anchored to real Hong Kong time at 1×; fast-forward multipliers
+// advance the sim epoch faster so trains, crowds and the clock all speed up
+let speed = 1;
+let simNow = Date.now();
+const simNowFn = () => simNow;
 const timer = new THREE.Timer();
-let tickerT = 0;
+let tickerT = 0, escT = 0;
 function tick() {
   timer.update();
   const dt = Math.min(timer.getDelta(), 0.05);
   const t = timer.getElapsed();
+  const sdt = dt * speed;          // sim-time delta this frame
+  simNow += sdt * 1000;
+  escT += sdt;
 
   rig.update(dt);
   updatePick(dt);
   updateLabels();
 
   // sim
-  escSteps.update(t);
+  escSteps.update(escT);
   weather.update(dt, t);
   if (sun.position.distanceToSquared(lastSun) > 4) {   // sun moved — rebake shadows
     renderer.shadowMap.needsUpdate = true;
@@ -376,19 +398,27 @@ function tick() {
   audio.setCrowd?.(rig.mode === 'walk'
     ? Math.min(passengers.countNear(camera.position.x, rig.feetY, camera.position.z) / 12, 1)
     : 0);
-  const events = trainSim.update(dt, audio);
+  const events = trainSim.update(sdt, audio, simNowFn, speed);
   for (const ev of events) passengers.onTrainEvent(ev, audio);
-  if (peopleOn) passengers.update(dt, t, trainSim, audio);
-  updateGates(dt);
+  if (peopleOn) passengers.update(sdt, escT, trainSim, audio);
+  updateGates(sdt);
 
-  // gate prompt + ticker refresh
+  // gate / boarding prompt + ticker + clock refresh
   if (rig.mode === 'walk') {
-    showPrompt(rig.nearGate && gateBlocks(rig.nearGate)
-      ? '拍卡進站 · Tap Octopus card — press <b>E</b>' : null);
+    if (rig._aboard) {
+      showPrompt('乘搭中 On board — doors open at the next stop · 下一站開門落車');
+    } else {
+      showPrompt(rig.nearGate && gateBlocks(rig.nearGate)
+        ? '拍卡進站 · Tap Octopus card — press <b>E</b>' : null);
+    }
   } else showPrompt(null);
 
   tickerT += dt;
-  if (tickerT > 0.5) { tickerT = 0; updateTicker(trainSim.services, trainSim.tt.live); }
+  if (tickerT > 0.5) {
+    tickerT = 0;
+    updateTicker(trainSim.board(), trainSim.tt.live, simNow);
+    updateClock(simNow, speed);
+  }
 
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);

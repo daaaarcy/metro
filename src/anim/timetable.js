@@ -5,12 +5,18 @@
 //   time   — arrival time; for terminus services it's the DEPARTURE (timeType:'D')
 // Falls back silently to the synthetic headways whenever the API is unreachable.
 const API = 'https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php';
-const LINES_API = ['TWL', 'ISL', 'EAL', 'SIL'];
+// (line, station) pairs the live feed can serve — the API only knows real
+// stations, and each returns UP/DOWN arrays keyed by platform number
+const FEEDS = [
+  ['TWL', 'ADM'], ['ISL', 'ADM'], ['EAL', 'ADM'], ['SIL', 'ADM'],
+  ['TWL', 'CEN'], ['ISL', 'CEN'],
+  ['TCL', 'HOK'], ['AEX', 'HOK'],
+];
 const POLL_S = 45;
 
 export class Timetable {
   constructor() {
-    this.byPlat = {};   // '1'..'8' -> sorted [epochMs]
+    this.byPlat = {};   // 'ADM:1'..'HOK:4' -> sorted [epochMs]
     this.live = false;
     this.timer = 2;     // first fetch shortly after load
   }
@@ -22,16 +28,16 @@ export class Timetable {
 
   async refresh() {
     const out = {};
-    await Promise.all(LINES_API.map(async line => {
+    await Promise.all(FEEDS.map(async ([line, stn]) => {
       try {
-        const r = await fetch(`${API}?line=${line}&sta=ADM`);
+        const r = await fetch(`${API}?line=${line}&sta=${stn}`);
         if (!r.ok) return;
-        const d = (await r.json()).data?.[`${line}-ADM`];
+        const d = (await r.json()).data?.[`${line}-${stn}`];
         for (const dir of ['UP', 'DOWN']) {
           for (const e of d?.[dir] || []) {
             if (e.valid !== 'Y') continue;
             const t = new Date(e.time.replace(' ', 'T') + '+08:00').getTime();
-            if (Number.isFinite(t)) (out[e.plat] ??= []).push(t);
+            if (Number.isFinite(t)) (out[`${stn}:${e.plat}`] ??= []).push(t);
           }
         }
       } catch { /* offline / blocked — keep whatever we already had */ }
@@ -45,9 +51,10 @@ export class Timetable {
   }
 
   // next scheduled event (arrival, or departure for termini) for a platform,
-  // skipping anything already consumed (`after`) or too far in the past
-  next(plat, after = 0) {
+  // skipping anything already consumed (`after`) or too far in the past.
+  // Stations/lines the feed doesn't cover get null → synthetic headways.
+  next(stn, plat, after = 0) {
     const min = Math.max(Date.now() - 20000, after);
-    return (this.byPlat[String(plat)] || []).find(t => t > min) ?? null;
+    return (this.byPlat[`${stn}:${plat}`] || []).find(t => t > min) ?? null;
   }
 }

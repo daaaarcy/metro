@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { ESC_RUNS, GATES, STAIR_RUNS } from '../registry.js';
-import { WALK_RECTS, BOXES, levelById, boxToWorld, worldToBox } from '../station-data.js';
+import { WALK_RECTS, BOXES, PEOPLE_N, levelById, boxToWorld, worldToBox, concourseId } from '../station-data.js';
 import { pointInRects, worldRectToLocal } from '../builders/structure.js';
 import { openGate, gateBlocks } from './gates.js';
 import { resolvePed } from '../colliders.js';
 import { rollAppearance, PART_GEO, FACE_DARK } from '../builders/people.js';
 
-const N_LEVELS = { U1: 14, G: 16, L1: 58, L2: 44, L3: 44, L4: 24, L5: 24, L6: 18 };
+const N_LEVELS = PEOPLE_N;   // uid ('ADM:L1' etc.) -> headcount
 const SPEED = [0.9, 1.5];   // walk speed range m/s
 const IDBOX = { cx: 0, cz: 0, rot: 0 };   // U1 bridge coords are already world axes
 
@@ -159,34 +159,39 @@ export class Passengers {
         return;
       }
     }
-    if (lvl === 'L1' && roll < 0.4) {
-      const g = GATES[Math.floor(Math.random() * GATES.length)];
+    const lvlType = levelById(lvl).type;
+    if (lvlType === 'concourse' && roll < 0.4) {
+      const lanes = GATES.filter(g => g.level === lvl);
+      const g = lanes[Math.floor(Math.random() * lanes.length)];
       if (g) {
-        const approach = p.z < g.z ? -1 : 1;       // approach side
+        const bx0 = this.boxOf[lvl];
+        const lg = worldToBox(bx0, g.x, g.z);
+        const approach = p.z < lg.z ? -1 : 1;       // approach side (local)
         p.gate = g; p.gateSide = approach;
-        p.tx = g.x; p.tz = g.z + approach * 1.7;
+        p.tx = lg.x; p.tz = lg.z + approach * 1.7;
         p.state = 'toGate';
         return;
       }
     }
-    // street traffic: descend an exit stair into L1, or climb to the footbridge
-    if (lvl === 'G' && roll < 0.55) {
-      const down = STAIR_RUNS.filter(r => r.from === 'G');
-      const up = STAIR_RUNS.filter(r => r.to === 'G');
+    // street traffic: descend an exit stair toward the concourse, or climb
+    // to the footbridge — stairs register station-level uids
+    if ((lvlType === 'ground' || lvlType === 'checkin') && roll < 0.55) {
+      const down = STAIR_RUNS.filter(r => r.from === lvl && r.to !== lvl);
+      const up = STAIR_RUNS.filter(r => r.to === lvl);
       const pick = Math.random() < 0.7 ? down : up;
       if (pick.length) {
         const r = pick[Math.floor(Math.random() * pick.length)];
-        const goingDown = r.from === 'G';
+        const goingDown = r.from === lvl;
         const a = goingDown ? r.top : r.bot;
         const sgn = goingDown ? -1 : 1;
-        const l = worldToBox(this.boxOf.G, a.x + r.ux * 1.4 * sgn, a.z + r.uz * 1.4 * sgn);
+        const l = worldToBox(this.boxOf[lvl], a.x + r.ux * 1.4 * sgn, a.z + r.uz * 1.4 * sgn);
         p.stair = { r, down: goingDown };
         p.tx = l.x; p.tz = l.z; p.state = 'toStair';
         return;
       }
     }
-    // people leaving: L1 -> G via an exit stair, U1 -> G via the footbridge stair
-    if ((lvl === 'L1' || lvl === 'U1') && roll < 0.08) {
+    // people leaving: concourse/bridge -> street via an exit stair
+    if ((lvlType === 'concourse' || lvlType === 'bridge') && roll < 0.08) {
       const up = STAIR_RUNS.filter(r => r.to === lvl);
       if (up.length) {
         const r = up[Math.floor(Math.random() * up.length)];
@@ -266,9 +271,22 @@ export class Passengers {
         case 'aboard':
           visible = false;
           p.hideT -= dt;
-          if (p.hideT <= 0) {
-            // reappear at the concourse as if they travelled and returned
-            const np = this.spawn('L1');
+          // reappear on the platform the next time their consist dwells —
+          // they really did ride the train to another station
+          if (p.svc && p.svc.state === 'dwell' && p.svc.ds && p.hideT <= 0) {
+            const lvl2 = p.svc.ds.level;
+            const doors = p.svc.doorWorld(4, -1.6);
+            const outs = p.svc.doorWorld(4, 1.6);
+            if (doors.length) {
+              const li = worldToBox(this.boxOf[lvl2], doors[0].x, doors[0].z);
+              const lo = worldToBox(this.boxOf[lvl2], outs[0].x, outs[0].z);
+              const np = this.spawn(lvl2, li.x, li.z);
+              Object.assign(p, np);
+              p.tx = lo.x; p.tz = lo.z; p.state = 'alight'; p.svc = null;
+            }
+          } else if (p.hideT <= -60) {
+            // consist went off-map — respawn at that station's concourse
+            const np = this.spawn(concourseId(p.level.split(':')[0]) || 'ADM:L1');
             Object.assign(p, np);
           }
           break;
@@ -284,11 +302,12 @@ export class Passengers {
           break;
         }
         case 'throughGate': {
-          // walk through once the flaps open
+          // walk through once the flaps open (gate coords are world-space)
           if (!p.gate || p.gate.open < 0.7) break;
-          const goal = p.gate.z - p.gateSide * 2.0;
-          p.tz = goal;
-          if (this.stepTo(p, dt, p.gate.x)) { p.state = 'seek'; }
+          const gl = worldToBox(this.boxOf[p.level], p.gate.x, p.gate.z - p.gateSide * 2.0);
+          const gx = worldToBox(this.boxOf[p.level], p.gate.x, p.gate.z).x;
+          p.tz = gl.z;
+          if (this.stepTo(p, dt, gx)) { p.state = 'seek'; }
           break;
         }
         case 'toStair': {
@@ -382,9 +401,8 @@ export class Passengers {
         const wy0 = p.wy ?? levelById(p.level).y;
         let [rx, rz] = resolvePed(this.col, w0.x, w0.z, wy0, 1.7);
         // closed Octopus flaps block the lane (dynamic — not in SOLIDS)
-        if (wy0 < -6.4 && wy0 > -7.8) {
-          for (const g of GATES) {
-            if (!gateBlocks(g)) continue;
+        for (const g of GATES) {
+          if (g.level !== p.level || !gateBlocks(g)) continue;
             const s = g.rect;
             const nx = Math.max(s.x0, Math.min(rx, s.x1));
             const nz = Math.max(s.z0, Math.min(rz, s.z1));
@@ -393,14 +411,11 @@ export class Passengers {
             const d = Math.sqrt(d2);
             rx = nx + dx / d * 0.3; rz = nz + dz / d * 0.3;
           }
-        }
         if (rx !== w0.x || rz !== w0.z) {
           const l = worldToBox(bx0, rx, rz);
           p.x = l.x; p.z = l.z;
         }
       }
-
-      if (p.dirty) { this.paint(i); p.dirty = false; }
 
       if (!visible) {
         for (const im of Object.values(this.parts)) im.setMatrixAt(i, this._zero);

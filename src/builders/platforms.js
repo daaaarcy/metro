@@ -127,7 +127,7 @@ export function benches(x0, x1, z, y) {
 export function platformLevel(levelDef, rect) {
   const g = new THREE.Group();
   const y = 0; // local floor surface = 0 (group is positioned at level.y)
-  const spec = PLATFORMS[levelDef.id];
+  const spec = PLATFORMS[levelDef.uid];
   const trackRects = [];
   const doorSets = [];
 
@@ -136,7 +136,7 @@ export function platformLevel(levelDef, rect) {
     g.add(sd.group);
     sd.doorSet.face = face;
     sd.doorSet.track = tr;
-    sd.doorSet.level = levelDef.id;
+    sd.doorSet.level = levelDef.uid;
     sd.doorSet.terminus = !!spec.terminus;
     sd.doorSet.kind = spec.kind;
     doorSets.push(sd.doorSet);
@@ -152,6 +152,17 @@ export function platformLevel(levelDef, rect) {
       addFace(tr, s * (TRACK_Z - BED_HALF) - s * 0.06, -s, spec.faces[i]);
     }
     g.add(benches(rect.x0 + 12, rect.x1 - 12, 0, y));
+  } else if (spec.kind === 'single') {
+    // one track + one side platform (Central L2/L4, HK L2):
+    // single.track = which side the track sits on, single.side = platform side
+    const ts = spec.single.track, ps = spec.single.side;
+    const zc = ts * SIDE_TRACK_Z;
+    const tr = { x0: rect.x0 + 1.5, z0: zc - BED_HALF, x1: rect.x1 - 1.5, z1: zc + BED_HALF, sides: [] };
+    trackRects.push(tr);
+    g.add(track(tr, y));
+    // platform edge = far side of the bed; doors/decals face the platform
+    addFace(tr, zc - ts * BED_HALF - ts * 0.06, ps, spec.faces[0]);
+    g.add(benches(rect.x0 + 12, rect.x1 - 12, ps * (Math.abs(rect.z1) - 3.4), y));
   } else {
     // side platforms: tracks in the middle, platforms along both walls
     for (const [i, s] of [-1, 1].entries()) {

@@ -1,204 +1,463 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { FITTINGS } from '../registry.js';
 import { TRAIN_SPEC, LINES, BOXES, levelById, boxToWorld } from '../station-data.js';
 import { M } from '../builders/materials.js';
 import { box } from '../builders/structure.js';
+import { canvasTex } from '../builders/decor.js';
 import { Timetable } from './timetable.js';
 
-const ARR_T = 13, DEP_T = 11;          // seconds to run in/out of the platform
-const DOOR_T = 0.7;                     // door slide time
+const DOOR_T = 0.7;                       // door slide time
+const ARR_T = 12, DEP_T = 10;             // platform run-in / run-out
 const easeOut = p => 1 - Math.pow(1 - p, 3);
 const easeIn = p => p * p * p;
 
 const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc9ced4, roughness: 0.35, metalness: 0.6 });
 const winMat  = new THREE.MeshStandardMaterial({ color: 0x18222e, roughness: 0.2, metalness: 0.3 });
 const doorMat = new THREE.MeshStandardMaterial({ color: 0xb4bac2, roughness: 0.4, metalness: 0.5 });
-// interior shell renders its inner faces too — from outside it still reads as
-// a dark interior through the windows, from aboard it becomes the car walls
-const innerMat = new THREE.MeshStandardMaterial({ color: 0x18222e, roughness: 0.2, metalness: 0.3, side: THREE.BackSide });
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xd6dade, roughness: 0.55, metalness: 0.15, side: THREE.BackSide });
 const headMat = new THREE.MeshStandardMaterial({ color: 0xfff6cc, emissive: 0xffedb0, emissiveIntensity: 2.2 });
+const innerMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.1 });
 
-function buildTrain(line, cars, carLen, doorSide) {
+// M-Train door positions per car: 5 pairs per side (fractions of car length)
+const DOOR_FR = [-0.4, -0.2, 0, 0.2, 0.4];
+
+// ---------------------------------------------------------------- geometry
+// vertex-coloured box added to the merged interior geometry
+function cbox(parts, w, h, d, hex, x, y, z, ry = 0) {
+  const g = new THREE.BoxGeometry(w, h, d);
+  if (ry) g.rotateY(ry);
+  g.translate(x, y, z);
+  const c = new THREE.Color(hex);
+  const n = g.attributes.position.count;
+  const col = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  parts.push(g);
+}
+
+// per-line route-map strip above each door (shared texture per line)
+const routeMapMats = {};
+function routeMapMat(line) {
+  if (!routeMapMats[line]) {
+    const c = LINES[line].color;
+    routeMapMats[line] = new THREE.MeshBasicMaterial({
+      map: canvasTex(512, 72, (ctx, w, h) => {
+        ctx.fillStyle = '#f4f5f2'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = c; ctx.fillRect(0, h * 0.30, w, h * 0.34);
+        ctx.fillStyle = '#fff';
+        for (let i = 1; i < 10; i++) { ctx.beginPath(); ctx.arc(i * w / 10, h * 0.47, h * 0.11, 0, 7); ctx.fill(); }
+        ctx.fillStyle = '#222';
+        ctx.font = '600 22px "PingFang HK",sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(LINES[line].zh + ' ' + LINES[line].en, w / 2, h * 0.24);
+      }),
+    });
+  }
+  return routeMapMats[line];
+}
+const ledMat = new THREE.MeshBasicMaterial({
+  map: canvasTex(256, 36, (ctx, w, h) => {
+    ctx.fillStyle = '#101010'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#ff9a1f'; ctx.font = '700 22px "PingFang HK",monospace'; ctx.textAlign = 'center';
+    ctx.fillText('下一站 Next Station', w / 2, h * 0.72);
+  }),
+});
+
+// interior shell + furniture for one consist, merged to a single draw call.
+// Real M-Train: longitudinal bench seats between the 5 door openings, grab
+// poles at each vestibule, overhead rail + hanging straps, gangway bellows,
+// ceiling light band, priority seats at the car ends.
+function buildInterior(line, cars, carLen, W, H, gap) {
+  const parts = [];
+  const floorY = 0.72, winLo = 2.42, winHi = 3.32;
+  for (let c = 0; c < cars; c++) {
+    const x0 = (c - (cars - 1) / 2) * (carLen + gap);
+    // floor + ceiling + below-window side walls (drawn inside-out via wallMat)
+    cbox(parts, carLen - 0.2, 0.08, W - 0.3, 0x848b91, x0, floorY - 0.04, 0);          // speckled floor
+    for (const s of [-1, 1]) {
+      const zw = s * (W / 2 - 0.06);
+      cbox(parts, carLen - 0.2, winLo - floorY, 0.06, 0xe8eaec, x0, (winLo + floorY) / 2, zw);   // wall below glass
+      cbox(parts, carLen - 0.2, 0.9, 0.07, 0x22262c, x0, (winLo + winHi) / 2, zw);               // window band from inside
+      cbox(parts, carLen - 0.2, H - winHi + 0.4, 0.06, 0xdfe2e5, x0, (H + winHi) / 2 - 0.1, zw); // above window
+      // longitudinal bench seats between the 5 doorways (4 bays + car ends)
+      for (const bx of [-0.3, -0.1, 0.1, 0.3]) {
+        const pri = c === 0 && bx === -0.3 || c === cars - 1 && bx === 0.3;
+        cbox(parts, carLen * 0.155, 0.46, 0.46, pri ? 0xc0463e : 0x9fb6c4, x0 + bx * carLen, floorY + 0.23, s * (W / 2 - 0.34));
+        cbox(parts, carLen * 0.155, 0.5, 0.1, pri ? 0xa83c36 : 0x88a2b0, x0 + bx * carLen, floorY + 0.62, s * (W / 2 - 0.1));
+      }
+      // vestibule grab poles at each door edge
+      for (const f of DOOR_FR) {
+        for (const e of [-0.85, 0.85]) {
+          cbox(parts, 0.045, 1.9, 0.045, 0xd8b93a, x0 + f * carLen + e, floorY + 0.95, s * (W / 2 - 0.6));
+        }
+      }
+      // overhead rail + hanging straps over the benches
+      cbox(parts, carLen - 0.6, 0.05, 0.05, 0xc9ced4, x0, floorY + 1.92, s * (W / 2 - 0.55));
+      for (let i = 0; i < 9; i++) {
+        cbox(parts, 0.05, 0.22, 0.02, 0xe8e2d2, x0 - carLen / 2 + 1.4 + i * (carLen - 2.8) / 8, floorY + 1.78, s * (W / 2 - 0.55));
+        cbox(parts, 0.05, 0.09, 0.09, 0xe8e2d2, x0 - carLen / 2 + 1.4 + i * (carLen - 2.8) / 8, floorY + 1.62, s * (W / 2 - 0.55));
+      }
+    }
+    // ceiling + light band + A/C vent strip
+    cbox(parts, carLen - 0.2, 0.06, W - 0.4, 0xeef0f1, x0, H + 0.02, 0);
+    cbox(parts, carLen - 1.2, 0.05, 0.5, 0xffffff, x0, H - 0.04, 0);
+    cbox(parts, carLen - 1.4, 0.04, 0.24, 0xb9bec4, x0, H - 0.05, W / 4);
+    cbox(parts, carLen - 1.4, 0.04, 0.24, 0xb9bec4, x0, H - 0.05, -W / 4);
+    // centre ceiling poles near mid-car
+    for (const f of [-0.12, 0.12]) cbox(parts, 0.045, 1.75, 0.045, 0xd8b93a, x0 + f * carLen, floorY + 0.9, 0);
+    // car-end partition walls with the gangway opening
+    for (const s of [-1, 1]) {
+      const ex = x0 + s * (carLen / 2 - 0.05);
+      cbox(parts, 0.12, 1.15, 0.5, 0xd0d4d8, ex, floorY + 0.6, s * 0);            // stub wall
+      for (const zs of [-1, 1]) cbox(parts, 0.1, 1.6, W / 2 - 0.5, 0xd0d4d8, ex, floorY + 0.8, zs * (W / 4 + 0.22));
+    }
+    // door leaves recess + headers get route-map strips (real MTR look)
+    for (const f of DOOR_FR) for (const s of [-1, 1]) {
+      cbox(parts, 1.9, 0.42, 0.08, 0xf0f2f4, x0 + f * carLen, floorY + 1.98, s * (W / 2 - 0.1));
+    }
+    // gangway bellows between cars — open passage with dark rubber frame
+    if (c < cars - 1) {
+      const gx = x0 + carLen / 2 + gap / 2;
+      cbox(parts, gap + 0.1, 0.08, 1.15, 0x5a5e63, gx, floorY - 0.02, 0);          // gangway floor
+      for (const zs of [-1, 1]) cbox(parts, gap + 0.1, 1.95, 0.1, 0x3a3e44, gx, floorY + 0.98, zs * 0.62);
+      cbox(parts, gap + 0.1, 0.25, 1.3, 0x3a3e44, gx, floorY + 2.0, 0);            // bellows header
+    }
+  }
+  const mesh = new THREE.Mesh(mergeGeometries(parts), innerMat);
+  mesh.castShadow = mesh.receiveShadow = false;
+  // route-map strips + LED panels above each door — merged to two draw calls
+  const mapGeos = [], ledGeos = [];
+  for (let c = 0; c < cars; c++) {
+    const x0 = (c - (cars - 1) / 2) * (carLen + gap);
+    for (const f of DOOR_FR) for (const s of [-1, 1]) {
+      const mg = new THREE.PlaneGeometry(1.7, 0.26);
+      if (s > 0) mg.rotateY(Math.PI);
+      mg.translate(x0 + f * carLen, floorY + 2.02, s * (W / 2 - 0.14));
+      mapGeos.push(mg);
+      const lg = new THREE.PlaneGeometry(1.15, 0.18);
+      if (s > 0) lg.rotateY(Math.PI);
+      lg.translate(x0 + f * carLen + 1.15, floorY + 2.02, s * (W / 2 - 0.14));
+      ledGeos.push(lg);
+    }
+  }
+  const extras = new THREE.Group();
+  extras.add(new THREE.Mesh(mergeGeometries(mapGeos), routeMapMat(line)));
+  extras.add(new THREE.Mesh(mergeGeometries(ledGeos), ledMat));
+  return { mesh, extras };
+}
+
+function buildTrain(line, cars, carLen) {
   const g = new THREE.Group();
   const W = 3.0, H = 3.3, gap = 0.55;
   const stripe = new THREE.MeshStandardMaterial({ color: new THREE.Color(LINES[line].color), roughness: 0.5 });
+  // car shells merged per material — one draw call each
+  const geos = { body: [], win: [], str: [], inner: [] };
+  const leafSpecs = [];                       // {x, z, s, side} per leaf
   const leafGeo = new THREE.BoxGeometry(0.85, 2.05, 0.07);
-  const leaves = [];
   for (let c = 0; c < cars; c++) {
     const x0 = (c - (cars - 1) / 2) * (carLen + gap);
-    const body = box(carLen, H, W, bodyMat);
-    body.position.set(x0, 2.1, 0);
-    const win = box(carLen - 0.5, 0.9, W + 0.04, winMat);
-    win.position.set(x0, 2.85, 0);
-    const str = box(carLen, 0.28, W + 0.06, stripe);
-    str.position.set(x0, 1.45, 0);
-    // dark interior visible through the open doors
-    const inner = box(carLen - 0.7, H - 0.7, W - 0.6, innerMat);
-    inner.position.set(x0, 2.0, 0);
-    g.add(body, win, str, inner);
-    // 3 door pairs per car on the platform side
-    for (const dx of [-carLen * 0.3, 0, carLen * 0.3]) {
-      for (const s of [-1, 1]) {
-        const leaf = new THREE.Mesh(leafGeo, doorMat);
-        leaf.userData = { x: x0 + dx + s * 0.44, z: doorSide * (W / 2 + 0.02), s };
-        g.add(leaf);
-        leaves.push(leaf);
-      }
+    const bg = new THREE.BoxGeometry(carLen, H, W); bg.translate(x0, 2.1, 0); geos.body.push(bg);
+    const wg = new THREE.BoxGeometry(carLen - 0.5, 0.9, W + 0.04); wg.translate(x0, 2.85, 0); geos.win.push(wg);
+    const sg = new THREE.BoxGeometry(carLen, 0.28, W + 0.06); sg.translate(x0, 1.45, 0); geos.str.push(sg);
+    const ig = new THREE.BoxGeometry(carLen - 0.7, H - 0.55, W - 0.55); ig.translate(x0, 2.02, 0); geos.inner.push(ig);
+    // five door pairs per car per side, at the real M-Train positions
+    for (const f of DOOR_FR) for (const side of [-1, 1]) for (const s of [-1, 1]) {
+      leafSpecs.push({ x: x0 + f * carLen + s * 0.44, z: side * (W / 2 + 0.02), s, side });
     }
   }
-  // cab ends
   const half = (cars * (carLen + gap) - gap) / 2;
   for (const s of [-1, 1]) {
-    const cab = box(0.5, H * 0.9, W * 0.96, winMat);
-    cab.position.set(s * (half + 0.2), 2.05, 0);
-    const light = box(0.15, 0.3, 1.9, headMat);
-    light.position.set(s * (half + 0.5), 1.35, 0);
-    g.add(cab, light);
+    const cg = new THREE.BoxGeometry(0.5, H * 0.9, W * 0.96); cg.translate(s * (half + 0.2), 2.05, 0); geos.win.push(cg);
+    const lg = new THREE.BoxGeometry(0.15, 0.3, 1.9); lg.translate(s * (half + 0.5), 1.35, 0);
+    const light = new THREE.Mesh(lg, headMat); g.add(light);
   }
+  g.add(new THREE.Mesh(mergeGeometries(geos.body), bodyMat));
+  g.add(new THREE.Mesh(mergeGeometries(geos.win), winMat));
+  g.add(new THREE.Mesh(mergeGeometries(geos.str), stripe));
+  // interior shell — light walls visible through windows and from aboard
+  g.add(new THREE.Mesh(mergeGeometries(geos.inner), wallMat));
+  // door leaves: one InstancedMesh, matrices slide on open/close
+  const leafIM = new THREE.InstancedMesh(leafGeo, doorMat, leafSpecs.length);
+  const _m = new THREE.Matrix4();
+  leafSpecs.forEach((sp, i) => leafIM.setMatrixAt(i, _m.makeTranslation(sp.x, 2.05, sp.z)));
+  leafIM.instanceMatrix.needsUpdate = true;
+  leafIM.frustumCulled = false;
+  g.add(leafIM);
+  const leaves = { im: leafIM, specs: leafSpecs };
+  const interior = buildInterior(line, cars, carLen, W, H, gap);
+  g.add(interior.mesh, interior.extras);
   return { group: g, leaves, len: cars * (carLen + gap) - gap };
 }
 
-// One scheduled service on a platform face.
-class Service {
-  constructor(scene, doorSet) {
-    this.ds = doorSet;
-    const face = doorSet.face, tr = doorSet.track;
-    this.spec = TRAIN_SPEC[face.line];
-    this.bx = BOXES[levelById(doorSet.level).box];
-    this.zc = (tr.z0 + tr.z1) / 2;
-    // train doors open toward the platform: island platforms face the centre,
-    // side platforms face outward
-    this.doorSide = doorSet.kind === 'island' ? -face.side : face.side;
-    this.color = LINES[face.line].color;
-    this.dir = face.dir;                                   // +1/-1 along local X
-    this.plat = face.num;                                  // MTR platform number (matches the API)
-    this.terminus = !!doorSet.terminus;
-    this.nextAt = null;                                    // next real scheduled time (ms)
-    this.consumed = 0;                                     // last schedule already used
-    const t = buildTrain(face.line, this.spec.cars, this.spec.carLen, this.doorSide);
+// ------------------------------------------------------------- route model
+// A stop = one platform face (resolved to its PSD door set).
+class Stop {
+  constructor(ds, spec) {
+    this.ds = ds;
+    this.face = ds.face;
+    this.line = ds.face.line;
+    this.spec = TRAIN_SPEC[this.line];
+    this.bx = BOXES[levelById(ds.level).box];
+    this.levelY = levelById(ds.level).y;
+    this.zc = (ds.track.z0 + ds.track.z1) / 2;
+    this.doorSide = ds.kind === 'island' ? -ds.face.side : ds.face.side;
+    this.tr = ds.track;
+    this.stopX = (ds.track.x0 + ds.track.x1) / 2;
+    this.terminus = !!ds.terminus;
+    this.dwell = spec?.dwell ?? this.spec.dwell;
+    this.uid = ds.level;
+    this.stn = ds.level.split(':')[0];
+    this.plat = ds.face.num;
+    // portal the train exits toward after departing (local x end)
+    this.outEnd = ds.face.dir > 0 ? 'x1' : 'x0';
+  }
+  portalX(end, halfLen) {
+    return end === 'x1' ? this.tr.x1 + halfLen + 4 : this.tr.x0 - halfLen - 4;
+  }
+  worldOf(lx) { return boxToWorld(this.bx, lx, this.zc); }
+}
+
+// legs[i] runs from stops[i] to stops[(i+1)%n]:
+//  'tunnel' — visible run between stations, trapezoid speed profile
+//  'off'    — leave the map via one portal, reappear at the next stop's portal
+function resolveRoute(routeDef, doorSets) {
+  const stops = routeDef.stops.map(sd => {
+    const ds = doorSets.find(d => d.level === sd.uid && d.face.num === sd.num);
+    if (!ds) throw new Error(`route ${routeDef.line}: no door set ${sd.uid} P${sd.num}`);
+    return new Stop(ds, sd);
+  });
+  const legs = routeDef.legs.map((via, i) => {
+    const A = stops[i], B = stops[(i + 1) % stops.length];
+    if (via === 'tunnel') {
+      const wA = A.worldOf(A.stopX), wB = B.worldOf(B.stopX);
+      const dist = Math.hypot(wB.x - wA.x, wB.z - wA.z);
+      const dir = Math.sign(wB.x - wA.x) || 1;          // plan travel direction
+      return { via, A, B, dist, travel: routeDef.travel ?? Math.max(40, dist / 13),
+               dir, yA: A.levelY, yB: B.levelY };
+    }
+    // off-map leg: depart A through its dir portal; re-enter B — through
+    // services come back from B's opposite end, termini reverse at the same end
+    const inEnd = B.terminus ? B.outEnd : (B.face.dir > 0 ? 'x0' : 'x1');
+    return { via, A, B, inEnd, travel: routeDef.travel ?? 30 };
+  });
+  return { stops, legs, line: routeDef.line };
+}
+
+// -------------------------------------------------------------- the consist
+class Consist {
+  constructor(scene, route, idx, total) {
+    this.route = route;
+    this.stops = route.stops;
+    this.legs = route.legs;
+    this.spec = TRAIN_SPEC[route.line];
+    const t = buildTrain(route.line, this.spec.cars, this.spec.carLen);
     this.train = t.group;
-    this.leaves = t.leaves;
+    this.leafSets = t.leaves;
     this.trainLen = t.len;
     scene.add(this.train);
 
-    const mid = (tr.x0 + tr.x1) / 2;
-    this.stopX = mid;
-    if (doorSet.terminus) {
-      this.enterX = tr.x1 + this.trainLen / 2 + 4;          // tunnel end is +X
-      this.exitX = this.enterX;
-    } else {
-      this.enterX = this.dir > 0 ? tr.x0 - this.trainLen / 2 - 4 : tr.x1 + this.trainLen / 2 + 4;
-      this.exitX = this.dir > 0 ? tr.x1 + this.trainLen / 2 + 4 : tr.x0 - this.trainLen / 2 - 4;
-    }
-    this.state = 'away';
-    this.t = 2 + Math.random() * this.spec.headway;         // staggered first arrivals
-    this.open = 0;                                          // door open fraction
-    this.tx = this.enterX;
-    this.dtx = 0;                                           // local-x moved this frame (carries riders)
-    this._ptx = this.enterX;
-    this.doorXs = doorSet.xs;                               // PSD leaf positions (local)
+    this.i = 0;                       // index of the stop we're at / heading to
+    this.ds = null;                   // door set when berthed (null mid-run)
+    this.bx = { cx: 0, cz: 0, rot: 0 }; // live frame for the player constraint
+    this.tx = 0; this.zc = 0;
+    this.doorSide = 1;
+    this.floorY = -14;
+    this.dwx = 0; this.dwz = 0;         // world displacement this frame (carry)
+    this.open = 0;
+    this.nextAt = null;
+    this.events = [];
     this._m4 = new THREE.Matrix4();
-    this.events = [];                                       // {type:'arrive'|'dwell'|'depart'}
-    this.place(this.enterX);
+
+    // stagger consists along the route; start parked at a stop
+    this.state = 'dwell';
+    this.t = (idx * 0.5 + Math.random() * 0.4) * this.spec.headway / total + 4;
+    this._berth(this.stops[0], true);
+    this._pw = { x: this.train.position.x, z: this.train.position.z };
   }
 
-  place(tx) {
+  get color() { return LINES[this.route.line].color; }
+
+  // park the consist at a stop: frame = the stop's box, tx = stop centre
+  _berth(stop, snap = false) {
+    this.ds = stop.ds;
+    this.stop = stop;
+    this.bx = stop.bx;
+    this.zc = stop.zc;
+    this.doorSide = stop.doorSide;
+    this.tx = snap ? stop.stopX : this.tx;
+    this.floorY = stop.levelY + 0.08;   // car floor = platform height
+    this._place(stop.stopX, stop);
+  }
+
+  _place(tx, stop) {
+    const w = boxToWorld(stop.bx, tx, stop.zc);
     this.tx = tx;
-    const w = boxToWorld(this.bx, tx, this.zc);
-    this.train.position.set(w.x, levelById(this.ds.level).y - 0.62, w.z);
-    this.train.rotation.y = this.bx.rot;
+    this.train.position.set(w.x, stop.levelY - 0.62, w.z);
+    this.train.rotation.y = stop.bx.rot;
+  }
+
+  // free-running position along a leg (world point + yaw), sets bx frame
+  _runPlace(x, z, yaw, y) {
+    this.train.position.set(x, y - 0.62, z);
+    this.train.rotation.y = -yaw;
+    // the live frame the constraint pass resolves the player against
+    this.bx = { cx: x, cz: z, rot: -yaw };
+    this.tx = 0; this.zc = 0;
+    this.floorY = y + 0.08;             // car floor tracks the running height
   }
 
   setDoors(open, dt) {
     this.open = THREE.MathUtils.clamp(this.open + (open ? dt : -dt) / DOOR_T, 0, 1);
     const o = this.open;
-    for (const leaf of this.leaves) {
-      leaf.position.set(leaf.userData.x + leaf.userData.s * o * 0.78, 2.05, leaf.userData.z);
+    const { im, specs } = this.leafSets;
+    for (let i = 0; i < specs.length; i++) {
+      const sp = specs[i];
+      const slide = (sp.side === this.doorSide ? o : 0) * 0.78;
+      this._m4.makeTranslation(sp.x + sp.s * slide, 2.05, sp.z);
+      im.setMatrixAt(i, this._m4);
     }
-    // PSD leaves slide in step with train doors — pairs part into the panels
+    im.instanceMatrix.needsUpdate = true;
     const ds = this.ds;
-    const target = o * 0.9;
-    if (ds._slide === undefined) ds._slide = 0;
-    if (Math.abs(ds._slide - target) > 0.001) {
-      ds._slide += Math.sign(target - ds._slide) * Math.min(Math.abs(target - ds._slide), dt * 1.4);
-      for (let i = 0; i < ds.leafX.length; i++) {
-        this._m4.makeTranslation(ds.leafX[i] + ds.leafDir[i] * ds._slide, ds.y, ds.z);
-        ds.doors.setMatrixAt(i, this._m4);
+    if (ds) {
+      const target = o * 0.9;
+      if (ds._slide === undefined) ds._slide = 0;
+      if (Math.abs(ds._slide - target) > 0.001) {
+        ds._slide += Math.sign(target - ds._slide) * Math.min(Math.abs(target - ds._slide), dt * 1.4);
+        for (let i = 0; i < ds.leafX.length; i++) {
+          this._m4.makeTranslation(ds.leafX[i] + ds.leafDir[i] * ds._slide, ds.y, ds.z);
+          ds.doors.setMatrixAt(i, this._m4);
+        }
+        ds.doors.instanceMatrix.needsUpdate = true;
       }
-      ds.doors.instanceMatrix.needsUpdate = true;
     }
   }
 
-  beginArrive(audio) {
-    this.state = 'arrive'; this.t = ARR_T;
-    this.events.push({ type: 'arrive', face: this.ds.face, level: this.ds.level });
-    audio?.announceArrive(this.ds.face, this.ds.level);
+  _beginRun(audio) {
+    const leg = this.legs[this.i];
+    this.ds = null;
+    this.state = leg.via === 'tunnel' ? 'run' : 'offOut';
+    this.leg = leg;
+    this.t = leg.via === 'tunnel' ? leg.travel : DEP_T;
+    this.s = 0;
+    this.events.push({ type: 'depart', face: this.stop.face, level: this.stop.uid, service: this });
+    audio?.announceDepart(this.stop.face, this.stop.uid);
   }
 
-  update(dt, audio, tt) {
+  update(dt, audio, tt, simNow, speed) {
     this.t -= dt;
     switch (this.state) {
-      case 'away': {
-        this.setDoors(false, dt);
-        const sched = tt?.next(this.plat, this.consumed) ?? null;
-        this.nextAt = sched;
-        if (sched != null) {
-          // API `time` = arrival at through platforms, departure at termini —
-          // start the run-in early enough to be at the platform when due
-          const leadS = this.terminus ? ARR_T + this.spec.dwell + 8 : ARR_T;
-          if (sched - Date.now() <= leadS * 1000) {
-            this.consumed = sched;   // never let one schedule fire twice
-            this.beginArrive(audio);
-          }
-        } else if (this.t <= 0) {
-          this.beginArrive(audio);   // no live data — synthetic headway
-        }
-        break;
-      }
-      case 'arrive': {
-        const p = 1 - Math.max(this.t, 0) / ARR_T;
-        this.place(THREE.MathUtils.lerp(this.enterX, this.stopX, easeOut(p)));
-        if (this.t <= 0) {
-          this.state = 'dwell'; this.t = this.spec.dwell;
-          this.events.push({ type: 'dwell', face: this.ds.face, level: this.ds.level, service: this });
-        }
-        break;
-      }
       case 'dwell': {
         const closing = this.t < 1.6;
         this.setDoors(!closing, dt);
-        if (!this._dwelled && this.t < this.spec.dwell * 0.55) {
+        if (!this._dwelled && this.t < this.stop.dwell * 0.55) {
           this._dwelled = true;
-          audio?.announceDwell(this.ds.face);
+          audio?.announceDwell(this.stop.face);
         }
         if (closing && !this._chimed) { this._chimed = true; audio?.doorChime(); }
         if (this.t <= 0) {
           this._chimed = false; this._dwelled = false;
-          this.state = 'depart'; this.t = DEP_T;
-          this.events.push({ type: 'depart', face: this.ds.face, level: this.ds.level, service: this });
-          audio?.announceDepart(this.ds.face, this.ds.level);
+          this._beginRun(audio);
         }
         break;
       }
-      case 'depart': {
-        const p = 1 - Math.max(this.t, 0) / DEP_T;
-        this.place(THREE.MathUtils.lerp(this.stopX, this.exitX, easeIn(p)));
+      case 'run': {   // visible inter-station tunnel leg
+        this.setDoors(false, dt);
+        const leg = this.leg;
+        const A = leg.A, B = leg.B;
+        const p = 1 - Math.max(this.t, 0) / leg.travel;
+        // trapezoid-ish profile: smooth accelerate then brake
+        const k = p < 0.35 ? easeOut(p / 0.35) * 0.5
+                 : p < 0.65 ? 0.5 + (p - 0.35) / 0.3 * 0.28
+                 : 0.78 + easeIn((p - 0.65) / 0.35) * 0.22;
+        const wA = A.worldOf(A.portalX(A.outEnd === 'x1' ? 'x1' : 'x0', this.trainLen / 2));
+        const wB = B.worldOf(B.stopX);
+        const x = THREE.MathUtils.lerp(wA.x, wB.x, k);
+        const z = THREE.MathUtils.lerp(wA.z, wB.z, k);
+        const y = THREE.MathUtils.lerp(A.levelY, B.levelY, k);
+        const yaw = Math.atan2(wB.z - wA.z, wB.x - wA.x);
+        this._runPlace(x, z, yaw, y);
+        if (p > 0.82 && !this._ann) {
+          this._ann = true;
+          this.events.push({ type: 'arrive', face: B.face, level: B.uid });
+          audio?.announceArrive(B.face, B.uid);
+        }
         if (this.t <= 0) {
-          this.state = 'away';
-          this.t = Math.max(this.spec.headway - ARR_T - this.spec.dwell - DEP_T, 4);
-          this.place(this.enterX);
+          this._ann = false;
+          this.i = (this.i + 1) % this.stops.length;
+          this._berth(this.stops[this.i]);
+          this.state = 'dwell'; this.t = this.stop.dwell;
+          this.events.push({ type: 'dwell', face: this.stop.face, level: this.stop.uid, service: this });
+        }
+        break;
+      }
+      case 'offOut': {   // slide out the departure portal, then vanish
+        this.setDoors(false, dt);
+        const A = this.leg.A;
+        const p = 1 - Math.max(this.t, 0) / DEP_T;
+        const outX = A.portalX(A.outEnd, this.trainLen / 2);
+        this._place(THREE.MathUtils.lerp(this.stop.stopX, outX, easeIn(p)), A);
+        if (this.t <= 0) {
+          this.state = 'offWait';
+          this.t = this._offWait(tt, simNow, speed);
+          this.train.visible = false;
+        }
+        break;
+      }
+      case 'offWait': {
+        this.nextAt = null;
+        if (this.t <= 0) { this.state = 'offIn'; this.t = ARR_T; this.train.visible = true; this._ann = false; }
+        break;
+      }
+      case 'offIn': {    // re-enter the next stop's portal to the berth
+        this.setDoors(false, dt);
+        const leg = this.leg, B = leg.B;
+        const p = 1 - Math.max(this.t, 0) / ARR_T;
+        const inX = B.portalX(leg.inEnd, this.trainLen / 2);
+        this._place(THREE.MathUtils.lerp(inX, B.stopX, easeOut(p)), B);
+        // point the consist at this stop for boarding constraints
+        this.ds = null;
+        if (p > 0.6 && !this._ann) {
+          this._ann = true;
+          this.events.push({ type: 'arrive', face: B.face, level: B.uid });
+          audio?.announceArrive(B.face, B.uid);
+        }
+        if (this.t <= 0) {
+          this.i = (this.i + 1) % this.stops.length;
+          this._berth(this.stops[this.i]);
+          this.state = 'dwell'; this.t = this.stop.dwell;
+          this.events.push({ type: 'dwell', face: this.stop.face, level: this.stop.uid, service: this });
         }
         break;
       }
     }
-    this.dtx = this.tx - this._ptx;
-    this._ptx = this.tx;
+    // world displacement for carrying a standing player
+    this.dwx = this.train.position.x - this._pw.x;
+    this.dwz = this.train.position.z - this._pw.z;
+    this._pw.x = this.train.position.x; this._pw.z = this.train.position.z;
   }
 
-  // world positions of a few PSD door bays. off>0 = platform side (approach),
-  // off<0 = inside the car (passengers emerge from / vanish into the train).
+  // how long to hide off-map: live schedule when the feed's up at 1x speed,
+  // otherwise a synthetic layover inside the headway
+  _offWait(tt, simNow, speed) {
+    const B = this.leg.B;
+    if (speed === 1 && tt?.live) {
+      const sched = tt.next(B.stn, B.plat, this._consumed ?? 0);
+      if (sched != null) {
+        this._consumed = sched;
+        const wait = Math.max((sched - simNow()) / 1000 - ARR_T, 4);
+        this.nextAt = sched;
+        return wait;
+      }
+    }
+    this.nextAt = null;
+    return Math.max(this.spec.headway - this.stop.dwell - ARR_T - DEP_T, 8);
+  }
+
+  // world positions of a few PSD door bays (only valid while berthed)
   doorWorld(n = 5, off = 0.9) {
-    const ds = this.ds, out = [];
+    const ds = this.ds;
+    if (!ds) return [];
+    const out = [];
     const step = Math.max(1, Math.floor(ds.xs.length / n));
     for (let i = 2; i < ds.xs.length - 2; i += step) {
       const w = boxToWorld(this.bx, ds.xs[i], ds.z + this.doorSide * off);
@@ -208,29 +467,92 @@ class Service {
   }
 }
 
+// ------------------------------------------------------------ route table
+// legs[i] runs after stops[i]. 'tunnel' = visible run between stations;
+// 'off' = off-map loop (through services re-enter the far portal, termini
+// reverse from the same portal). Travel times ≈ the real inter-station runs.
+export const ROUTES = [
+  // Tsuen Wan Line: Admiralty <-> Central terminus (~850 m, ≈2 min)
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1,
+    stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 1, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1,
+    stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
+  // Island Line through service looping both stations
+  { line: 'ISL', travel: 80, legs: ['off', 'tunnel', 'off', 'tunnel'], consists: 2,
+    stops: [{ uid: 'CEN:L4', num: 4 }, { uid: 'CEN:L2', num: 3 },
+            { uid: 'ADM:L2', num: 3 }, { uid: 'ADM:L3', num: 2 }] },
+  // single-face loops for the remaining lines
+  { line: 'EAL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L5', num: 7 }] },
+  { line: 'EAL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L5', num: 8 }] },
+  { line: 'SIL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L6', num: 5 }] },
+  { line: 'SIL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L6', num: 6 }] },
+  { line: 'TCL', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L4', num: 3 }] },
+  { line: 'TCL', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L4', num: 4 }] },
+  { line: 'AEX', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L2', num: 1 }] },
+];
+
 export class TrainSim {
   constructor(scene) {
-    this.services = [];
+    const doorSets = [];
     for (const lvl of Object.keys(FITTINGS)) {
-      for (const ds of FITTINGS[lvl].doorSets) {
-        this.services.push(new Service(scene, ds));
+      for (const ds of FITTINGS[lvl].doorSets) doorSets.push(ds);
+    }
+    this.services = [];
+    for (const rd of ROUTES) {
+      const route = resolveRoute(rd, doorSets);
+      for (let i = 0; i < rd.consists; i++) {
+        this.services.push(new Consist(scene, route, i, rd.consists));
       }
     }
     this.tt = new Timetable();
   }
 
-  update(dt, audio) {
+  update(dt, audio, simNow, speed = 1) {
     this.tt.update(dt);
     const events = [];
     for (const s of this.services) {
-      s.update(dt, audio, this.tt);
+      s.update(dt, audio, this.tt, simNow, speed);
       if (s.events.length) { events.push(...s.events); s.events.length = 0; }
     }
     return events;
   }
 
-  // faces currently dwelling with doors open — used by passengers
+  // faces currently dwelling with doors open — used by passengers + the rig
   dwelling() {
     return this.services.filter(s => s.state === 'dwell' && s.open > 0.8);
+  }
+
+  // ticker rows: one per door set — the berthed consist's state, else the ETA
+  // of the next consist heading here
+  board() {
+    const rows = [];
+    for (const lvl of Object.keys(FITTINGS)) {
+      for (const ds of FITTINGS[lvl].doorSets) {
+        const berthed = this.services.find(s => s.ds === ds);
+        if (berthed) {
+          rows.push({ ds, face: ds.face, state: berthed.state === 'dwell' ? 'dwell' : 'depart',
+                      color: berthed.color, nextAt: null, terminus: ds.terminus });
+          continue;
+        }
+        // next consist whose route will berth here
+        let best = null;
+        for (const s of this.services) {
+          const nextStop = s.route.stops[(s.i + (s.state === 'dwell' ? 1 : 0)) % s.route.stops.length];
+          const coming = s.state === 'offIn' || s.state === 'run' ? s.leg.B : nextStop;
+          if (coming.ds !== ds) continue;
+          const eta = s.state === 'run' ? s.t
+            : s.state === 'offIn' ? s.t
+            : s.state === 'offWait' ? s.t + ARR_T
+            : s.state === 'dwell' ? s.t + (s.leg?.travel ?? 20)
+            : s.t;
+          if (!best || eta < best.eta) best = { s, eta };
+        }
+        rows.push({ ds, face: ds.face, state: 'away',
+                    color: LINES[ds.face.line].color,
+                    nextAt: best?.s.nextAt ?? null, eta: best?.eta ?? null,
+                    terminus: ds.terminus });
+      }
+    }
+    return rows;
   }
 }

@@ -128,7 +128,7 @@ export function stairRun(run) {
 
 // register a staircase for pedestrian pathing — normalized to a top end
 // (level `from`) and bottom end (level `to`) plus the unit vector top→bot
-function registerStair(run, from, to) {
+export function registerStair(run, from, to) {
   const top = run.y1 >= run.y2 ? { x: run.x1, z: run.z1, y: run.y1 }
                                : { x: run.x2, z: run.z2, y: run.y2 };
   const bot = run.y1 >= run.y2 ? { x: run.x2, z: run.z2, y: run.y2 }
@@ -149,8 +149,9 @@ export function runWorldRect(run, margin = 0.55) {
   };
 }
 
-// Exit stair shaft: stair run G -> L1 + glazed pavilion on top.
-export function exitShaft(exit, yG, yL1) {
+// Exit stair shaft: stair run between two levels + glazed pavilion on top.
+// fromUid/toUid are the registry level uids (e.g. 'CEN:G' -> 'CEN:L1').
+export function exitShaft(exit, yG, yL1, fromUid = 'G', toUid = 'L1') {
   const g = new THREE.Group();
   const dir = exit.side;
   const cz = exit.z;
@@ -161,7 +162,7 @@ export function exitShaft(exit, yG, yL1) {
     w: 2.4,
   };
   g.add(stairRun(run));
-  registerStair(run, 'G', 'L1');
+  registerStair(run, fromUid, toUid);
 
   // pavilion: glazed canopy over the stair mouth — the entry end
   // (facing the station core, at the stair top) is left open
@@ -205,6 +206,33 @@ export function exitShaft(exit, yG, yL1) {
   guard.position.set(px, yG + 0.5, run.z2 + dir * 0.9);
   g.add(frame, roof, fascia, solid(guard));
   return { group: g, run };
+}
+
+// Street doorway exit (HK Station check-in hall): a door gap in the hall's
+// glazed frontage — lintel + exit fascia + a flat pathing run through it so
+// pedestrians can wander in/out. The wall segments themselves are built by
+// the level's frontage, which reads the same gap list.
+export function exitDoor(exit, yG, fromUid) {
+  const g = new THREE.Group();
+  const dir = exit.side, cz = exit.z;
+  const doorW = 4.2, doorH = 3.1;
+  // lintel + door frame posts
+  const lintel = box(doorW + 0.6, 0.5, 0.3, M.steel);
+  lintel.position.set(exit.x, yG + doorH + 0.25, cz);
+  g.add(solid(lintel));
+  for (const s of [-1, 1]) {
+    const post = box(0.22, doorH + 0.5, 0.3, M.steel);
+    post.position.set(exit.x + s * (doorW / 2 + 0.2), yG + (doorH + 0.5) / 2, cz);
+    g.add(solid(post));
+  }
+  const fascia = exitFascia(exit, 5.4, 0.9);
+  fascia.position.set(exit.x, yG + doorH + 0.85, cz - dir * 0.2);
+  fascia.rotation.y = dir === -1 ? 0 : Math.PI;
+  g.add(fascia);
+  // flat pathing run through the doorway (drop 0 — same level both sides)
+  const run = { x1: exit.x, z1: cz + dir * 2.4, y1: yG, x2: exit.x, z2: cz - dir * 2.4, y2: yG, w: doorW };
+  registerStair(run, fromUid, fromUid);
+  return { group: g, run, doorW };
 }
 
 // Glazed lift shaft through several levels.
@@ -272,7 +300,7 @@ export function footbridge() {
     x2: STAIR_X, z2: BRIDGE.spine.z1 + 14.6, y2: 0, w: 3,
   };
   g.add(stairRun(fbRun));
-  registerStair(fbRun, 'U1', 'G');
+  registerStair(fbRun, 'ADM:U1', 'ADM:G');
 
   // planters along the spine parapet + a bench on the connector deck
   for (const px of [-64, -32, 20, 44]) {

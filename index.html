@@ -60,7 +60,20 @@
     <button id="panel-open" title="Show panel (H)">☰ Controls 控制</button>
     <div id="info"></div>
     <div id="prompt"></div>
-    <div id="board"><div id="ticker"></div><div id="weather"></div></div>
+    <div id="board">
+      <div id="clock">
+        <span id="clock-time">--:--</span>
+        <span id="clock-date">HKT 香港時間</span>
+        <div id="speed-buttons">
+          <button data-speed="1" class="active">1×</button>
+          <button data-speed="2">2×</button>
+          <button data-speed="4">4×</button>
+          <button data-speed="8">8×</button>
+        </div>
+      </div>
+      <div id="ticker"></div>
+      <div id="weather"></div>
+    </div>
     <div id="hint">Orbit: drag · Walk: WASD + drag (E = tap Octopus, H = hide panel)</div>
   </div>
   <script type="module" src="/src/main.js"></script>

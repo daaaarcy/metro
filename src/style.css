@@ -84,6 +84,10 @@ input[type="range"]:disabled { opacity: 0.3; }
   background: rgba(255,255,255,0.08); border: none; color: #9fd3ff; cursor: pointer;
 }
 .lvl-row .go:hover { background: rgba(255,255,255,0.18); }
+.lvl-stn {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.6px; opacity: 0.5;
+  margin-top: 8px; padding-bottom: 2px; border-bottom: 1px solid rgba(255,255,255,0.12);
+}
 
 .legend-row { display: flex; align-items: center; gap: 7px; font-size: 11px; padding: 2px 0; }
 .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
@@ -109,6 +113,20 @@ input[type="range"]:disabled { opacity: 0.3; }
 #prompt.show { opacity: 1; }
 
 #board { position: absolute; top: 16px; right: 18px; pointer-events: none; }
+#clock {
+  background: rgba(13,17,23,0.85); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: 8px 14px; margin-bottom: 6px;
+  display: flex; align-items: baseline; gap: 10px; pointer-events: auto;
+}
+#clock #clock-time { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+#clock #clock-date { font-size: 10px; opacity: 0.6; flex: 1; }
+#speed-buttons { display: flex; gap: 3px; }
+#speed-buttons button {
+  font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+  background: rgba(255,255,255,0.08); border: none; color: #cfd8e3; cursor: pointer;
+}
+#speed-buttons button:hover { background: rgba(255,255,255,0.16); }
+#speed-buttons button.active { background: #e2231a; color: #fff; }
 #ticker {
   background: rgba(13,17,23,0.85); border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px; padding: 8px 14px; font-size: 11.5px;
@@ -132,6 +150,7 @@ input[type="range"]:disabled { opacity: 0.3; }
 #weather .w-dot.storm    { background: #b678e0; }
 #weather .w-off { opacity: 0.5; }
 #ticker .t-row { display: flex; gap: 8px; align-items: baseline; padding: 1.5px 0; }
+#ticker .t-stn { font-size: 9px; font-weight: 700; opacity: 0.55; width: 28px; }
 #ticker .t-plat { font-weight: 800; width: 20px; }
 #ticker .t-dest { flex: 1; opacity: 0.9; }
 #ticker .t-state { opacity: 0.6; font-size: 10px; }

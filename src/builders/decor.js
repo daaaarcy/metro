@@ -18,19 +18,19 @@ export function canvasTex(w, h, draw) {
 
 // ---- platform calligraphy: giant 金鐘 characters + ADMIRALTY on the tiled
 // wall behind the tracks — the signature MTR platform-wall treatment ---------
-export function calligraphy(rect, y) {
+export function calligraphy(rect, y, stn = { zh: '金鐘', en: 'ADMIRALTY' }) {
   const g = new THREE.Group();
   const tex = canvasTex(640, 200, (ctx, w, h) => {
-    ctx.fillStyle = '#122a4e'; ctx.fillRect(0, 0, w, h);       // Admiralty navy
+    ctx.fillStyle = '#122a4e'; ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     for (let x = 0; x < w; x += 26) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
     for (let yy = 0; yy < h; yy += 26) { ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke(); }
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '700 128px "PingFang HK","Songti SC","STSong",serif';
-    ctx.fillText('金鐘', w / 2, h * 0.40);
+    ctx.fillText(stn.zh, w / 2, h * 0.40);
     ctx.font = '600 30px sans-serif';
-    ctx.fillText('A D M I R A L T Y', w / 2, h * 0.82);
+    ctx.fillText(stn.en.toUpperCase().split('').join(' '), w / 2, h * 0.82);
   });
   const mat = new THREE.MeshBasicMaterial({ map: tex });
   const geo = new THREE.PlaneGeometry(6.6, 2.06);

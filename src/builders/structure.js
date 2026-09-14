@@ -85,20 +85,44 @@ function kerb(h, y) {
 }
 
 // ---------- perimeter walls: 4 sides of rect, from y up `height`
-// portalsX: [{z0,z1,h}] tunnel openings in the two X-end walls (train tracks pass)
-export function walls(rect, y, height = FLOOR_H - SLAB_T - 0.5, mat = M.wall, portalsX = []) {
+// portalsX: [{z0,z1,h,end}] openings in the X-end walls (train tracks,
+// link corridors). end: 'x0' | 'x1' | 'both' (default) selects the wall(s).
+// portalsZ: [{x0,x1,h,side}] openings in the Z-side walls (street doorways).
+// side: 'z0' | 'z1' | 'both' (default).
+export function walls(rect, y, height = FLOOR_H - SLAB_T - 0.5, mat = M.wall, portalsX = [], portalsZ = []) {
   const g = new THREE.Group();
   const t = WALL_T, cy = y + height / 2;
   const mk = (w, d, cx, cz, h = height) => {
     const m = box(w, h, d, mat); m.position.set(cx, y + h / 2, cz); g.add(solid(m));
   };
-  mk(rect.x1 - rect.x0, t, (rect.x0 + rect.x1) / 2, rect.z0 + t / 2);
-  mk(rect.x1 - rect.x0, t, (rect.x0 + rect.x1) / 2, rect.z1 - t / 2);
+  for (const zSide of [rect.z0, rect.z1]) {
+    const sideKey = zSide === rect.z0 ? 'z0' : 'z1';
+    const openings = portalsZ.filter(p => !p.side || p.side === 'both' || p.side === sideKey);
+    const zw = zSide + (zSide === rect.z0 ? t / 2 : -t / 2);
+    const xs = [{ x0: rect.x0, x1: rect.x1 }];
+    for (const p of openings) {
+      const i = xs.findIndex(s => s.x0 <= p.x0 && s.x1 >= p.x1);
+      if (i < 0) continue;
+      const s = xs.splice(i, 1)[0];
+      if (p.x0 > s.x0) xs.push({ x0: s.x0, x1: p.x0 });
+      if (p.x1 < s.x1) xs.push({ x0: p.x1, x1: s.x1 });
+    }
+    for (const s of xs) mk(s.x1 - s.x0, t, (s.x0 + s.x1) / 2, zw);
+    for (const p of openings) {
+      const lh = height - p.h;
+      if (lh <= 0) continue;
+      const m = box(p.x1 - p.x0, lh, t, mat);
+      m.position.set((p.x0 + p.x1) / 2, y + p.h + lh / 2, zw);
+      g.add(solid(m));
+    }
+  }
   for (const xSide of [rect.x0, rect.x1]) {
+    const endKey = xSide === rect.x0 ? 'x0' : 'x1';
+    const openings = portalsX.filter(p => !p.end || p.end === 'both' || p.end === endKey);
     const xw = xSide + (xSide === rect.x0 ? t / 2 : -t / 2);
     // solid segments between portal openings
     const zs = [{ z0: rect.z0, z1: rect.z1 }];
-    for (const p of portalsX) {
+    for (const p of openings) {
       const i = zs.findIndex(s => s.z0 <= p.z0 && s.z1 >= p.z1);
       if (i < 0) continue;
       const s = zs.splice(i, 1)[0];
@@ -107,7 +131,7 @@ export function walls(rect, y, height = FLOOR_H - SLAB_T - 0.5, mat = M.wall, po
     }
     for (const s of zs) mk(t, s.z1 - s.z0, xw, (s.z0 + s.z1) / 2);
     // lintels above each portal
-    for (const p of portalsX) {
+    for (const p of openings) {
       const lh = height - p.h;
       if (lh <= 0) continue;
       const m = box(t, lh, p.z1 - p.z0, mat);

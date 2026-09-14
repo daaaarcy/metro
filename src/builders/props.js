@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { M } from './materials.js';
 import { solid, walkable, GATES } from '../registry.js';
 import { box } from './structure.js';
-import { GATE_PITCH, SHOP_NAMES, FLOOR_H, SLAB_T, EXITS, EXIT_Z, RESTAURANTS, MALL, SEVEN } from '../station-data.js';
+import { boxToWorld } from '../station-data.js';
+import { GATE_PITCH, SHOP_NAMES, FLOOR_H, SLAB_T } from '../station-data.js';
 import { personFigure } from './people.js';
 
 const padMat  = new THREE.MeshStandardMaterial({ color: 0x18d8e0, emissive: 0x0aa8b0, emissiveIntensity: 1.4, roughness: 0.4 });
@@ -12,9 +13,20 @@ const casMat  = new THREE.MeshStandardMaterial({ color: 0xe4e7ea, roughness: 0.6
 const ventMat = new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.8 });
 
 // ---- Octopus gate lanes ----------------------------------------------------
-// One bank along X at world z. Each lane: two cabinets + two swing paddles +
-// reader pad. Paddles fold back into the cabinets when a card is tapped.
-export function gateBank(x0, x1, zRow, y) {
+// One bank along X at local z inside level group `bx`'s frame. Each lane: two
+// cabinets + two swing paddles + reader pad. Paddles fold back into the
+// cabinets when a card is tapped. Registry records are world-space + level uid.
+export function gateBank(x0, x1, zRow, y, bx = { cx: 0, cz: 0, rot: 0 }, level = null) {
+  const worldRect = (x0l, z0l, x1l, z1l) => {
+    const pts = [
+      boxToWorld(bx, x0l, z0l), boxToWorld(bx, x1l, z0l),
+      boxToWorld(bx, x0l, z1l), boxToWorld(bx, x1l, z1l),
+    ];
+    return {
+      x0: Math.min(...pts.map(p => p.x)), x1: Math.max(...pts.map(p => p.x)),
+      z0: Math.min(...pts.map(p => p.z)), z1: Math.max(...pts.map(p => p.z)),
+    };
+  };
   const g = new THREE.Group();
   const cabW = 0.45, cabD = 1.9, cabH = 1.02;
   const nCab = Math.floor((x1 - x0) / GATE_PITCH) + 1;
@@ -61,9 +73,10 @@ export function gateBank(x0, x1, zRow, y) {
       g.add(pivot);
       flaps.push({ pivot, dir: -s });
     }
+    const w = boxToWorld(bx, xLane, zRow);
     GATES.push({
-      x: xLane, z: zRow, half: clear / 2, open: 0, timer: 0,
-      rect: { x0: xLane - clear / 2, z0: zRow - 0.22, x1: xLane + clear / 2, z1: zRow + 0.22 },
+      x: w.x, z: w.z, half: clear / 2, open: 0, timer: 0, level,
+      rect: worldRect(xLane - clear / 2, zRow - 0.22, xLane + clear / 2, zRow + 0.22),
       flaps,
     });
   }
@@ -333,17 +346,13 @@ function fig(pose, at, yaw) {
 }
 
 // named shopfronts along a wall; faceDir = +1 faces +Z
-export function shops(x0, x1, z, y, faceDir) {
+// shops(x0,x1,z,y,faceDir, gaps) — gaps = {exits:[xs], reserved:[{x,w}]}
+// leave gaps where exit stairs land on this side, and where dedicated
+// restaurant / mall units occupy slots (per-station data, not global)
+export function shops(x0, x1, z, y, faceDir, gaps = { exits: [], reserved: [] }) {
   const g = new THREE.Group();
-  // leave gaps where exit stairs land on this side, and where dedicated
-  // restaurant / mall / 7-Eleven units occupy slots
-  const side = Math.sign(z);
-  const skipXs = EXITS.filter(e => e.side === side).map(e => e.x);
-  const reserved = RESTAURANTS.filter(r => r.side === side).map(r => r.x)
-    .concat(MALL.side === side ? [MALL.x] : [])
-    .concat(SEVEN.side === side ? [SEVEN.x] : []);
-  const blocked = x => skipXs.some(ex => x < ex + 2.6 && x + 7.5 > ex - 2.6)
-    || reserved.some(rx => x < rx + 11.5 && x + 7.5 > rx);
+  const blocked = x => gaps.exits.some(ex => x < ex + 2.6 && x + 7.5 > ex - 2.6)
+    || gaps.reserved.some(r => x < r.x + (r.w ?? 11.5) && x + 7.5 > r.x);
   let i = 0;
   for (let x = x0; x < x1 - 7 && i < 40; x += 11.5, i++) {
     if (blocked(x)) continue;
@@ -693,7 +702,7 @@ export function sevenEleven(x, z, y, faceDir) {
 
 // MTR mall link: wide lit portal in the shop row with a dark corridor recess
 // at the back suggesting the mall continuing beyond the station box.
-export function mallEntrance(x, z, y, faceDir) {
+export function mallEntrance(x, z, y, faceDir, spec) {
   const g = new THREE.Group();
   const w = 11.5, h = 3.9, d = 2.2;
   const cx = x + w / 2;
@@ -734,7 +743,7 @@ export function mallEntrance(x, z, y, faceDir) {
     g.add(fas);
   }
 
-  const sign = brandFascia(MALL, w - 0.4, 1.05);
+  const sign = brandFascia(spec, w - 0.4, 1.05);
   sign.position.set(cx, y + 3.15, front + faceDir * 0.13);
   if (faceDir < 0) sign.rotation.y = Math.PI;
   g.add(sign);

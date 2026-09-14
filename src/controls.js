@@ -149,11 +149,12 @@ export class CameraRig {
         px = s.cx + ox * s.cos + oz * s.sin;
         pz = s.cz - ox * s.sin + oz * s.cos;
       }
-      // closed gates block too
+      // closed gates block too (each gate knows its level's floor height)
       for (const g of GATES) {
         if (!gateBlocks(g)) continue;
         const s = g.rect;
-        if (feet > -6.4 || feet < -7.8) continue;   // gates only exist at L1 height
+        const gy = g.level ? levelById(g.level).y : -7;
+        if (Math.abs(feet - gy) > 1.3) continue;
         const nx = Math.max(s.x0, Math.min(px, s.x1));
         const nz = Math.max(s.z0, Math.min(pz, s.z1));
         const dx = px - nx, dz = pz - nz;
@@ -166,24 +167,26 @@ export class CameraRig {
     return [px, pz];
   }
 
-  // Dynamic train/platform-door constraints — runs in each service's local
-  // box frame (u = signed distance from track centre, + = platform side):
+  // Dynamic train/platform-door constraints — runs in each consist's live
+  // frame (u = signed distance from car centre, + = platform side):
   //  · aboard a car: floor + walls + end caps; carried by the train's motion
-  //  · doorway corridor: floored only while the train dwells with doors open
+  //    (consists move between stations — the frame follows the consist)
+  //  · doorway corridor at a stop: floored only while dwelling with doors open
   //  · otherwise the bays seal and hold the player on the platform side
   constrainTrains(px, pz) {
     let floor = -Infinity;
     if (!this.trains) return [px, pz, floor];
     let sawAboard = false;
     for (const svc of this.trains.services) {
-      const ds = svc.ds;
-      const lvlY = levelById(ds.level).y;
-      if (Math.abs(this.feetY - lvlY) > 2.5 && this._aboard !== svc) continue;
+      const ds = svc.ds;                       // null while running between stops
+      const lvlY = svc.floorY - 0.08;
+      if (ds == null && this._aboard !== svc) continue;
+      if (ds != null && Math.abs(this.feetY - lvlY) > 2.5 && this._aboard !== svc) continue;
       const zc = svc.zc, dSide = svc.doorSide, halfLen = svc.trainLen / 2;
       const INNER = 1.2, OUTER = 1.5;
-      const psdU = (ds.z - zc) * dSide;
+      const psdU = ds ? (ds.z - zc) * dSide : INNER + 0.4;
       const open = svc.state === 'dwell' && svc.open > 0.55;
-      const inBay = x => ds.xs.some(b => Math.abs(x - b) < BAY / 2 + 0.05);
+      const inBay = x => ds && ds.xs.some(b => Math.abs(x - b) < BAY / 2 + 0.05);
       const put = () => { const w = boxToWorld(svc.bx, lp.x, lp.z); px = w.x; pz = w.z; };
 
       let lp = worldToBox(svc.bx, px, pz);
@@ -192,7 +195,7 @@ export class CameraRig {
       if (Math.abs(relX) > halfLen + 4 || u < -2.5 || u > psdU + 3) continue;
 
       // ended up on the track bed — recover to the platform edge
-      if (this.feetY < lvlY - 0.5) {
+      if (ds && this.feetY < lvlY - 0.5) {
         lp.z = zc + dSide * (psdU + RADIUS + 0.3);
         floor = Math.max(floor, lvlY);
         put();
@@ -202,14 +205,14 @@ export class CameraRig {
       const inX = Math.abs(relX) < halfLen - 0.45;
       if (this._aboard === svc && inX && Math.abs(u) < INNER + 0.15) {
         sawAboard = true;
-        // carried by the train (incl. its repositioning between runs)
-        if (svc.dtx) {
-          const c = Math.cos(svc.bx.rot), s = Math.sin(svc.bx.rot);
-          px += svc.dtx * c; pz += svc.dtx * -s;
+        // carried by the train's world displacement — works while berthed,
+        // running the tunnel leg, and parked off-map
+        if (svc.dwx || svc.dwz) {
+          px += svc.dwx; pz += svc.dwz;
           lp = worldToBox(svc.bx, px, pz);
           relX = lp.x - svc.tx; u = (lp.z - zc) * dSide;
         }
-        floor = Math.max(floor, lvlY + 0.08);
+        floor = Math.max(floor, svc.floorY);
         const maxX = halfLen - 0.55;
         if (relX > maxX) lp.x = svc.tx + maxX;
         else if (relX < -maxX) lp.x = svc.tx - maxX;
@@ -220,6 +223,7 @@ export class CameraRig {
         put();
         continue;
       }
+      if (ds == null) continue;   // running — no corridor to interact with
 
       // doorway corridor: floored only while a stopped train dwells with
       // doors open — every other state seals the corridor to platform side
@@ -335,8 +339,8 @@ export class CameraRig {
     }
     this.camera.position.y = this.feetY + EYE;
 
-    // octopus gate prompt
-    this.nearGate = (Math.abs(this.feetY + 7) < 1.2)
-      ? nearestGate(px, pz, 2.4) : null;
+    // octopus gate prompt — the nearest lane on the level we're standing on
+    const ng = nearestGate(px, pz, 2.4);
+    this.nearGate = ng && Math.abs(this.feetY - (ng.level ? levelById(ng.level).y : -7)) < 1.4 ? ng : null;
   }
 }

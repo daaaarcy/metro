@@ -1,28 +1,28 @@
 import * as THREE from 'three';
-import { LEVELS, LINES, BOXES, boxToWorld } from './station-data.js';
+import { LEVELS, LINES, STATIONS, BOXES, PLATFORMS, boxToWorld } from './station-data.js';
 
-// Per-level interior viewpoints (world space).
+// Per-level interior viewpoints (world space) — a standing-height spot near
+// one end of each box looking down its length. Single-track platform levels
+// put the camera on the platform side, not over the trough. Bridges bespoke.
 function viewpoints() {
   const eye = 1.7;
-  const ext = BOXES.ext;
-  const v = {
-    U1: { pos: new THREE.Vector3(-70, 9.6, -36), look: new THREE.Vector3(60, 8, -36) },
-    G:  { pos: new THREE.Vector3(-30, 1.8, 26),  look: new THREE.Vector3(0, 2, -14) },
-    L1: { pos: new THREE.Vector3(-21, -7 + eye, -12.3), look: new THREE.Vector3(-14, -6.6, -9.4) },
-    L2: { pos: new THREE.Vector3(-70, -14 + eye, 0), look: new THREE.Vector3(60, -14.5, 0) },
-    L3: { pos: new THREE.Vector3(70, -21 + eye, 0),  look: new THREE.Vector3(-60, -21.5, 0) },
-    L4: { pos: new THREE.Vector3(-5, -28 + eye, 16), look: new THREE.Vector3(60, -30, 28) },
-    L5: { pos: null, look: null },
-    L6: { pos: null, look: null },
-  };
-  const e1 = boxToWorld(ext, 44, 0), t1 = boxToWorld(ext, -55, 0);
-  v.L5 = { pos: new THREE.Vector3(e1.x, -35 + eye, e1.z), look: new THREE.Vector3(t1.x, -35.5, t1.z) };
-  const e2 = boxToWorld(ext, -58, 10), t2 = boxToWorld(ext, 55, 6);
-  v.L6 = { pos: new THREE.Vector3(e2.x, -42 + eye, e2.z), look: new THREE.Vector3(t2.x, -42.5, t2.z) };
+  const v = {};
+  for (const lvl of LEVELS) {
+    if (lvl.type === 'bridge') {
+      v[lvl.uid] = { pos: new THREE.Vector3(-70, 9.6, -36), look: new THREE.Vector3(60, 8, -36) };
+      continue;
+    }
+    const bx = BOXES[lvl.box];
+    const spec = PLATFORMS[lvl.uid];
+    const zs = spec?.kind === 'single' ? spec.single.side : -1;
+    const e = boxToWorld(bx, bx.len / 2 - 16, zs * bx.wid / 5);
+    const t = boxToWorld(bx, -bx.len / 3, zs * bx.wid / 7);
+    v[lvl.uid] = { pos: new THREE.Vector3(e.x, lvl.y + eye, e.z), look: new THREE.Vector3(t.x, lvl.y - 0.5, t.z) };
+  }
   return v;
 }
 
-export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople }) {
+export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, onSpeed }) {
   const vp = viewpoints();
 
   // mode buttons
@@ -56,17 +56,26 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople })
     if (axis && axis !== 'none') { ensureOrbit(); onClip(axis, parseFloat(slider.value)); }
   });
 
-  // level list: label + jump-to viewpoint (all levels are always shown)
+  // level list grouped by station, jump-to viewpoint per level
   const list = document.getElementById('level-list');
+  let lastStn = null;
   for (const lvl of LEVELS) {
+    if (lvl.station !== lastStn) {
+      lastStn = lvl.station;
+      const stn = STATIONS[lastStn];
+      const head = document.createElement('div');
+      head.className = 'lvl-stn';
+      head.textContent = `${stn.zh} ${stn.en}`;
+      list.appendChild(head);
+    }
     const row = document.createElement('div');
     row.className = 'lvl-row';
     row.innerHTML = `
       <span class="lvl-id">${lvl.id}</span>
       <span class="lvl-name">${lvl.zh} ${lvl.en}</span>
-      <button class="go" data-id="${lvl.id}">go</button>`;
+      <button class="go" data-id="${lvl.uid}">go</button>`;
     list.appendChild(row);
-    row.querySelector('.go').addEventListener('click', () => onGoto(lvl.id, vp[lvl.id]));
+    row.querySelector('.go').addEventListener('click', () => onGoto(lvl.uid, vp[lvl.uid]));
   }
 
   // line legend
@@ -81,6 +90,13 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople })
   document.getElementById('toggle-labels').addEventListener('change', e => onLabels(e.target.checked));
   document.getElementById('toggle-audio').addEventListener('change', e => onAudio(e.target.checked));
   document.getElementById('toggle-people').addEventListener('change', e => onPeople(e.target.checked));
+
+  // simulation speed: 1x follows real Hong Kong time; 2/4/8 fast-forward
+  const speedBtns = document.querySelectorAll('#speed-buttons button');
+  speedBtns.forEach(b => b.addEventListener('click', () => {
+    speedBtns.forEach(x => x.classList.toggle('active', x === b));
+    onSpeed(parseFloat(b.dataset.speed));
+  }));
 
   // panel collapse — the × button, the ☰ chip, or the H key
   const panel = document.getElementById('panel');
@@ -110,22 +126,44 @@ export function showPrompt(html) {
   el.classList.add('show');
 }
 
+// Hong Kong sim clock — renders the sim-time epoch in Asia/Hong_Kong so the
+// station clock always reads HKT regardless of the browser's timezone, and
+// fast-forwards under speed multipliers
+const hktFmt = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Hong_Kong', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+});
+const hktDay = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Hong_Kong', weekday: 'short', day: '2-digit', month: 'short',
+});
+export function updateClock(epochMs, speed) {
+  document.getElementById('clock-time').textContent = hktFmt.format(epochMs);
+  document.getElementById('clock-date').textContent =
+    `${hktDay.format(epochMs)} · HKT 香港時間${speed !== 1 ? ` ×${speed}` : ''}`;
+}
+
 // live departures board, top-right — real next-train countdowns when the
-// data.gov.hk feed is up, generic states otherwise
-export function updateTicker(services, live) {
+// data.gov.hk feed is up, sim ETAs otherwise. One row per platform face.
+export function updateTicker(rows, live, simNow) {
   const el = document.getElementById('ticker');
   const label = { away: '—', arrive: '進站 arriving', dwell: '上落客 boarding', depart: '離站 departing' };
   let html = live
     ? `<div class="t-row t-live"><span class="live-dot"></span>實時到站 LIVE · data.gov.hk</div>`
     : '';
-  for (const s of services) {
-    const f = s.ds.face;
-    let state = label[s.state];
-    if (s.state === 'away' && s.nextAt) {
-      const m = Math.round((s.nextAt - Date.now()) / 60000);
-      state = m <= 0 ? '即將 due' : s.terminus ? `開出 dep ${m} min` : `${m} min`;
+  for (const r of rows) {
+    const f = r.face;
+    const stn = STATIONS[r.ds.level.split(':')[0]];
+    let state = label[r.state];
+    if (r.state === 'away') {
+      if (r.nextAt) {
+        const m = Math.round((r.nextAt - Date.now()) / 60000);
+        state = m <= 0 ? '即將 due' : r.terminus ? `開出 dep ${m} min` : `${m} min`;
+      } else if (r.eta != null) {
+        const m = Math.max(1, Math.round(r.eta / 60));
+        state = r.eta < 45 ? '即將 due' : `~${m} min`;
+      }
     }
-    html += `<div class="t-row"><span class="t-plat" style="color:${s.color}">${f.num}</span>` +
+    html += `<div class="t-row"><span class="t-stn">${stn.id}</span>` +
+            `<span class="t-plat" style="color:${r.color}">${f.num}</span>` +
             `<span class="t-dest">${f.to.zh} ${f.to.en}</span>` +
             `<span class="t-state">${state}</span></div>`;
   }

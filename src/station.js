@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { M, lineMat } from './builders/materials.js';
 import {
-  LEVELS, BOXES, ESCALATORS, EXITS, LIFTS, PLATFORMS, LINES,
-  ESC, EXIT_Z, LIFT_SIZE, FLOOR_H, SLAB_T,
+  STATIONS, LEVELS, BOXES, ESCALATORS, EXITS, LIFTS, PLATFORMS, LINES,
+  ESC, LIFT_SIZE, FLOOR_H, SLAB_T, GATE_ROWS,
   boxToWorld, escalatorRuns, liftWorldRect, levelById,
 } from './station-data.js';
 import {
@@ -10,15 +10,17 @@ import {
   boxRect, rectSubtract, worldRectToLocal, box,
 } from './builders/structure.js';
 import { platformLevel, benches } from './builders/platforms.js';
-import { escalatorRun, runWorldRect, exitShaft, liftShaft, footbridge } from './builders/circulation.js';
+import { escalatorRun, runWorldRect, exitShaft, exitDoor, liftShaft, footbridge } from './builders/circulation.js';
 import { makeSign, hangingSign, platformSign, exitTotem } from './builders/signage.js';
 import { gateBank, serviceBooth, shops, toilets, kiosk, hvac, restaurant, mallEntrance, sevenEleven } from './builders/props.js';
 import { calligraphy, posters, postersEnd, binPair, fireCabinets, mapBoard } from './builders/decor.js';
 import { tunnelTube } from './builders/tracks.js';
-import { GATE_ROWS, RESTAURANTS, MALL, SEVEN } from './station-data.js';
-import { FITTINGS } from './registry.js';
+import { linkCorridor, LINK } from './builders/link.js';
+import { FITTINGS, solid } from './registry.js';
 
 const INTERIOR_H = FLOOR_H - SLAB_T - 0.5;
+const lvlOf = (stn, type) => STATIONS[stn].levels.find(l => l.type === type);
+const uidOf = (stn, lvl) => `${stn}:${lvl.id}`;   // raw level entry -> uid
 
 // ---- openings: which slabs/ceilings each circulation element pierces --------
 export function computeOpenings() {
@@ -28,8 +30,6 @@ export function computeOpenings() {
   for (const e of ESCALATORS) {
     // one open well per bank (union of the lanes' footprints) — kerbs on the
     // outer edges + the deep end only; the boarding end stays open to walk on.
-    // Per-lane slots left cement strips + double kerbs between lanes, which
-    // read as a solid wall from the side.
     const horiz = Math.abs(e.dir[0]) >= Math.abs(e.dir[1]);
     const lat = horiz ? ['z0', 'z1'] : ['x0', 'x1'];
     const u = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
@@ -44,11 +44,18 @@ export function computeOpenings() {
     add(e.to + ':ceil', { ...u, sides: lat });
   }
   for (const ex of EXITS) {
-    const dir = ex.side, cz = ex.side * EXIT_Z, half = ESC.runLen / 2;
-    const run = { x1: ex.x, z1: cz - dir * half, x2: ex.x, z2: cz + dir * half, w: 2.4 };
+    const stn = STATIONS[ex.stn];
+    const gLvl = lvlOf(ex.stn, 'ground') || lvlOf(ex.stn, 'checkin');
+    const cLvl = lvlOf(ex.stn, 'concourse');
+    if (!gLvl || !cLvl) continue;
+    if (gLvl.type === 'checkin') continue;              // door exits pierce no slab
+    const bx = BOXES[gLvl.box];
+    const wx = bx.cx + ex.x;
+    const dir = ex.side, cz = ex.side * ex.exitZ, half = ESC.runLen / 2;
+    const run = { x1: wx, z1: cz - dir * half, x2: wx, z2: cz + dir * half, w: 2.4 };
     const wr = { ...runWorldRect(run, 0.9), sides: ['x0', 'x1'] };
-    add('G', wr);
-    add('L1:ceil', wr);
+    add(uidOf(ex.stn, gLvl), wr);
+    add(uidOf(ex.stn, cLvl) + ':ceil', wr);
   }
   for (const l of LIFTS) {
     const p = liftWorldRect(l);
@@ -78,31 +85,246 @@ function ceilingWithHoles(rect, holes, y) {
   return g;
 }
 
-// ---------------------------------------------------------------------------
+// ============================================================ level dressing
+function dressPlatform(g, stn, lvl, spec, rect, floorHoles) {
+  const single = spec.kind === 'single';
+  const ps = single ? spec.single.side : 0;    // single-platform side (+z/-z)
+  // wall colour bands per face (each face's line on its platform-side wall)
+  for (const f of spec.faces) {
+    const band = box(rect.x1 - rect.x0 - 1, 1.1, 0.08, lineMat(LINES[f.line].color));
+    band.position.set(0, 2.6, f.side * (Math.abs(rect.z1) - 0.55));
+    g.add(band);
+  }
+  if (single) {
+    // band on the track-side wall too — seen across the track
+    const band = box(rect.x1 - rect.x0 - 1, 1.1, 0.08, lineMat(LINES[spec.faces[0].line].color));
+    band.position.set(0, 2.6, -ps * (Math.abs(rect.z1) - 0.55));
+    g.add(band);
+  }
+  const colZ = spec.kind === 'island' ? [0] : single ? [ps * 5.2] : [-10, 10];
+  g.add(columns(rect, 0, colZ, 15, floorHoles));
+  g.add(lightStrips(rect, 0, spec.kind === 'island' ? [0, -8.6, 8.6] : single ? [-4, 4.5] : [-10, 0, 10]));
+  g.add(hvac(rect, 0, spec.kind === 'island' ? [0] : single ? [4] : [-10, 10]));
+  // platform signage every ~38 m on each face, over the platform side
+  const edge = spec.kind === 'island' ? 5.3 : single ? 1.6 : 7.6;
+  for (const f of spec.faces) {
+    for (const x of [-57, -19, 19, 57]) {
+      const s = platformSign(f);
+      s.position.set(x, 0, f.side * edge);
+      s.rotation.y = f.side < 0 ? 0 : Math.PI;
+      g.add(s);
+    }
+  }
+  // level id plate on an end wall
+  const end = makeSign({ zh: `${lvl.id}  ${lvl.zh}`, en: lvl.en, w: 9, h: 1.8 });
+  end.position.set(-rect.x1 + 1.2, 3.2, 0);
+  end.rotation.y = Math.PI / 2;
+  g.add(end);
+  g.add(calligraphy(rect, 0, stn));
+  for (const s of [-1, 1]) {
+    g.add(posters(rect.x0 + 34, rect.x1 - 34, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 38));
+    g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 56));
+    for (const mx of [rect.x0 + 20, rect.x1 - 20]) {
+      g.add(mapBoard(mx, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 4.25));
+    }
+  }
+  const binZ = spec.kind === 'island' ? 1.5 : single ? ps * 5 : 10.9;
+  for (const bx of [-50, -20, 10, 40]) g.add(binPair(bx, binZ, 0));
+}
+
+function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
+  const tint = (r, mat) => {
+    const t = box(r.x1 - r.x0, 0.02, r.z1 - r.z0, mat);
+    t.position.set((r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2);
+    g.add(t);
+  };
+  const gateRows = stn.gateRows || [];
+  const gateZ = gateRows.length ? Math.abs(gateRows[0].z) : 9.4;
+  for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -gateZ + 0.4, z1: gateZ - 0.4 }, floorHoles)) tint(r, M.paid);
+  for (const s of [-1, 1]) {
+    for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: s * (gateZ + 2) - 4.75, z1: s * (gateZ + 2) + 4.75 }, floorHoles)) tint(r, M.unpaid);
+  }
+  // shop rows skip exit stairs + reserved units on each side
+  const exitsHere = EXITS.filter(e => e.stn === stn.id);
+  const reserved = (stn.restaurants || []).concat(stn.mall ? [stn.mall] : [], stn.seven ? [stn.seven] : []);
+  for (const s of [-1, 1]) {
+    const gaps = {
+      exits: exitsHere.filter(e => e.side === s).map(e => e.x),
+      reserved: reserved.filter(r => r.side === s),
+    };
+    g.add(shops(rect.x0 + 8, rect.x1 - 10, s * (Math.abs(rect.z1) - 3.4), 0, -s, gaps));
+  }
+  for (const r of gateRows) g.add(gateBank(r.x0, r.x1, r.z, 0, bx, lvl.uid));
+  // dedicated tenants (Admiralty's restaurant row / mall / 7-Eleven)
+  for (const r of stn.restaurants || []) g.add(restaurant(r, r.side * (Math.abs(rect.z1) - 3.4), 0, -r.side));
+  if (stn.mall) g.add(mallEntrance(stn.mall.x, stn.mall.side * (Math.abs(rect.z1) - 3.4), 0, -stn.mall.side, stn.mall));
+  if (stn.seven) g.add(sevenEleven(stn.seven.x, stn.seven.side * (Math.abs(rect.z1) - 3.4), 0, -stn.seven.side));
+  const kioskXs = stn.id === 'ADM' ? [-48, -14, 40, 55] : [-40, -5, 35];
+  for (const [i, x] of kioskXs.entries()) g.add(kiosk(x, -(gateZ + 3.8), 0, i + 2));
+  for (const [i, x] of (stn.id === 'ADM' ? [-60, -20, 25, 62] : [-50, 15, 55]).entries()) g.add(kiosk(x, gateZ + 3.8, 0, i + 5));
+  g.add(serviceBooth(0, gateZ + 3.6, 0));
+  g.add(serviceBooth(-30, -(gateZ + 3.6), 0));
+  g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, 0, 3.0, gateZ + 3.6));
+  g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -30, 3.0, -(gateZ + 3.6)));
+  g.add(toilets(rect.x0 + 15, -(gateZ + 4.6), 0));
+  // end-wall ads + system map + bins + fire cabinets
+  g.add(postersEnd(rect, 0, -1, rect.z0 + 4, rect.z1 - 4, 12));
+  g.add(postersEnd(rect, 0, 1, rect.z0 + 4, 0, 12));
+  g.add(mapBoard(rect.x1 - 0.7, 9, 0, -Math.PI / 2));
+  g.add(mapBoard(rect.x1 - 0.7, -4, 0, -Math.PI / 2));
+  g.add(mapBoard(rect.x0 + 0.7, 8, 0, Math.PI / 2));
+  for (const s of [-1, 1]) {
+    g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 60));
+    for (const bx2 of [-56, -4, 56]) g.add(binPair(bx2, s * (gateZ + 2.4), 0));
+  }
+  // keep columns out of the exit stair shafts (they land inside the concourse)
+  const exitHoles = exitsHere.map(ex => {
+    const cz = ex.side * ex.exitZ, half = ESC.runLen / 2;
+    return { x0: ex.x - 2.2, x1: ex.x + 2.2, z0: cz - half - 0.6, z1: cz + half + 0.6 };
+  });
+  g.add(columns(rect, 0, [-16, -5.5, 5.5, 16], 16, [...floorHoles, ...exitHoles]));
+  g.add(lightStrips(rect, 0, [-15, -5, 5, 15]));
+  g.add(hvac(rect, 0, [-10, 0, 10]));
+  // line chips this station serves
+  const chips = [];
+  for (const spec of Object.values(stn.platforms || {}))
+    for (const f of spec.faces)
+      if (!chips.some(c => c.text === f.line)) chips.push({ text: f.line, color: LINES[f.line].color });
+  for (const x of [-52, 0, 52]) {
+    const s = makeSign({ zh: '往各月台', en: 'To Platforms', chips, w: 8, h: 1.5 });
+    s.position.set(x, 3.6, -6);
+    g.add(s);
+  }
+  const letters = stn.exitLetters || [];
+  for (const [x, z] of [[-20, 8], [30, -8]]) {
+    const exitSign = makeSign({
+      zh: '出口', en: 'Exits',
+      chips: letters.map(t => ({ text: t, color: '#e2231a' })),
+      w: 11, h: 1.5,
+    });
+    exitSign.position.set(x, 3.6, z);
+    g.add(exitSign);
+  }
+  // Central's west end opens onto the HK Station travellator subway
+  if (stn.id === 'CEN') {
+    const s = makeSign({
+      zh: '往香港站・機場快綫/東涌綫', en: 'Subway to Hong Kong Station · AEX / TCL',
+      chips: [{ text: 'AEX', color: LINES.AEX.color }, { text: 'TCL', color: LINES.TCL.color }],
+      w: 10, h: 1.5,
+    });
+    s.position.set(rect.x0 + 6, 3.6, 3);
+    s.rotation.y = Math.PI / 2;
+    g.add(s);
+  }
+}
+
+// Admiralty L4 transfer lobby (paid corridor feeding the EAL/SIL shaft)
+function dressLobby(g, stn, lvl, rect, floorHoles) {
+  for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -11, z1: 11 }, floorHoles)) {
+    const t = box(r.x1 - r.x0, 0.02, r.z1 - r.z0, M.paid);
+    t.position.set((r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2);
+    g.add(t);
+  }
+  for (const s of [-1, 1]) {
+    const band = box(rect.x1 - rect.x0 - 1, 1.1, 0.08, lineMat(LINES.EAL.color));
+    band.position.set(0, 2.6, s * (Math.abs(rect.z1) - 0.55));
+    g.add(band);
+  }
+  g.add(benches(rect.x0 + 14, rect.x1 - 14, -14.5, 0));
+  g.add(benches(rect.x0 + 14, rect.x1 - 14, 14.5, 0));
+  g.add(serviceBooth(-35, 13, 0));
+  g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -35, 3.0, 13));
+  g.add(posters(rect.x0 + 8, rect.x1 - 8, rect.z1 - 0.62, 0, Math.PI, 20));
+  g.add(mapBoard(rect.x0 + 0.7, -10, 0, Math.PI / 2));
+  g.add(mapBoard(rect.x0 + 0.7, 10, 0, Math.PI / 2));
+  for (const bx of [-30, 0, 30, 60]) g.add(binPair(bx, -15.2, 0));
+  for (const [i, x] of [-12, 30].entries()) g.add(kiosk(x, -13.4, 0, i + 9));
+  g.add(columns(rect, 0, [-9, 9], 16, floorHoles));
+  g.add(lightStrips(rect, 0, [-10, 0, 10]));
+  g.add(hvac(rect, 0, [-6, 6]));
+  for (const x of [-30, 10, 45]) {
+    const s = makeSign({
+      zh: '往東鐵綫・南港島綫月台', en: 'To East Rail / South Island Line Platforms',
+      chips: [{ text: 'EAL', color: LINES.EAL.color }, { text: 'SIL', color: LINES.SIL.color }],
+      w: 9, h: 1.5,
+    });
+    s.position.set(x, 3.5, 0);
+    g.add(s);
+  }
+  const end = makeSign({ zh: `${lvl.id}  ${lvl.zh}`, en: lvl.en, w: 9, h: 1.8 });
+  end.position.set(rect.x0 + 1.2, 3.2, 0);
+  end.rotation.y = Math.PI / 2;
+  g.add(end);
+}
+
+// HK Station ground-level in-town check-in hall: glazed walls with doorway
+// exits, airline check-in counter rows, baggage drops and shop pods.
+function dressCheckin(g, stn, lvl, rect, floorHoles, bx) {
+  // check-in counter rows down the hall — twin counters + baggage belts
+  const ctr = new THREE.Group();
+  for (const z of [-10, -4, 4, 10]) {
+    for (let x = rect.x0 + 26; x < rect.x1 - 30; x += 26) {
+      const desk = box(9, 1.05, 1.4, M.booth);
+      desk.position.set(x, 0.55, z);
+      const belt = box(9, 0.5, 0.8, M.stepMetal);
+      belt.position.set(x, 0.3, z + 1.35);
+      ctr.add(solid(desk), solid(belt));
+      const scr = box(0.5, 0.42, 0.06, M.signPost);
+      scr.position.set(x - 3.4, 1.45, z);
+      ctr.add(scr);
+    }
+  }
+  g.add(ctr);
+  // overhead airline-style signs
+  for (const x of [-50, 0, 50]) {
+    const s = makeSign({
+      zh: '市區預辦登機 In-town Check-in', en: 'Drop bags · Board Airport Express',
+      chips: [{ text: 'AEX', color: LINES.AEX.color }],
+      w: 11, h: 1.5,
+    });
+    s.position.set(x, 3.8, 0);
+    g.add(s);
+  }
+  for (const [i, x] of [-58, -18, 22, 58].entries()) g.add(kiosk(x, 14.5, 0, i + 3));
+  g.add(serviceBooth(0, -14.5, 0));
+  g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, 0, 3.0, -14.5));
+  g.add(toilets(rect.x0 + 14, -14.5, 0));
+  for (const s of [-1, 1]) {
+    g.add(posters(rect.x0 + 30, rect.x1 - 30, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 34));
+    g.add(mapBoard(rect.x1 - 0.7, s * 8, 0, -Math.PI / 2));
+    for (const bx2 of [-40, 0, 40]) g.add(binPair(bx2, s * 16.5, 0));
+  }
+  g.add(columns(rect, 0, [-16, 0, 16], 20, floorHoles));
+  g.add(lightStrips(rect, 0, [-20, -7, 7, 20], 16));
+  g.add(hvac(rect, 0, [-12, 0, 12]));
+}
+
+// ============================================================== main build
 export function buildStation() {
   const root = new THREE.Group();
   const openings = computeOpenings();
-  const levelGroups = {};   // levelId -> group (visibility toggling)
-  const togglables = {};    // levelId -> extra world-space objects (circulation)
+  const levelGroups = {};   // level uid -> group (visibility toggling)
+  const togglables = {};    // level uid -> extra world-space objects
   const labels = [];
 
   for (const lvl of LEVELS) {
-    togglables[lvl.id] = [];
+    togglables[lvl.uid] = [];
     if (lvl.type === 'bridge') {
       const g = footbridge();
-      levelGroups[lvl.id] = g;
+      levelGroups[lvl.uid] = g;
       root.add(g);
-      labels.push({ level: 'U1', pos: new THREE.Vector3(0, lvl.y + 3, -36), cls: 'lvl', html: `U1 ${lvl.zh} ${lvl.en}` });
+      labels.push({ level: lvl.uid, pos: new THREE.Vector3(0, lvl.y + 3, -36), cls: 'lvl', html: `${lvl.id} ${lvl.zh} ${lvl.en}` });
       continue;
     }
 
     const bx = BOXES[lvl.box];
+    const stn = STATIONS[lvl.station];
     const g = new THREE.Group();
     g.position.set(bx.cx, lvl.y, bx.cz);
     g.rotation.y = bx.rot;
     const rect = boxRect(bx);
-    const floorHoles = localHoles(openings, lvl.id, bx);
-    const ceilHoles = localHoles(openings, lvl.id + ':ceil', bx);
+    const floorHoles = localHoles(openings, lvl.uid, bx);
+    const ceilHoles = localHoles(openings, lvl.uid + ':ceil', bx);
 
     // ---- platform levels: troughs + PSD + markings
     let trackRects = [];
@@ -110,17 +332,28 @@ export function buildStation() {
       const built = platformLevel(lvl, rect);
       trackRects = built.trackRects;
       g.add(built.fittings);
-      FITTINGS[lvl.id] = { doorSets: built.doorSets };
+      FITTINGS[lvl.uid] = { doorSets: built.doorSets };
     }
 
     const floorMat = lvl.type === 'platform' ? M.platFloor
-      : lvl.type === 'concourse' ? M.concFloor
+      : lvl.type === 'concourse' || lvl.type === 'checkin' ? M.concFloor
       : lvl.type === 'ground' ? M.pavement : M.floor;
-    g.add(floorSlab(rect, [...floorHoles, ...trackRects], 0, floorMat, { kerbs: lvl.id !== 'G' }));
+    g.add(floorSlab(rect, [...floorHoles, ...trackRects], 0, floorMat, { kerbs: lvl.type !== 'ground' }));
 
     if (lvl.type !== 'ground') {
       const portalsX = trackRects.map(tr => ({ z0: tr.z0 + 0.2, z1: tr.z1 - 0.2, h: 4.4 }));
-      g.add(walls(rect, 0, INTERIOR_H, M.wall, portalsX));
+      // pedestrian-link portals on the levels the subway mouths into
+      if (lvl.uid === 'CEN:L1') portalsX.push({ z0: LINK.z0 + 0.15, z1: LINK.z1 - 0.15, h: 3.4, end: 'x0' });
+      if (lvl.uid === 'HOK:L1') portalsX.push({ z0: LINK.z0 + 0.15, z1: LINK.z1 - 0.15, h: 3.4, end: 'x1' });
+      if (lvl.type === 'checkin') {
+        // glazed hall — street doorway openings in the glazed frontage
+        const doorsZ = stn.exits.map(ex => ({
+          x0: ex.x - 2.6, x1: ex.x + 2.6, h: 3.0, side: ex.side < 0 ? 'z0' : 'z1',
+        }));
+        g.add(walls(rect, 0, INTERIOR_H, M.glassDark, portalsX, doorsZ));
+      } else {
+        g.add(walls(rect, 0, INTERIOR_H, M.wall, portalsX));
+      }
       g.add(ceilingWithHoles(rect, ceilHoles, 0));
       for (const tr of trackRects) {
         g.add(tunnelTube(tr, 0, 1));
@@ -129,167 +362,17 @@ export function buildStation() {
     }
 
     // ---- per-level dressing
-    if (lvl.type === 'platform') {
-      const spec = PLATFORMS[lvl.id];
-      const lines = spec.faces;
-      // wall colour bands per side (each wall serves that side's platform)
-      for (const f of lines) {
-        const mat = lineMat(LINES[f.line].color);
-        const band = box(rect.x1 - rect.x0 - 1, 1.1, 0.08, mat);
-        band.position.set(0, 2.6, f.side * (Math.abs(rect.z1) - 0.55));
-        g.add(band);
-      }
-      // columns down the island / side platforms
-      if (spec.kind === 'island') g.add(columns(rect, 0, [0], 15, floorHoles));
-      else g.add(columns(rect, 0, [-10, 10], 15, floorHoles));
-      g.add(lightStrips(rect, 0, spec.kind === 'island' ? [0, -8.6, 8.6] : [-10, 0, 10]));
-      g.add(hvac(rect, 0, spec.kind === 'island' ? [0] : [-10, 10]));
-      // platform signage every ~38 m on each face
-      for (const f of lines) {
-        const edge = spec.kind === 'island' ? 5.3 : 7.6;
-        for (const x of [-57, -19, 19, 57]) {
-          const s = platformSign(f);
-          s.position.set(x, 0, f.side * edge);
-          s.rotation.y = f.side < 0 ? 0 : Math.PI;
-          g.add(s);
-        }
-      }
-      // level id plate on end walls
-      const end = makeSign({ zh: `${lvl.id}  ${lvl.zh}`, en: lvl.en, w: 9, h: 1.8 });
-      end.position.set(-rect.x1 + 1.2, 3.2, 0);
-      end.rotation.y = Math.PI / 2;
-      g.add(end);
-      // real-station dressing: calligraphy across the tracks, ad lightboxes,
-      // fire cabinets on the walls, bins beside the benches
-      g.add(calligraphy(rect, 0));
-      for (const s of [-1, 1]) {
-        g.add(posters(rect.x0 + 34, rect.x1 - 34, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 38));
-        g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 56));
-        // system map lightboxes high on the side walls, clear of the colour band
-        for (const mx of [rect.x0 + 20, rect.x1 - 20]) {
-          g.add(mapBoard(mx, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 4.25));
-        }
-      }
-      for (const bx of [-50, -20, 10, 40]) {
-        g.add(binPair(bx, spec.kind === 'island' ? 1.5 : 10.9, 0));
-      }
-    }
+    if (lvl.type === 'platform') dressPlatform(g, stn, lvl, PLATFORMS[lvl.uid], rect, floorHoles);
+    else if (lvl.type === 'concourse') dressConcourse(g, stn, lvl, rect, floorHoles, bx);
+    else if (lvl.type === 'lobby') dressLobby(g, stn, lvl, rect, floorHoles);
+    else if (lvl.type === 'checkin') dressCheckin(g, stn, lvl, rect, floorHoles, bx);
 
-    if (lvl.type === 'concourse') {
-      // paid (blue) / unpaid (yellow) floor tint like the diagram — tiled
-      // around the floor openings so it doesn't bridge the escalator wells
-      const tint = (r, mat) => {
-        const t = box(r.x1 - r.x0, 0.02, r.z1 - r.z0, mat);
-        t.position.set((r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2);
-        g.add(t);
-      };
-      for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -9, z1: 9 }, floorHoles)) tint(r, M.paid);
-      for (const s of [-1, 1]) {
-        for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: s * 15.4 - 4.75, z1: s * 15.4 + 4.75 }, floorHoles)) tint(r, M.unpaid);
-        g.add(shops(rect.x0 + 8, rect.x1 - 10, s * 19.6, 0, -s));
-      }
-      for (const r of GATE_ROWS) g.add(gateBank(r.x0, r.x1, r.z, 0));
-      for (const r of RESTAURANTS) g.add(restaurant(r, r.side * 19.6, 0, -r.side));
-      g.add(mallEntrance(MALL.x, MALL.side * 19.6, 0, -MALL.side));
-      g.add(sevenEleven(SEVEN.x, SEVEN.side * 19.6, 0, -SEVEN.side));
-      for (const [i, x] of [-48, -14, 40, 55].entries()) g.add(kiosk(x, -13.2, 0, i + 2));
-      for (const [i, x] of [-60, -20, 25, 62].entries()) g.add(kiosk(x, 13.2, 0, i + 5));
-      g.add(serviceBooth(0, 13, 0));
-      g.add(serviceBooth(-30, -13, 0));
-      g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, 0, 3.0, 13));
-      g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -30, 3.0, -13));
-      g.add(toilets(-70, -14, 0));
-      // end-wall ads + system map + bins + fire cabinets
-      g.add(postersEnd(rect, 0, -1, rect.z0 + 4, rect.z1 - 4, 12));
-      g.add(postersEnd(rect, 0, 1, rect.z0 + 4, 0, 12));
-      g.add(mapBoard(rect.x1 - 0.7, 9, 0, -Math.PI / 2));
-      g.add(mapBoard(rect.x1 - 0.7, -4, 0, -Math.PI / 2));
-      g.add(mapBoard(rect.x0 + 0.7, 8, 0, Math.PI / 2));
-      for (const s of [-1, 1]) {
-        g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 60));
-        for (const bx of [-56, -4, 56]) g.add(binPair(bx, s * 11.8, 0));
-      }
-      // keep columns out of the exit stair shafts (they land inside the concourse)
-      const exitHoles = EXITS.map(ex => {
-        const cz = ex.side * EXIT_Z, half = ESC.runLen / 2;
-        return { x0: ex.x - 2.2, x1: ex.x + 2.2, z0: cz - half - 0.6, z1: cz + half + 0.6 };
-      });
-      g.add(columns(rect, 0, [-16, -5.5, 5.5, 16], 16, [...floorHoles, ...exitHoles]));
-      g.add(lightStrips(rect, 0, [-15, -5, 5, 15]));
-      g.add(hvac(rect, 0, [-10, 0, 10]));
-      for (const x of [-52, 0, 52]) {
-        const s = makeSign({
-          zh: '往各月台', en: 'To Platforms',
-          chips: [{ text: 'TWL', color: LINES.TWL.color }, { text: 'ISL', color: LINES.ISL.color },
-                  { text: 'EAL', color: LINES.EAL.color }, { text: 'SIL', color: LINES.SIL.color }],
-          w: 8, h: 1.5,
-        });
-        s.position.set(x, 3.6, -6);
-        g.add(s);
-      }
-      // wayfinding with exit-letter chips like the real concourse signs
-      const exitSign = makeSign({
-        zh: '出口', en: 'Exits',
-        chips: ['A', 'B', 'C', 'D', 'E', 'F'].map(t => ({ text: t, color: '#e2231a' })),
-        w: 11, h: 1.5,
-      });
-      exitSign.position.set(-20, 3.6, 8);
-      g.add(exitSign);
-      const exitSign2 = makeSign({
-        zh: '出口', en: 'Exits',
-        chips: ['A', 'B', 'C', 'D', 'E', 'F'].map(t => ({ text: t, color: '#e2231a' })),
-        w: 11, h: 1.5,
-      });
-      exitSign2.position.set(30, 3.6, -8);
-      g.add(exitSign2);
-    }
-
-    if (lvl.type === 'lobby') {
-      // paid transfer corridor tint + wall accent bands so the lobby isn't
-      // bare — tiled around floor openings like the concourse tints
-      for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -11, z1: 11 }, floorHoles)) {
-        const t = box(r.x1 - r.x0, 0.02, r.z1 - r.z0, M.paid);
-        t.position.set((r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2);
-        g.add(t);
-      }
-      for (const s of [-1, 1]) {
-        const band = box(rect.x1 - rect.x0 - 1, 1.1, 0.08, lineMat(LINES.EAL.color));
-        band.position.set(0, 2.6, s * (Math.abs(rect.z1) - 0.55));
-        g.add(band);
-      }
-      g.add(benches(rect.x0 + 14, rect.x1 - 14, -14.5, 0));
-      g.add(benches(rect.x0 + 14, rect.x1 - 14, 14.5, 0));
-      g.add(serviceBooth(-35, 13, 0));
-      g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -35, 3.0, 13));
-      g.add(posters(rect.x0 + 8, rect.x1 - 8, rect.z1 - 0.62, 0, Math.PI, 20));
-      g.add(mapBoard(rect.x0 + 0.7, -10, 0, Math.PI / 2));
-      g.add(mapBoard(rect.x0 + 0.7, 10, 0, Math.PI / 2));
-      for (const bx of [-30, 0, 30, 60]) g.add(binPair(bx, -15.2, 0));
-      for (const [i, x] of [-12, 30].entries()) g.add(kiosk(x, -13.4, 0, i + 9));
-      g.add(columns(rect, 0, [-9, 9], 16, floorHoles));
-      g.add(lightStrips(rect, 0, [-10, 0, 10]));
-      g.add(hvac(rect, 0, [-6, 6]));
-      for (const x of [-30, 10, 45]) {
-        const s = makeSign({
-          zh: '往東鐵綫・南港島綫月台', en: 'To East Rail / South Island Line Platforms',
-          chips: [{ text: 'EAL', color: LINES.EAL.color }, { text: 'SIL', color: LINES.SIL.color }],
-          w: 9, h: 1.5,
-        });
-        s.position.set(x, 3.5, 0);
-        g.add(s);
-      }
-      const end = makeSign({ zh: `${lvl.id}  ${lvl.zh}`, en: lvl.en, w: 9, h: 1.8 });
-      end.position.set(rect.x0 + 1.2, 3.2, 0);
-      end.rotation.y = Math.PI / 2;
-      g.add(end);
-    }
-
-    levelGroups[lvl.id] = g;
+    levelGroups[lvl.uid] = g;
     root.add(g);
 
     // slab edge hover target + level label anchor at NE corner (world)
     const corner = boxToWorld(bx, rect.x1, rect.z0);
-    labels.push({ level: lvl.id, pos: new THREE.Vector3(corner.x, lvl.y + 1.2, corner.z), cls: 'lvl', html: `${lvl.id} ${lvl.zh} ${lvl.en}` });
+    labels.push({ level: lvl.uid, pos: new THREE.Vector3(corner.x, lvl.y + 1.2, corner.z), cls: 'lvl', html: `${lvl.id} ${lvl.zh} ${lvl.en}` });
   }
 
   // ---- circulation (world space, tagged to its `from` level for toggling)
@@ -301,17 +384,36 @@ export function buildStation() {
     }
   }
   for (const [i, ex] of EXITS.entries()) {
-    const cz = ex.side * EXIT_Z;
-    const s = exitShaft({ ...ex, z: cz }, 0, -7);
+    const stn = STATIONS[ex.stn];
+    const gLvl = lvlOf(ex.stn, 'ground') || lvlOf(ex.stn, 'checkin');
+    const cLvl = lvlOf(ex.stn, 'concourse');
+    const bx = BOXES[gLvl.box];
+    const wx = bx.cx + ex.x;                       // boxes are all unrotated
+    const cz = ex.side * ex.exitZ;
+    const gUid = uidOf(ex.stn, gLvl);
+    if (gLvl.type === 'checkin') {
+      // street doorway in the check-in hall's glazed frontage (at the wall)
+      const dz = ex.side * (bx.wid / 2);
+      const d = exitDoor({ ...ex, x: wx, z: dz }, gLvl.y, gUid);
+      root.add(d.group);
+      togglables[gUid].push(d.group);
+      const totem = exitTotem({ ...ex, x: wx });
+      totem.position.set(wx + 5.5, gLvl.y, dz + ex.side * 1.6);
+      root.add(totem);
+      togglables[gUid].push(totem);
+      labels.push({ level: gUid, pos: new THREE.Vector3(wx, gLvl.y + 4.6, dz + ex.side * 1.6), cls: 'exit', html: `出 ${ex.id} ${ex.en}` });
+      continue;
+    }
+    const s = exitShaft({ ...ex, x: wx, z: cz }, gLvl.y, cLvl.y, gUid, uidOf(ex.stn, cLvl));
     root.add(s.group);
-    togglables.G.push(s.group);
-    const totem = exitTotem(ex);
-    totem.position.set(ex.x + 5.5, 0, cz - ex.side * (ESC.runLen / 2 + 0.5));
+    togglables[gUid].push(s.group);
+    const totem = exitTotem({ ...ex, x: wx });
+    totem.position.set(wx + 5.5, gLvl.y, cz - ex.side * (ESC.runLen / 2 + 0.5));
     root.add(totem);
-    togglables.G.push(totem);
+    togglables[gUid].push(totem);
     // stagger adjacent exits so the floating tags don't overlap each other
-    const ly = 5.4 + (i % 2) * 1.6;
-    labels.push({ level: 'G', pos: new THREE.Vector3(ex.x, ly, cz - ex.side * (ESC.runLen / 2 + 0.5)), cls: 'exit', html: `出 ${ex.id} ${ex.en}` });
+    const ly = gLvl.y + 5.4 + (i % 2) * 1.6;
+    labels.push({ level: gUid, pos: new THREE.Vector3(wx, ly, cz - ex.side * (ESC.runLen / 2 + 0.5)), cls: 'exit', html: `出 ${ex.id} ${ex.en}` });
   }
   for (const l of LIFTS) {
     const p = liftWorldRect(l);
@@ -321,22 +423,32 @@ export function buildStation() {
     togglables[l.levels[0]].push(shaft);
   }
 
-  // ---- ground context: road strip south of the site
-  const road = box(240, 0.1, 16, M.ground);
-  road.position.set(0, 0.03, 34);
-  root.add(road);
+  // ---- Central <-> HK Station travellator subway (tagged to CEN:L1)
+  const link = linkCorridor();
+  root.add(link);
+  togglables['CEN:L1'].push(link);
+
+  // ---- ground context: a road strip along each station's ground slab
+  for (const lvl of LEVELS.filter(l => l.type === 'ground' || l.type === 'checkin')) {
+    const bx = BOXES[lvl.box];
+    const road = box(bx.len + 60, 0.1, 16, M.ground);
+    const rc = boxToWorld(bx, 0, bx.wid / 2 - 6);
+    road.position.set(rc.x, lvl.y + 0.03, rc.z);
+    road.rotation.y = bx.rot;
+    root.add(road);
+  }
 
   // ---- platform face labels
   for (const lvl of LEVELS) {
-    const spec = PLATFORMS[lvl.id];
+    const spec = PLATFORMS[lvl.uid];
     if (!spec) continue;
     const bx = BOXES[lvl.box];
     for (const f of spec.faces) {
-      const edge = spec.kind === 'island' ? 4.4 : 8.6;
+      const edge = spec.kind === 'island' ? 4.4 : spec.kind === 'single' ? 1.2 : 8.6;
       const w = boxToWorld(bx, 0, f.side * edge);
       const line = LINES[f.line];
       labels.push({
-        level: lvl.id,
+        level: lvl.uid,
         pos: new THREE.Vector3(w.x, lvl.y + 2.6, w.z),
         cls: 'plat',
         html: `<b>${f.num}</b> ${f.to.zh} ${f.to.en}`,
