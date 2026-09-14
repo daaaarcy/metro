@@ -223,10 +223,40 @@ const HOME_TARGET = new THREE.Vector3(5, -16, 12);
 // walk mode is the default — spawn at street level facing the exit pavilions
 const WALK_HOME = new THREE.Vector3(-30, 1.62, 26);
 const WALK_LOOK = new THREE.Vector3(-10, 1, -6);
-rig.orbit.target.copy(HOME_TARGET);
-camera.position.copy(WALK_HOME);
-camera.lookAt(WALK_LOOK);
-rig.setMode('walk');
+// restore the last camera pose across reloads/rebuilds (localStorage 'adm-pos')
+const saved = (() => { try { return JSON.parse(localStorage.getItem('adm-pos')); } catch { return null; } })();
+if (saved?.p?.length === 3 && saved.p.every(Number.isFinite)) {
+  camera.position.fromArray(saved.p);
+  if (saved.m === 'orbit' && saved.t?.length === 3) {
+    rig.orbit.target.fromArray(saved.t);
+    camera.lookAt(rig.orbit.target);
+    rig.setMode('orbit');
+  } else {
+    rig.setMode('walk');
+    rig.yaw = saved.yaw || 0; rig.pitch = saved.pitch || 0;
+    camera.rotation.set(rig.pitch, rig.yaw, 0, 'YXZ');
+    const fl = rig.floorAt(camera.position.x, camera.position.z, camera.position.y);
+    rig.feetY = fl.y > -Infinity ? fl.y : camera.position.y - 1.62;
+    rig.vy = 0;
+  }
+} else {
+  rig.orbit.target.copy(HOME_TARGET);
+  camera.position.copy(WALK_HOME);
+  camera.lookAt(WALK_LOOK);
+  rig.setMode('walk');
+}
+const savePos = () => {
+  if (rig._fly) return;   // don't persist a mid-teleport pose
+  try {
+    localStorage.setItem('adm-pos', JSON.stringify({
+      m: rig.mode, p: camera.position.toArray(),
+      yaw: rig.yaw, pitch: rig.pitch, t: rig.orbit.target.toArray(),
+    }));
+  } catch {}
+};
+setInterval(savePos, 500);
+addEventListener('pagehide', savePos);
+addEventListener('visibilitychange', () => { if (document.hidden) savePos(); });
 
 let peopleOn = true;
 buildUI({
@@ -266,6 +296,10 @@ buildUI({
     passengers.group.visible = v;
   },
 });
+
+// keep the mode buttons honest after a restored pose
+document.querySelectorAll('#mode-buttons button').forEach(b =>
+  b.classList.toggle('active', b.dataset.mode === rig.mode));
 
 // browsers gate audio behind a user gesture — flip Sound on at the first one
 const wakeAudio = () => {
