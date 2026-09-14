@@ -145,7 +145,7 @@ export class StationAudio {
     speechSynthesis.speak(u);
   }
 
-  announce(zh, en) {
+  announce(zh, en, cmn) {
     if (!this.enabled) return;
     // drop the PA rather than let several platforms' messages pile up —
     // but Chrome can wedge `pending` true forever; clear it if it's stuck
@@ -160,6 +160,7 @@ export class StationAudio {
     } else this._pendingSince = 0;
     this._speak(zh, 'zh-HK');
     this._speak(en, 'en-HK');
+    if (cmn) this._speak(cmn, 'zh-CN');   // MTR order: Cantonese, English, Mandarin
   }
 
   // Per-platform PA keyed to the service's route + platform number, with a
@@ -169,9 +170,9 @@ export class StationAudio {
     const dZh = face.to.zh.replace(/^往/, ''), dEn = face.to.en.replace(/^to /, '');
     const ln = LINES[face.line];
     this.announce(...pick([
-      [`前往${dZh}的列車即將到達`, `The train to ${dEn} is arriving`],
-      [`往${dZh}列車即將進入${face.num}號月台`, `The train to ${dEn} is approaching platform ${face.num}`],
-      [`${ln.zh}往${dZh}方向的列車即將到站`, `A ${ln.en} train bound for ${dEn} is now arriving`],
+      [`前往${dZh}的列車即將到達`, `The train to ${dEn} is arriving`, `前往${dZh}的列车即将到达`],
+      [`往${dZh}列車即將進入${face.num}號月台`, `The train to ${dEn} is approaching platform ${face.num}`, `开往${dZh}的列车即将进入${face.num}号月台`],
+      [`${ln.zh}往${dZh}方向的列車即將到站`, `A ${ln.en} train bound for ${dEn} is now arriving`, `${ln.zh}开往${dZh}方向的列车即将到站`],
     ]));
   }
 
@@ -180,18 +181,18 @@ export class StationAudio {
     if (Math.random() < 0.45) return;
     const dZh = face.to.zh.replace(/^往/, ''), dEn = face.to.en.replace(/^to /, '');
     this.announce(...pick([
-      ['請先讓乘客落車', 'Please let passengers alight first'],
-      ['請小心月台與車廂之間的空隙', 'Please mind the gap between the train and the platform'],
-      [`本班列車前往${dZh}，請先落後上`, `This train is for ${dEn}. Please let passengers exit before boarding`],
+      ['請先讓乘客落車', 'Please let passengers alight first', '请让乘客先下车'],
+      ['請小心月台與車廂之間的空隙', 'Please mind the gap between the train and the platform', '请小心月台与车厢之间的空隙'],
+      [`本班列車前往${dZh}，請先落後上`, `This train is for ${dEn}. Please let passengers exit before boarding`, `本班列车前往${dZh}，请先下后上`],
     ]));
   }
 
   announceDepart(face) {
     const dZh = face.to.zh.replace(/^往/, ''), dEn = face.to.en.replace(/^to /, '');
     this.announce(...pick([
-      ['請勿靠近車門', 'Please stand back from the train doors'],
-      [`往${dZh}列車即將開出，請勿靠近車門`, `The train to ${dEn} is about to depart. Please stand back from the doors`],
-      ['車門即將關閉', 'The train doors are closing'],
+      ['請勿靠近車門', 'Please stand back from the train doors', '请勿靠近车门'],
+      [`往${dZh}列車即將開出，請勿靠近車門`, `The train to ${dEn} is about to depart. Please stand back from the doors`, `开往${dZh}的列车即将开出，请勿靠近车门`],
+      ['車門即將關閉', 'The train doors are closing', '车门即将关闭'],
     ]));
   }
 }
