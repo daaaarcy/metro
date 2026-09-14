@@ -543,14 +543,20 @@ export function restaurant(r, z, y, faceDir) {
   const strip = box(w - 1.4, 0.08, 0.45, glowMat);
   strip.position.set(cx, y + h - 0.58, mid);
   g.add(solid(counter), menu, strip);
+  // till on the counter + card reader on the customer edge — the cashier post
+  const till = box(0.42, 0.3, 0.06, screenMat);
+  till.position.set(cx - 3.1, y + 1.16, back - inw * 0.58);
+  const reader = box(0.2, 0.13, 0.18, M.signPost);
+  reader.position.set(cx - 2.2, y + 1.07, back - inw * 0.42);
+  g.add(till, reader);
   cafeTable(g, cx + 1.6, mid - inw * 0.3, y);
   cafeTable(g, cx + 3.6, mid - inw * 0.05, y);
 
-  // diners at the tables + a staff member behind the counter
+  // diners at the tables + the cashier at the till
   g.add(fig('sit', { x: cx + 1.6 - 0.95, z: mid - inw * 0.65 }, Math.PI / 2));
   g.add(fig('sit', { x: cx + 3.6 + 0.95, z: mid + inw * 0.28 }, -Math.PI / 2));
   g.add(fig('sit', { x: cx + 3.6 - 0.95, z: mid - inw * 0.38 }, Math.PI / 2));
-  g.add(fig('stand', { x: cx - 2.5, z: back - inw * 1.1 }, faceDir > 0 ? 0 : Math.PI));
+  g.add(fig('stand', { x: cx - 2.9, z: back - inw * 1.1 }, faceDir > 0 ? 0 : Math.PI));
 
   // brand touches: McDonald's self-order kiosks, Genki conveyor belt,
   // dim-sum steamer stack
