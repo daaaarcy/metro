@@ -24,6 +24,8 @@ function pathClear(x0, z0, x1, z1, holes) {
 const PART_DEFS = {
   legL:  { geo: 'leg',   pivot: [-0.105, 0.88, 0] },
   legR:  { geo: 'leg',   pivot: [0.105, 0.88, 0] },
+  footL: { geo: 'foot',  pivot: [-0.105, 0.88, 0] },
+  footR: { geo: 'foot',  pivot: [0.105, 0.88, 0] },
   armL:  { geo: 'arm',   pivot: [-0.185, 1.35, 0] },
   armR:  { geo: 'arm',   pivot: [0.185, 1.35, 0] },
   handL: { geo: 'hand',  pivot: [-0.185, 1.35, 0] },
@@ -128,6 +130,7 @@ export class Passengers {
     if (!p) return;
     const set = (part, c) => this.parts[part].setColorAt(i, this._c.set(c));
     set('legL', p.skirted ? p.skin : p.pants); set('legR', p.skirted ? p.skin : p.pants);
+    set('footL', p.shoes); set('footR', p.shoes);
     set('armL', p.shirt); set('armR', p.shirt);
     set('handL', p.skin); set('handR', p.skin);
     set('torso', p.shirt); set('head', p.skin);
@@ -436,6 +439,8 @@ export class Passengers {
 
       this.writePart(i, 'legL', legSwing, 1, 1, 1);
       this.writePart(i, 'legR', -legSwing, 1, 1, 1);
+      this.writePart(i, 'footL', legSwing, 1, 1, 1);
+      this.writePart(i, 'footR', -legSwing, 1, 1, 1);
       this.writePart(i, 'armL', armSwing, 1, 1, 1);
       this.writePart(i, 'armR', -armSwing, 1, 1, 1);
       this.writePart(i, 'handL', armSwing, 1, 1, 1);

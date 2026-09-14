@@ -11,6 +11,7 @@ export const SHIRTS = [0x3a6ea5, 0xc65b4e, 0x4e8a5a, 0x8a6db0, 0xbf9b30, 0x555b6
   0x9e5f7e, 0x2e8a8a, 0xd8dde2, 0x2a2e35, 0xd47a9e, 0x7a5230, 0xe8a03a, 0x6ea5c8];
 export const PANTS  = [0x2b3242, 0x4a4038, 0x62666e, 0x365a7d, 0x1e2126, 0x7a7468];
 export const SKIRTS = [0x8a3040, 0x3a4a6e, 0x5e3a5e, 0x2e2e34, 0xa86848];
+export const SHOES  = [0x1c1a18, 0x2e2620, 0x3a3f4a, 0x554535, 0x26262c, 0x6e3b2a];
 
 const pick = a => a[Math.floor(Math.random() * a.length)];
 
@@ -32,6 +33,7 @@ export function rollAppearance() {
     shirt: pick(SHIRTS),
     pants: pick(PANTS),
     skirt: pick(SKIRTS),
+    shoes: pick(SHOES),
     speedK: kind === 'child' ? 0.8 : kind === 'elder' ? 0.62 : 1,
   };
 }
@@ -39,7 +41,15 @@ export function rollAppearance() {
 // ---- shared part geometries (unit person, ~1.7 m, faces +Z) -----------------
 const _leg = new THREE.BoxGeometry(0.13, 0.88, 0.15);   _leg.translate(0, -0.44, 0);
 const _arm = new THREE.BoxGeometry(0.09, 0.6, 0.11);    _arm.translate(0, -0.28, 0);
-const _hand = new THREE.BoxGeometry(0.08, 0.11, 0.1);   _hand.translate(0, -0.6, 0);
+// palm + three finger boxes — one merged part keeps the draw-call count flat
+const _hand = mergeGeometries([
+  new THREE.BoxGeometry(0.08, 0.07, 0.1).translate(0, -0.565, 0),
+  new THREE.BoxGeometry(0.02, 0.05, 0.085).translate(-0.022, -0.625, 0),
+  new THREE.BoxGeometry(0.02, 0.05, 0.085).translate(0, -0.625, 0),
+  new THREE.BoxGeometry(0.02, 0.05, 0.085).translate(0.022, -0.625, 0),
+]);
+const _foot = new THREE.BoxGeometry(0.13, 0.09, 0.24);  _foot.translate(0, -0.835, 0.045);
+const _footC = new THREE.BoxGeometry(0.13, 0.09, 0.24); // centred, placed directly for seated figures
 const _torso = new THREE.CylinderGeometry(0.155, 0.19, 0.6, 8); _torso.translate(0, 0.3, 0);
 const _head = new THREE.SphereGeometry(0.115, 10, 8);   _head.translate(0, 0.13, 0);
 const _hair = new THREE.SphereGeometry(0.128, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.62);
@@ -63,7 +73,7 @@ const FACE_DARK = 0x2a2019;
 
 export const PART_GEO = {
   leg: _leg, arm: _arm, torso: _torso, head: _head, hair: _hair, bun: _bun, skirt: _skirt,
-  faceDark: _faceDark, faceSkin: _faceSkin, hand: _hand,
+  faceDark: _faceDark, faceSkin: _faceSkin, hand: _hand, foot: _foot,
 };
 export { FACE_DARK };
 
@@ -109,6 +119,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_arm, a.shirt, 0.185, 0.98, 0.05, -0.5));
     parts.push(coloredPart(_hand, a.skin, -0.185, 0.98, 0.05, -0.5));
     parts.push(coloredPart(_hand, a.skin, 0.185, 0.98, 0.05, -0.5));
+    parts.push(coloredPart(_footC, a.shoes, -0.105, 0.045, 0.52));
+    parts.push(coloredPart(_footC, a.shoes, 0.105, 0.045, 0.52));
     if (a.bun) parts.push(coloredPart(_bun, a.hair, 0, 1.14, -0.1));
   } else {
     parts.push(coloredPart(_leg, legC, -0.105, 0.88, 0));
@@ -122,6 +134,8 @@ export function personFigure({ appearance = null, pose = 'stand', yaw = 0 } = {}
     parts.push(coloredPart(_arm, a.shirt, 0.185, 1.35, 0, a.hunch));
     parts.push(coloredPart(_hand, a.skin, -0.185, 1.35, 0, a.hunch));
     parts.push(coloredPart(_hand, a.skin, 0.185, 1.35, 0, a.hunch));
+    parts.push(coloredPart(_foot, a.shoes, -0.105, 0.88, 0));
+    parts.push(coloredPart(_foot, a.shoes, 0.105, 0.88, 0));
     if (a.skirted) parts.push(coloredPart(_skirt, a.skirt, 0, 0.88, 0));
     if (a.bun) parts.push(coloredPart(_bun, a.hair, 0, 1.6, -0.09));
   }
