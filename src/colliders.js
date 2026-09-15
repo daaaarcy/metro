@@ -87,11 +87,75 @@ export function buildColliders() {
   return { solidAABBs, solidOBBs, floors, ramps, grid };
 }
 
+// circle-vs-rect overlap in XZ
+const hitRect = (s, x, z, r) => {
+  const nx = Math.max(s.x0, Math.min(x, s.x1));
+  const nz = Math.max(s.z0, Math.min(z, s.z1));
+  const dx = x - nx, dz = z - nz;
+  return dx * dx + dz * dz < r * r;
+};
+
+// Axis-separated swept clamp: apply the x move, test, clamp at the face it
+// would cross; then the z move. A step can never jump past a face it started
+// outside of — thin glass/panels stay solid at any speed — and diagonal moves
+// still slide along the free axis.
+export function clampRect(s, ox, oz, nx, nz, r) {
+  if (hitRect(s, nx, oz, r) && !hitRect(s, ox, oz, r)) {
+    nx = nx > ox ? Math.min(nx, s.x0 - r) : Math.max(nx, s.x1 + r);
+  }
+  if (hitRect(s, nx, nz, r) && !hitRect(s, nx, oz, r)) {
+    nz = nz > oz ? Math.min(nz, s.z0 - r) : Math.max(nz, s.z1 + r);
+  }
+  return [nx, nz];
+}
+
+// same clamp against one OBB ({cx,cz,hx,hz,cos,sin}) — used for dynamic
+// barriers like PSD door bays that live in rotated level frames
+export function clampOBB(o, ox, oz, nx, nz, r) {
+  const rect = { x0: -o.hx, z0: -o.hz, x1: o.hx, z1: o.hz };
+  const lox = (ox - o.cx) * o.cos - (oz - o.cz) * o.sin;
+  const loz = (ox - o.cx) * o.sin + (oz - o.cz) * o.cos;
+  let lnx = (nx - o.cx) * o.cos - (nz - o.cz) * o.sin;
+  let lnz = (nx - o.cx) * o.sin + (nz - o.cz) * o.cos;
+  const [cx, cz] = clampRect(rect, lox, loz, lnx, lnz, r);
+  if (cx === lnx && cz === lnz) return [nx, nz];
+  return [o.cx + cx * o.cos + cz * o.sin, o.cz - cx * o.sin + cz * o.cos];
+}
+
+// Swept clamp against full AABB/OBB lists (controls.js keeps plain lists —
+// pedestrians use the grid in resolvePed instead). extras = dynamic rects
+// (closed gate flaps) with y0/y1 for the height band test.
+export function sweepMove(aabbs, obbs, extras, ox, oz, nx, nz, feet, h, r) {
+  for (const s of aabbs) {
+    if (s.y1 < feet + 0.25 || s.y0 > feet + h) continue;
+    [nx, nz] = clampRect(s, ox, oz, nx, nz, r);
+  }
+  for (const s of extras) {
+    if (s.y1 < feet + 0.25 || s.y0 > feet + h) continue;
+    [nx, nz] = clampRect(s, ox, oz, nx, nz, r);
+  }
+  for (const s of obbs) {
+    if (s.y1 < feet + 0.25 || s.y0 > feet + h) continue;
+    const rect = { x0: -s.hx, z0: -s.hz, x1: s.hx, z1: s.hz };
+    const lox = (ox - s.cx) * s.cos - (oz - s.cz) * s.sin;
+    const loz = (ox - s.cx) * s.sin + (oz - s.cz) * s.cos;
+    let lnx = (nx - s.cx) * s.cos - (nz - s.cz) * s.sin;
+    let lnz = (nx - s.cx) * s.sin + (nz - s.cz) * s.cos;
+    if (hitRect(rect, lnx, lnz, r) && !hitRect(rect, lox, loz, r)) {
+      [lnx, lnz] = clampRect(rect, lox, loz, lnx, lnz, r);
+      nx = s.cx + lnx * s.cos + lnz * s.sin;
+      nz = s.cz - lnx * s.sin + lnz * s.cos;
+    }
+  }
+  return [nx, nz];
+}
+
 // push a circle out of solids near (px,pz) overlapping the band [feet, feet+h].
-// World-space; one pass is enough for NPCs.
-export function resolvePed(col, px, pz, feet, h, r = PED_RADIUS) {
-  const c0x = Math.floor((px - r) / CELL), c1x = Math.floor((px + r) / CELL);
-  const c0z = Math.floor((pz - r) / CELL), c1z = Math.floor((pz + r) / CELL);
+// World-space; one pass is enough for NPCs. (ox,oz) = previous resolved
+// position — lets the swept clamp block thin walls a big step would jump.
+export function resolvePed(col, px, pz, feet, h, r = PED_RADIUS, ox = px, oz = pz) {
+  const c0x = Math.floor((Math.min(px, ox) - r) / CELL), c1x = Math.floor((Math.max(px, ox) + r) / CELL);
+  const c0z = Math.floor((Math.min(pz, oz) - r) / CELL), c1z = Math.floor((Math.max(pz, oz) + r) / CELL);
   for (let cx = c0x; cx <= c1x; cx++) {
     for (let cz = c0z; cz <= c1z; cz++) {
       const arr = col.grid.get(cx + ',' + cz);
@@ -100,6 +164,7 @@ export function resolvePed(col, px, pz, feet, h, r = PED_RADIUS) {
         const s = ent.a || ent.o;
         if (s.y1 < feet + 0.25 || s.y0 > feet + h) continue;
         if (ent.a) {
+          [px, pz] = clampRect(s, ox, oz, px, pz, r);   // swept: block face crossings
           const nx = Math.max(s.x0, Math.min(px, s.x1));
           const nz = Math.max(s.z0, Math.min(pz, s.z1));
           const dx = px - nx, dz = pz - nz;
@@ -118,28 +183,34 @@ export function resolvePed(col, px, pz, feet, h, r = PED_RADIUS) {
             pz += pushes[0][2] * pushes[0][0];
           }
         } else {
-          const lx = (px - s.cx) * s.cos - (pz - s.cz) * s.sin;
-          const lz = (px - s.cx) * s.sin + (pz - s.cz) * s.cos;
+          let lx = (px - s.cx) * s.cos - (pz - s.cz) * s.sin;
+          let lz = (px - s.cx) * s.sin + (pz - s.cz) * s.cos;
+          const rect = { x0: -s.hx, z0: -s.hz, x1: s.hx, z1: s.hz };
+          const lox = (ox - s.cx) * s.cos - (oz - s.cz) * s.sin;
+          const loz = (ox - s.cx) * s.sin + (oz - s.cz) * s.cos;
+          [lx, lz] = clampRect(rect, lox, loz, lx, lz, r);
+          px = s.cx + lx * s.cos + lz * s.sin;
+          pz = s.cz - lx * s.sin + lz * s.cos;
           const nx = Math.max(-s.hx, Math.min(lx, s.hx));
           const nz = Math.max(-s.hz, Math.min(lz, s.hz));
           const dx = lx - nx, dz = lz - nz;
           const d2 = dx * dx + dz * dz;
           if (d2 >= r * r) continue;
-          let ox, oz;
+          let ex, ez;
           if (d2 > 1e-9) {
             const d = Math.sqrt(d2);
-            ox = nx + dx / d * r; oz = nz + dz / d * r;
+            ex = nx + dx / d * r; ez = nz + dz / d * r;
           } else {
             const pushes = [
               [s.hx + r - lx, 1, 0], [lx + s.hx + r, -1, 0],
               [s.hz + r - lz, 0, 1], [lz + s.hz + r, 0, -1],
             ];
             pushes.sort((a, b2) => a[0] - b2[0]);
-            ox = lx + pushes[0][1] * pushes[0][0];
-            oz = lz + pushes[0][2] * pushes[0][0];
+            ex = lx + pushes[0][1] * pushes[0][0];
+            ez = lz + pushes[0][2] * pushes[0][0];
           }
-          px = s.cx + ox * s.cos + oz * s.sin;
-          pz = s.cz - ox * s.sin + oz * s.cos;
+          px = s.cx + ex * s.cos + ez * s.sin;
+          pz = s.cz - ex * s.sin + ez * s.cos;
         }
       }
     }

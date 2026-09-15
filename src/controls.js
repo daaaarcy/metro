@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GATES } from './registry.js';
-import { buildColliders } from './colliders.js';
+import { GATES, PSD_BAYS, FITTINGS } from './registry.js';
+import { psdBlocked } from './anim/trains.js';
+import { buildColliders, sweepMove } from './colliders.js';
 import { gateBlocks, nearestGate, openGate } from './anim/gates.js';
-import { worldToBox, boxToWorld, levelById } from './station-data.js';
+import { worldToBox, boxToWorld, levelById, BOXES } from './station-data.js';
 import { BAY } from './builders/platforms.js';
 
 const EYE = 1.62, RADIUS = 0.35, STEP_MAX = 0.42, GRAVITY = 22;
@@ -99,8 +100,28 @@ export class CameraRig {
     return { y: best, ramp: onRamp };
   }
 
-  // push a circle (px,pz,r) out of solid AABBs overlapping [feet, feet+h]
-  resolve(px, pz, feet, h) {
+  // push a circle (px,pz,r) out of solid AABBs overlapping [feet, feet+h].
+  // (ox,oz) = previous position — swept clamp stops thin glass/panels being
+  // tunneled through on a big frame step.
+  resolve(px, pz, feet, h, ox = px, oz = pz) {
+    const gateRects = [];
+    for (const g of GATES) {
+      if (!gateBlocks(g)) continue;
+      const gy = g.level ? levelById(g.level).y : -7;
+      if (Math.abs(feet - gy) > 1.3) continue;
+      gateRects.push({ ...g.rect, y0: gy - 0.5, y1: gy + 2 });
+    }
+    // closed PSD door bays are barriers too — open only while a consist
+    // dwells there with doors open (psdBlocked), so the edge stays sealed
+    let obbList = this.solidOBBs;
+    let bayList = null;
+    for (const b of PSD_BAYS) {
+      if (!psdBlocked(b)) continue;
+      if (Math.abs(feet - (b.y0 + 0.5)) > 1.8) continue;
+      (bayList ??= []).push(b);
+    }
+    if (bayList) obbList = this.solidOBBs.concat(bayList);
+    [px, pz] = sweepMove(this.solidAABBs, obbList, gateRects, ox, oz, px, pz, feet, h, RADIUS);
     for (let iter = 0; iter < 3; iter++) {
       for (const s of this.solidAABBs) {
         if (s.y1 < feet + 0.25 || s.y0 > feet + h) continue;
@@ -245,6 +266,30 @@ export class CameraRig {
     return [px, pz, floor];
   }
 
+  // Ended up on a track bed (past an end-wall portal) — put back on the
+  // nearest platform edge of that trough. Skipped while aboard a consist.
+  rescueTracks(px, pz) {
+    if (this._aboard || this.feetY > -1) return [px, pz];
+    for (const lvl of Object.keys(FITTINGS)) {
+      const ly = levelById(lvl).y;
+      if (this.feetY > ly - 0.6 || this.feetY < ly - 4) continue;
+      const bx = BOXES[levelById(lvl).box];
+      const lp = worldToBox(bx, px, pz);
+      for (const ds of FITTINGS[lvl].doorSets) {
+        const tr = ds.track;
+        if (!tr) continue;
+        if (lp.x < tr.x0 || lp.x > tr.x1 || lp.z < tr.z0 || lp.z > tr.z1) continue;
+        // put back on the platform side of this door set's PSD plane
+        const sgn = Math.sign(ds.z - (tr.z0 + tr.z1) / 2) || 1;
+        lp.z = ds.z + sgn * (RADIUS + 0.25);
+        const w = boxToWorld(bx, lp.x, lp.z);
+        this.feetY = ly; this.vy = 0;
+        return [w.x, w.z];
+      }
+    }
+    return [px, pz];
+  }
+
   setMode(mode) {
     this.mode = mode;
     this.orbit.enabled = mode === 'orbit';
@@ -317,9 +362,10 @@ export class CameraRig {
 
     let px = this.camera.position.x + mx;
     let pz = this.camera.position.z + mz;
-    [px, pz] = this.resolve(px, pz, this.feetY, 1.7);
+    [px, pz] = this.resolve(px, pz, this.feetY, 1.7, this.camera.position.x, this.camera.position.z);
     const tc = this.constrainTrains(px, pz);
     px = tc[0]; pz = tc[1];
+    [px, pz] = this.rescueTracks(px, pz);
     this.camera.position.x = px;
     this.camera.position.z = pz;
 

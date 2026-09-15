@@ -15,6 +15,11 @@ export const ESC_RUNS = [];
 // {x,z,half,open,timer,rect,flaps:[{pivot,dir}]}
 export const GATES = [];
 
+// PSD door bays (world space): each bay is a dynamic barrier — solid unless
+// the consist berthed there (ds.openSvc) is dwelling with its doors open.
+// {level, ds, rect:{x0,z0,x1,z1,y0,y1}}
+export const PSD_BAYS = [];
+
 // per-level animated fittings populated by builders:
 // { [levelId]: { doorSets:[{doors,xs,y,z,face,track,level,terminus}] } }
 export const FITTINGS = {};

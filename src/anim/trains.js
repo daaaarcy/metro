@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { FITTINGS } from '../registry.js';
+import { FITTINGS, PSD_BAYS } from '../registry.js';
 import { TRAIN_SPEC, LINES, BOXES, levelById, boxToWorld } from '../station-data.js';
+import { BAY } from '../builders/platforms.js';
 import { M } from '../builders/materials.js';
 import { box } from '../builders/structure.js';
 import { canvasTex } from '../builders/decor.js';
@@ -280,6 +281,7 @@ class Consist {
   // park the consist at a stop: frame = the stop's box, tx = stop centre
   _berth(stop, snap = false) {
     this.ds = stop.ds;
+    stop.ds.openSvc = this;               // this consist owns the bays now
     this.stop = stop;
     this.bx = stop.bx;
     this.zc = stop.zc;
@@ -317,23 +319,29 @@ class Consist {
       im.setMatrixAt(i, this._m4);
     }
     im.instanceMatrix.needsUpdate = true;
+    // PSD leaves: slide open with the train doors while berthed — and keep
+    // driving the LAST door set shut after departure so bays never gape.
     const ds = this.ds;
-    if (ds) {
-      const target = o * 0.9;
-      if (ds._slide === undefined) ds._slide = 0;
-      if (Math.abs(ds._slide - target) > 0.001) {
-        ds._slide += Math.sign(target - ds._slide) * Math.min(Math.abs(target - ds._slide), dt * 1.4);
-        for (let i = 0; i < ds.leafX.length; i++) {
-          this._m4.makeTranslation(ds.leafX[i] + ds.leafDir[i] * ds._slide, ds.y, ds.z);
-          ds.doors.setMatrixAt(i, this._m4);
+    if (ds) this._lastDs = ds;
+    else if (this._lastDs?.openSvc) this._lastDs = null;  // another consist owns it now
+    const d = ds || this._lastDs;
+    if (d) {
+      const target = ds ? o * 0.9 : 0;
+      if (d._slide === undefined) d._slide = 0;
+      if (Math.abs(d._slide - target) > 0.001) {
+        d._slide += Math.sign(target - d._slide) * Math.min(Math.abs(target - d._slide), dt * 1.4);
+        for (let i = 0; i < d.leafX.length; i++) {
+          this._m4.makeTranslation(d.leafX[i] + d.leafDir[i] * d._slide, d.y, d.z);
+          d.doors.setMatrixAt(i, this._m4);
         }
-        ds.doors.instanceMatrix.needsUpdate = true;
-      }
+        d.doors.instanceMatrix.needsUpdate = true;
+      } else if (!ds) this._lastDs = null;   // fully shut — release the set
     }
   }
 
   _beginRun(audio) {
     const leg = this.legs[this.i];
+    if (this.ds) this.ds.openSvc = null;  // bays become barriers again
     this.ds = null;
     this.state = leg.via === 'tunnel' ? 'run' : 'offOut';
     this.leg = leg;
@@ -491,11 +499,33 @@ export const ROUTES = [
   { line: 'AEX', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L2', num: 1 }] },
 ];
 
+// a PSD bay is a solid barrier unless the consist berthed there is dwelling
+// with its doors open (ds.openSvc is set at _berth and cleared at _beginRun)
+export function psdBlocked(bay) {
+  const s = bay.ds.openSvc;
+  return !(s && s.state === 'dwell' && s.open > 0.55);
+}
+
 export class TrainSim {
   constructor(scene) {
     const doorSets = [];
     for (const lvl of Object.keys(FITTINGS)) {
       for (const ds of FITTINGS[lvl].doorSets) doorSets.push(ds);
+    }
+    // every door bay registers as a dynamic barrier in world space so the
+    // platform edge stays sealed whenever no consist has its doors open there.
+    // OBB form so rotated level boxes (ADM L5/L6) get correctly angled walls.
+    for (const ds of doorSets) {
+      const lvl = levelById(ds.level), bx = BOXES[lvl.box];
+      for (const x of ds.xs) {
+        const w = boxToWorld(bx, x, ds.z);
+        PSD_BAYS.push({
+          level: ds.level, ds,
+          cx: w.x, cz: w.z, hx: BAY / 2, hz: 0.12,
+          cos: Math.cos(bx.rot), sin: Math.sin(bx.rot),
+          y0: lvl.y - 0.5, y1: lvl.y + 3,
+        });
+      }
     }
     this.services = [];
     for (const rd of ROUTES) {

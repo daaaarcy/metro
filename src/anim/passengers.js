@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { ESC_RUNS, GATES, STAIR_RUNS } from '../registry.js';
+import { ESC_RUNS, GATES, STAIR_RUNS, PSD_BAYS } from '../registry.js';
+import { psdBlocked } from './trains.js';
 import { WALK_RECTS, BOXES, PEOPLE_N, levelById, boxToWorld, worldToBox, concourseId } from '../station-data.js';
 import { pointInRects, worldRectToLocal } from '../builders/structure.js';
 import { openGate, gateBlocks } from './gates.js';
-import { resolvePed } from '../colliders.js';
+import { resolvePed, clampRect, clampOBB, PED_RADIUS } from '../colliders.js';
 import { rollAppearance, PART_GEO, FACE_DARK } from '../builders/people.js';
 
 const N_LEVELS = PEOPLE_N;   // uid ('ADM:L1' etc.) -> headcount
@@ -267,6 +268,11 @@ export class Passengers {
       const p = this.list[i];
       let visible = !this.hidden.has(p.level);
 
+      // frame-start pose — the "from" for the swept wall clamp; if a scripted
+      // state teleports the ped across levels the sweep is skipped that frame
+      const lvlPre = p.level;
+      const wPre = boxToWorld(this.boxOf[lvlPre], p.x, p.z);
+
       switch (p.state) {
         case 'aboard':
           visible = false;
@@ -394,15 +400,19 @@ export class Passengers {
       }
 
       // physical collision: pedestrians slide along walls, glass, furniture
-      // like the player does — only scripted crossings skip it
+      // like the player does — only scripted crossings skip it. The swept
+      // clamp stops thin glass being tunneled through at high sim speed.
       if (!NOCLIP.has(p.state)) {
         const bx0 = this.boxOf[p.level];
         const w0 = boxToWorld(bx0, p.x, p.z);
         const wy0 = p.wy ?? levelById(p.level).y;
-        let [rx, rz] = resolvePed(this.col, w0.x, w0.z, wy0, 1.7);
+        const sameSpot = p.level === lvlPre;
+        const ox = sameSpot ? wPre.x : w0.x, oz = sameSpot ? wPre.z : w0.z;
+        let [rx, rz] = resolvePed(this.col, w0.x, w0.z, wy0, 1.7, PED_RADIUS, ox, oz);
         // closed Octopus flaps block the lane (dynamic — not in SOLIDS)
         for (const g of GATES) {
           if (g.level !== p.level || !gateBlocks(g)) continue;
+            [rx, rz] = clampRect(g.rect, ox, oz, rx, rz, 0.3);
             const s = g.rect;
             const nx = Math.max(s.x0, Math.min(rx, s.x1));
             const nz = Math.max(s.z0, Math.min(rz, s.z1));
@@ -410,6 +420,12 @@ export class Passengers {
             if (d2 >= 0.09 || d2 < 1e-9) continue;
             const d = Math.sqrt(d2);
             rx = nx + dx / d * 0.3; rz = nz + dz / d * 0.3;
+          }
+        // closed PSD bays are solid too — the edge seals whenever no consist
+        // is berthed with its doors open (boarding uses NOCLIP states)
+        for (const b of PSD_BAYS) {
+          if (b.level !== p.level || !psdBlocked(b)) continue;
+            [rx, rz] = clampOBB(b, ox, oz, rx, rz, 0.3);
           }
         if (rx !== w0.x || rz !== w0.z) {
           const l = worldToBox(bx0, rx, rz);

@@ -12,7 +12,7 @@ import { StationAudio } from './audio.js';
 import { buildColliders } from './colliders.js';
 import { Weather } from './weather.js';
 import { mergeStation } from './merge.js';
-import { GATES } from './registry.js';
+import { GATES, ESC_RUNS } from './registry.js';
 
 // ---------- renderer ----------
 const app = document.getElementById('app');
@@ -90,7 +90,7 @@ scene.add(ground);
 
 // ---------- simulation ----------
 const escSteps = new EscalatorSteps();
-scene.add(escSteps.mesh);
+scene.add(escSteps.mesh, escSteps.stripMesh);
 const trainSim = new TrainSim(scene);
 const passengers = new Passengers(scene, computeOpenings(), colliders);
 const audio = new StationAudio();
@@ -226,7 +226,8 @@ const rig = new CameraRig(camera, renderer.domElement);
 rig.trains = trainSim;              // lets the player board dwelling trains
 rig.audio = audio;
 rig.initColliders(colliders);
-window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers; window.__weather = weather; window.__renderer = renderer;
+window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
+window.__escRuns = ESC_RUNS; window.__weather = weather; window.__renderer = renderer;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
 // orbit "home" frames all three stations — Admiralty near field, Central and
