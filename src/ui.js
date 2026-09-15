@@ -74,17 +74,36 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     if (axis && axis !== 'none') { ensureOrbit(); onClip(axis, parseFloat(slider.value)); }
   });
 
-  // level list grouped by station, jump-to viewpoint per level
+  // level list grouped by station — each group collapses on its header,
+  // jump-to viewpoint per level. Open/closed state persists.
   const list = document.getElementById('level-list');
-  let lastStn = null;
+  const OPEN_KEY = 'adm-lvl-open';
+  let savedOpen = null;
+  try { savedOpen = JSON.parse(localStorage.getItem(OPEN_KEY) || 'null'); } catch { /* bad JSON */ }
+  const openSet = new Set(savedOpen ?? Object.keys(STATIONS));   // default: all open
+  const saveOpen = () => {
+    try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openSet])); } catch { /* private mode */ }
+  };
+  let lastStn = null, rowsEl = null;
   for (const lvl of LEVELS) {
     if (lvl.station !== lastStn) {
       lastStn = lvl.station;
-      const stn = STATIONS[lastStn];
+      const stn = STATIONS[lastStn], sid = lastStn;
+      const grp = document.createElement('div');
+      grp.className = 'lvl-group';
       const head = document.createElement('div');
       head.className = 'lvl-stn';
-      head.innerHTML = `<span class="zh">${stn.zh}</span> <span class="en">${stn.en}</span>`;
-      list.appendChild(head);
+      head.innerHTML = `<span class="lvl-chev">▾</span><span class="zh">${stn.zh}</span> <span class="en">${stn.en}</span>`;
+      rowsEl = document.createElement('div');
+      rowsEl.className = 'lvl-rows';
+      grp.append(head, rowsEl);
+      list.appendChild(grp);
+      const apply = () => grp.classList.toggle('closed', !openSet.has(sid));
+      head.addEventListener('click', () => {
+        openSet.has(sid) ? openSet.delete(sid) : openSet.add(sid);
+        saveOpen(); apply();
+      });
+      apply();
     }
     const row = document.createElement('div');
     row.className = 'lvl-row';
@@ -92,7 +111,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
       <span class="lvl-id">${lvl.id}</span>
       <span class="lvl-name"><span class="zh">${lvl.zh}</span> <span class="en">${lvl.en}</span></span>
       <button class="go" data-id="${lvl.uid}">go</button>`;
-    list.appendChild(row);
+    rowsEl.appendChild(row);
     row.querySelector('.go').addEventListener('click', () => onGoto(lvl.uid, vp[lvl.uid]));
   }
 

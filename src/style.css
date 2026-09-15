@@ -86,7 +86,12 @@ input[type="range"]:disabled { opacity: 0.3; }
 .lvl-stn {
   font-size: 10px; font-weight: 800; letter-spacing: 0.6px; opacity: 0.5;
   margin-top: 8px; padding-bottom: 2px; border-bottom: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer; user-select: none; display: flex; align-items: baseline; gap: 5px;
 }
+.lvl-stn:hover { opacity: 0.85; }
+.lvl-chev { display: inline-block; font-size: 7px; transition: transform 0.15s; }
+.lvl-group.closed .lvl-chev { transform: rotate(-90deg); }
+.lvl-group.closed .lvl-rows { display: none; }
 
 .legend-row { display: flex; align-items: center; gap: 7px; font-size: 11px; padding: 2px 0; }
 .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
