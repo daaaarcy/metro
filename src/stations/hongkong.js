@@ -50,16 +50,19 @@ export const HOK = {
     { from: 'L3', to: 'L4', frame: 'hokTcl',  cx:  45, cz: 0,  dir: [ 1, 0], n: 2 },
   ],
 
-  // IFC / harbourfront exits down to the check-in hall.
+  // IFC / harbourfront exits down to the check-in hall, per Wikipedia:
+  // A1/A2 Two IFC, B1/B2 Exchange Square I/II, C Douglas St, D Exchange Sq III,
+  // E1/E3 One IFC, F IFC Mall.
   exits: [
-    { id: 'A1', x: -55, side: -1, zh: '國際金融中心一期', en: 'One IFC' },
-    { id: 'A2', x: -40, side: 1,  zh: '民祥街運輸交匯處', en: 'Man Cheung St Interchange' },
-    { id: 'B1', x: -12, side: -1, zh: '國際金融中心二期', en: 'Two IFC' },
-    { id: 'B2', x: 5,   side: 1,  zh: '金融街運輸交匯處', en: 'Finance St Interchange' },
-    { id: 'C',  x: 30,  side: -1, zh: '香港站公共運輸處', en: 'HK Station Transport' },
-    { id: 'D',  x: 55,  side: 1,  zh: '中環碼頭',         en: 'Central Piers' },
-    { id: 'E1', x: 75,  side: -1, zh: '民光街',           en: 'Man Kwong Street' },
-    { id: 'F',  x: 88,  side: 1,  zh: '中環海濱',         en: 'Central Harbourfront' },
+    { id: 'A1', x: -60, side: 1,  zh: '國際金融中心二期', en: 'Two IFC' },
+    { id: 'A2', x: -45, side: 1,  zh: '國際金融中心二期', en: 'Two IFC' },
+    { id: 'E1', x: -30, side: -1, zh: '國際金融中心一期', en: 'One IFC' },
+    { id: 'E3', x: -15, side: -1, zh: '國際金融中心一期', en: 'One IFC' },
+    { id: 'B1', x: 30,  side: -1, zh: '交易廣場一/二座',   en: 'Exchange Square I/II' },
+    { id: 'B2', x: 45,  side: -1, zh: '交易廣場一/二座',   en: 'Exchange Square I/II' },
+    { id: 'D',  x: 58,  side: -1, zh: '交易廣場三座',      en: 'Exchange Square III' },
+    { id: 'C',  x: 70,  side: 1,  zh: '德忌利士街',        en: 'Douglas Street' },
+    { id: 'F',  x: 82,  side: 1,  zh: '國際金融中心商場',  en: 'IFC Mall' },
   ],
   exitZ: 16,
   exitLetters: ['A', 'B', 'C', 'D', 'E', 'F'],

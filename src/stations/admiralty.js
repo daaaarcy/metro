@@ -75,15 +75,17 @@ export const ADM = {
   ],
 
   // Exits: stair shafts from G down to L1. side = -1 north / +1 south.
+  // Per Wikipedia: A Admiralty Centre, B Drake St/Lippo, C1 Queensway Plaza,
+  // C2 taxi stand, D United Centre, E1 Rodney St, E2 CITIC Tower, F Pacific Place.
   exits: [
+    { id: 'C1', x: -78, side: -1, zh: '金鐘廊',           en: 'Queensway Plaza' },
     { id: 'A',  x: -62, side: -1, zh: '海富中心',          en: 'Admiralty Centre' },
-    { id: 'B',  x: -40, side: 1,  zh: '德立街・力寶中心',  en: 'Drake St · Lippo Centre' },
-    { id: 'C1', x: -8,  side: -1, zh: '金鐘廊',            en: 'Queensway Plaza' },
-    { id: 'C2', x: 16,  side: -1, zh: '的士站',            en: 'Taxi Stand' },
-    { id: 'D',  x: -80, side: -1, zh: '統一中心',          en: 'United Centre' },
-    { id: 'E1', x: 45,  side: 1,  zh: '樂禮街',           en: 'Rodney Street' },
-    { id: 'E2', x: 58,  side: 1,  zh: '中信大廈',          en: 'CITIC Tower' },
-    { id: 'F',  x: 66,  side: -1, zh: '太古廣場',          en: 'Pacific Place' },
+    { id: 'B',  x: -46, side: -1, zh: '德立街・力寶中心',  en: 'Drake St · Lippo Centre' },
+    { id: 'C2', x: -28, side: -1, zh: '的士站',            en: 'Taxi Stand' },
+    { id: 'D',  x: 20,  side: 1,  zh: '統一中心',          en: 'United Centre' },
+    { id: 'E1', x: 42,  side: -1, zh: '樂禮街',           en: 'Rodney Street' },
+    { id: 'E2', x: 55,  side: -1, zh: '中信大廈',          en: 'CITIC Tower' },
+    { id: 'F',  x: 66,  side: 1,  zh: '太古廣場',          en: 'Pacific Place' },
   ],
   exitZ: 12.7,
   exitLetters: ['A', 'B', 'C', 'D', 'E', 'F'],

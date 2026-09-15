@@ -16,6 +16,10 @@
         <h1><span class="zh">金鐘站</span><span class="en">Admiralty Station</span></h1>
         <p class="sub"><span class="en">3D layout viewer</span><span class="zh">立體車站結構圖</span></p>
       </div>
+      <div id="lang-toggle">
+        <button data-lang="en">EN</button>
+        <button data-lang="zh">中</button>
+      </div>
     </header>
 
     <aside id="panel">
@@ -75,9 +79,13 @@
       <div id="weather"></div>
     </div>
     <div id="hint"><span class="en">Orbit: drag · Walk: WASD + drag (E = tap Octopus, H = hide panel)</span><span class="zh">環視：拖曳 · 步行：WASD＋拖曳（E＝拍八達通，H＝隱藏面板）</span></div>
-    <div id="lang-toggle">
-      <button data-lang="en">EN</button>
-      <button data-lang="zh">中</button>
+    <div id="minimap">
+      <button id="map-toggle" title="MTR system map"><span class="en">Map</span> <span class="zh">路綫圖</span></button>
+      <div id="map-panel">
+        <button id="map-close" title="Close map">×</button>
+        <div id="map-body"></div>
+        <p class="map-hint"><span class="en">Click a lit station to travel</span><span class="zh">點按亮起的車站前往</span></p>
+      </div>
     </div>
   </div>
   <script type="module" src="/src/main.js"></script>

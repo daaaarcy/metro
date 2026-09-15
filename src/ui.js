@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { LEVELS, LINES, STATIONS, BOXES, PLATFORMS, boxToWorld } from './station-data.js';
+import { buildMiniMap } from './mtr-map.js';
 
 // Per-level interior viewpoints (world space) — a standing-height spot near
 // one end of each box looking down its length. Single-track platform levels
@@ -114,6 +115,20 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     rowsEl.appendChild(row);
     row.querySelector('.go').addEventListener('click', () => onGoto(lvl.uid, vp[lvl.uid]));
   }
+
+  // station mini-map — expandable MTR schematic; lit (built) stations
+  // navigate straight to that station's concourse. Grey stops are inert.
+  const mapPanel = document.getElementById('map-panel');
+  const mapToggle = document.getElementById('map-toggle');
+  const mapSvg = buildMiniMap({ onGoto: uid => { onGoto(uid, vp[uid]); setMap(false); } });
+  document.getElementById('map-body').appendChild(mapSvg);
+  const thumb = mapSvg.cloneNode(true);        // inert thumbnail in the chip
+  thumb.classList.add('thumb');
+  thumb.querySelectorAll('text').forEach(t => t.remove());
+  mapToggle.appendChild(thumb);
+  const setMap = show => mapPanel.classList.toggle('show', show);
+  mapToggle.addEventListener('click', () => setMap(!mapPanel.classList.contains('show')));
+  document.getElementById('map-close').addEventListener('click', () => setMap(false));
 
   // line legend
   const legend = document.getElementById('legend');
