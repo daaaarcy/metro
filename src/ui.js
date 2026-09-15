@@ -25,6 +25,24 @@ function viewpoints() {
 export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, onSpeed }) {
   const vp = viewpoints();
 
+  // language toggle — flips the UI chrome between English-only and 繁中-only.
+  // Pure CSS (data-lang on <html> hides the other side's spans); in-world
+  // signage/labels keep both languages regardless.
+  const LANG_KEY = 'adm-lang';
+  const langBtns = document.querySelectorAll('#lang-toggle button');
+  const setLang = l => {
+    document.documentElement.dataset.lang = l;
+    langBtns.forEach(b => b.classList.toggle('active', b.dataset.lang === l));
+    try { localStorage.setItem(LANG_KEY, l); } catch { /* private mode */ }
+  };
+  let initial = 'en';
+  try {
+    initial = localStorage.getItem(LANG_KEY)
+      || (navigator.language?.startsWith('zh') ? 'zh' : 'en');
+  } catch { /* private mode */ }
+  setLang(initial);
+  langBtns.forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+
   // mode buttons
   const modeBtns = document.querySelectorAll('#mode-buttons button');
   modeBtns.forEach(b => b.addEventListener('click', () => {
@@ -65,14 +83,14 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
       const stn = STATIONS[lastStn];
       const head = document.createElement('div');
       head.className = 'lvl-stn';
-      head.textContent = `${stn.zh} ${stn.en}`;
+      head.innerHTML = `<span class="zh">${stn.zh}</span> <span class="en">${stn.en}</span>`;
       list.appendChild(head);
     }
     const row = document.createElement('div');
     row.className = 'lvl-row';
     row.innerHTML = `
       <span class="lvl-id">${lvl.id}</span>
-      <span class="lvl-name">${lvl.zh} ${lvl.en}</span>
+      <span class="lvl-name"><span class="zh">${lvl.zh}</span> <span class="en">${lvl.en}</span></span>
       <button class="go" data-id="${lvl.uid}">go</button>`;
     list.appendChild(row);
     row.querySelector('.go').addEventListener('click', () => onGoto(lvl.uid, vp[lvl.uid]));
@@ -83,7 +101,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   for (const l of Object.values(LINES)) {
     const row = document.createElement('div');
     row.className = 'legend-row';
-    row.innerHTML = `<span class="legend-swatch" style="background:${l.color}"></span>${l.zh} ${l.en}`;
+    row.innerHTML = `<span class="legend-swatch" style="background:${l.color}"></span><span class="zh">${l.zh}</span> <span class="en">${l.en}</span>`;
     legend.appendChild(row);
   }
 
@@ -137,17 +155,19 @@ const hktDay = new Intl.DateTimeFormat('en-GB', {
 });
 export function updateClock(epochMs, speed) {
   document.getElementById('clock-time').textContent = hktFmt.format(epochMs);
-  document.getElementById('clock-date').textContent =
-    `${hktDay.format(epochMs)} · HKT 香港時間${speed !== 1 ? ` ×${speed}` : ''}`;
+  document.getElementById('clock-date').innerHTML =
+    `${hktDay.format(epochMs)} · <span class="zh">香港時間</span><span class="en">HKT</span>${speed !== 1 ? ` ×${speed}` : ''}`;
 }
 
 // live departures board, top-right — real next-train countdowns when the
 // data.gov.hk feed is up, sim ETAs otherwise. One row per platform face.
 export function updateTicker(rows, live, simNow) {
   const el = document.getElementById('ticker');
-  const label = { away: '—', arrive: '進站 arriving', dwell: '上落客 boarding', depart: '離站 departing' };
+  const pair = (zh, en) => `<span class="zh">${zh}</span><span class="en">${en}</span>`;
+  const label = { away: '—', arrive: pair('進站', 'arriving'), dwell: pair('上落客', 'boarding'), depart: pair('離站', 'departing') };
+  const due = pair('即將', 'due');
   let html = live
-    ? `<div class="t-row t-live"><span class="live-dot"></span>實時到站 LIVE · data.gov.hk</div>`
+    ? `<div class="t-row t-live"><span class="live-dot"></span>${pair('實時到站 · data.gov.hk', 'LIVE · data.gov.hk')}</div>`
     : '';
   for (const r of rows) {
     const f = r.face;
@@ -156,15 +176,15 @@ export function updateTicker(rows, live, simNow) {
     if (r.state === 'away') {
       if (r.nextAt) {
         const m = Math.round((r.nextAt - Date.now()) / 60000);
-        state = m <= 0 ? '即將 due' : r.terminus ? `開出 dep ${m} min` : `${m} min`;
+        state = m <= 0 ? due : r.terminus ? pair(`開出 ${m} 分`, `dep ${m} min`) : pair(`${m} 分`, `${m} min`);
       } else if (r.eta != null) {
         const m = Math.max(1, Math.round(r.eta / 60));
-        state = r.eta < 45 ? '即將 due' : `~${m} min`;
+        state = r.eta < 45 ? due : pair(`~${m} 分`, `~${m} min`);
       }
     }
     html += `<div class="t-row"><span class="t-stn">${stn.id}</span>` +
             `<span class="t-plat" style="color:${r.color}">${f.num}</span>` +
-            `<span class="t-dest">${f.to.zh} ${f.to.en}</span>` +
+            `<span class="t-dest"><span class="zh">${f.to.zh}</span> <span class="en">${f.to.en}</span></span>` +
             `<span class="t-state">${state}</span></div>`;
   }
   el.innerHTML = html;
@@ -175,13 +195,13 @@ export function updateWeatherChip(w) {
   const el = document.getElementById('weather');
   if (!el) return;
   if (!w?.live) {
-    el.innerHTML = `<span class="w-off">香港天氣 offline</span>`;
+    el.innerHTML = `<span class="w-off"><span class="zh">香港天氣 離線</span><span class="en">HK weather offline</span></span>`;
     return;
   }
   const bits = [
     w.tempC != null ? `${Math.round(w.tempC)}°C` : null,
     w.rh != null ? `${Math.round(w.rh)}%` : null,
-    `${w.zh} ${w.en}`,
+    `<span class="zh">${w.zh}</span><span class="en">${w.en}</span>`,
   ].filter(Boolean);
-  el.innerHTML = `<span class="w-dot ${w.kind}"></span>香港 ${bits.join(' · ')}`;
+  el.innerHTML = `<span class="w-dot ${w.kind}"></span><span class="zh">香港</span><span class="en">HK</span> ${bits.join(' · ')}`;
 }

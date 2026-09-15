@@ -25,7 +25,6 @@ img.mtr-badge {
     drop-shadow(0 0 6px rgba(255,255,255,0.45));
 }
 #masthead h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
-#masthead h1 span { font-weight: 400; opacity: 0.75; }
 #masthead .sub { font-size: 11px; opacity: 0.55; margin-top: 2px; }
 
 #panel {
@@ -166,6 +165,23 @@ input[type="range"]:disabled { opacity: 0.3; }
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   font-size: 11px; opacity: 0.45;
 }
+
+/* language toggle — bottom-right; switches the UI chrome only (in-world
+   signage keeps both languages). data-lang on <html> hides the other side. */
+#lang-toggle {
+  position: absolute; right: 18px; bottom: 14px;
+  display: flex; gap: 3px; pointer-events: auto;
+}
+#lang-toggle button {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px;
+  background: rgba(13,17,23,0.85); border: 1px solid rgba(255,255,255,0.12);
+  color: #cfd8e3; cursor: pointer;
+}
+#lang-toggle button:hover { background: rgba(255,255,255,0.14); }
+#lang-toggle button.active { background: #2b6cb0; border-color: #4299e1; color: #fff; }
+
+html[data-lang="en"] .zh { display: none; }
+html[data-lang="zh"] .en { display: none; }
 
 /* CSS2D labels */
 .lbl {

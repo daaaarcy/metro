@@ -407,10 +407,10 @@ function tick() {
   // gate / boarding prompt + ticker + clock refresh
   if (rig.mode === 'walk') {
     if (rig._aboard) {
-      showPrompt('乘搭中 On board — doors open at the next stop · 下一站開門落車');
+      showPrompt('<span class="zh">乘搭中 — 下一站開門落車</span><span class="en">On board — doors open at the next stop</span>');
     } else {
       showPrompt(rig.nearGate && gateBlocks(rig.nearGate)
-        ? '拍卡進站 · Tap Octopus card — press <b>E</b>' : null);
+        ? '<span class="zh">拍卡進站 · 按 <b>E</b></span><span class="en">Tap Octopus card — press <b>E</b></span>' : null);
     }
   } else showPrompt(null);
 

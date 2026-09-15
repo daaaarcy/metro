@@ -13,51 +13,51 @@
     <header id="masthead">
       <img class="mtr-badge" src="/mtr-logo.svg" alt="MTR" />
       <div>
-        <h1>金鐘站 <span>Admiralty Station</span></h1>
-        <p class="sub">3D layout viewer · 立體車站結構圖</p>
+        <h1><span class="zh">金鐘站</span><span class="en">Admiralty Station</span></h1>
+        <p class="sub"><span class="en">3D layout viewer</span><span class="zh">立體車站結構圖</span></p>
       </div>
     </header>
 
     <aside id="panel">
       <button id="panel-close" title="Hide panel (H)">×</button>
       <section>
-        <h2>View 視角</h2>
+        <h2><span class="en">View</span><span class="zh">視角</span></h2>
         <div class="btn-row" id="mode-buttons">
-          <button data-mode="orbit">Orbit 環視</button>
-          <button data-mode="walk" class="active">Walk 步行</button>
+          <button data-mode="orbit"><span class="en">Orbit</span> <span class="zh">環視</span></button>
+          <button data-mode="walk" class="active"><span class="en">Walk</span> <span class="zh">步行</span></button>
         </div>
       </section>
 
       <section>
-        <h2>Section 剖面</h2>
+        <h2><span class="en">Section</span><span class="zh">剖面</span></h2>
         <div class="btn-row" id="clip-buttons">
-          <button data-clip="none" class="active">Full 全貌</button>
-          <button data-clip="z">Long 縱切</button>
-          <button data-clip="x">Cross 橫切</button>
-          <button data-clip="y">Top 由上</button>
+          <button data-clip="none" class="active"><span class="en">Full</span> <span class="zh">全貌</span></button>
+          <button data-clip="z"><span class="en">Long</span> <span class="zh">縱切</span></button>
+          <button data-clip="x"><span class="en">Cross</span> <span class="zh">橫切</span></button>
+          <button data-clip="y"><span class="en">Top</span> <span class="zh">由上</span></button>
         </div>
         <input type="range" id="clip-slider" min="0" max="1" step="0.001" value="1" disabled />
-        <p class="sec-hint">Pick a cut, then drag the slider to sweep through the station.<br />選擇切面，再拉動滑桿逐層檢視車站內部。</p>
+        <p class="sec-hint"><span class="en">Pick a cut, then drag the slider to sweep through the station.</span><span class="zh">選擇切面，再拉動滑桿逐層檢視車站內部。</span></p>
       </section>
 
       <section>
-        <h2>Levels 樓層</h2>
+        <h2><span class="en">Levels</span><span class="zh">樓層</span></h2>
         <div id="level-list"></div>
       </section>
 
       <section>
-        <h2>Lines 路綫</h2>
+        <h2><span class="en">Lines</span><span class="zh">路綫</span></h2>
         <div id="legend"></div>
       </section>
 
       <section class="toggles">
-        <label><input type="checkbox" id="toggle-labels" checked /> Labels 標籤</label>
-        <label><input type="checkbox" id="toggle-audio" /> Sound 廣播</label>
-        <label><input type="checkbox" id="toggle-people" checked /> Passengers 乘客</label>
+        <label><input type="checkbox" id="toggle-labels" checked /> <span class="en">Labels</span> <span class="zh">標籤</span></label>
+        <label><input type="checkbox" id="toggle-audio" /> <span class="en">Sound</span> <span class="zh">廣播</span></label>
+        <label><input type="checkbox" id="toggle-people" checked /> <span class="en">Passengers</span> <span class="zh">乘客</span></label>
       </section>
     </aside>
 
-    <button id="panel-open" title="Show panel (H)">☰ Controls 控制</button>
+    <button id="panel-open" title="Show panel (H)">☰ <span class="en">Controls</span> <span class="zh">控制</span></button>
     <div id="info"></div>
     <div id="prompt"></div>
     <div id="board">
@@ -74,7 +74,11 @@
       <div id="ticker"></div>
       <div id="weather"></div>
     </div>
-    <div id="hint">Orbit: drag · Walk: WASD + drag (E = tap Octopus, H = hide panel)</div>
+    <div id="hint"><span class="en">Orbit: drag · Walk: WASD + drag (E = tap Octopus, H = hide panel)</span><span class="zh">環視：拖曳 · 步行：WASD＋拖曳（E＝拍八達通，H＝隱藏面板）</span></div>
+    <div id="lang-toggle">
+      <button data-lang="en">EN</button>
+      <button data-lang="zh">中</button>
+    </div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>
