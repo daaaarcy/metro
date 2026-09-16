@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { buildStation, computeOpenings } from './station.js';
-import { LEVELS, BOXES, worldToBox } from './station-data.js';
+import { LEVELS, BOXES, STATIONS, worldToBox } from './station-data.js';
 import { CameraRig } from './controls.js';
 import { buildUI, showInfo, showPrompt, updateTicker, updateClock } from './ui.js';
 import { EscalatorSteps } from './anim/escalators.js';
@@ -148,6 +148,32 @@ function levelBoxAt(p) {
   }
   return null;
 }
+// ---------- masthead follows the station you're in / looking at ----------
+// walk → the level box containing the player; orbit → the look-target.
+// In the link corridor or in free space, the nearest station centre wins.
+const titleZh = document.querySelector('#masthead h1 .zh');
+const titleEn = document.querySelector('#masthead h1 .en');
+const STN_CX = Object.fromEntries(Object.values(STATIONS)
+  .map(s => [s.id, BOXES[Object.keys(s.boxes)[0]].cx]));
+let titleStn = '';
+function updateTitle() {
+  const pt = rig.mode === 'walk' ? camera.position : rig.orbit.target;
+  const uid = levelBoxAt(pt);
+  let stn = uid ? uid.split(':')[0] : null;
+  if (!stn) {
+    let bd = Infinity;
+    for (const [id, cx] of Object.entries(STN_CX)) {
+      const d = Math.abs(pt.x - cx); if (d < bd) { bd = d; stn = id; }
+    }
+  }
+  if (stn === titleStn) return;
+  titleStn = stn;
+  const s = STATIONS[stn];
+  titleZh.textContent = `${s.zh}站`;
+  titleEn.textContent = `${s.en} Station`;
+  document.title = `${s.zh}站 ${s.en} Station — 3D Layout`;
+}
+
 // a level is "exposed" once a level above it *at the same station* is hidden
 function exposedLevel(uid) {
   const lvl = LEVELS.find(l => l.uid === uid);
@@ -417,6 +443,7 @@ function tick() {
   tickerT += dt;
   if (tickerT > 0.5) {
     tickerT = 0;
+    updateTitle();
     updateTicker(trainSim.board(), trainSim.tt.live, simNow);
     updateClock(simNow, speed);
   }
