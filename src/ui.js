@@ -96,6 +96,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   // level list grouped by station — each group collapses on its header,
   // jump-to viewpoint per level. Open/closed state persists.
   const list = document.getElementById('level-list');
+  list.replaceChildren();   // rebuild cleanly if buildUI ever re-runs
   const OPEN_KEY = 'adm-lvl-open';
   let savedOpen = null;
   try { savedOpen = JSON.parse(localStorage.getItem(OPEN_KEY) || 'null'); } catch { /* bad JSON */ }
@@ -103,35 +104,32 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   const saveOpen = () => {
     try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openSet])); } catch { /* private mode */ }
   };
-  let lastStn = null, rowsEl = null;
-  for (const lvl of LEVELS) {
-    if (lvl.station !== lastStn) {
-      lastStn = lvl.station;
-      const stn = STATIONS[lastStn], sid = lastStn;
-      const grp = document.createElement('div');
-      grp.className = 'lvl-group';
-      const head = document.createElement('div');
-      head.className = 'lvl-stn';
-      head.innerHTML = `<span class="lvl-chev">▾</span><span class="zh">${stn.zh}</span> <span class="en">${stn.en}</span>`;
-      rowsEl = document.createElement('div');
-      rowsEl.className = 'lvl-rows';
-      grp.append(head, rowsEl);
-      list.appendChild(grp);
-      const apply = () => grp.classList.toggle('closed', !openSet.has(sid));
-      head.addEventListener('click', () => {
-        openSet.has(sid) ? openSet.delete(sid) : openSet.add(sid);
-        saveOpen(); apply();
-      });
-      apply();
+  for (const [sid, stn] of Object.entries(STATIONS)) {
+    const grp = document.createElement('div');
+    grp.className = 'lvl-group';
+    const head = document.createElement('div');
+    head.className = 'lvl-stn';
+    head.innerHTML = `<span class="lvl-chev">▾</span><span class="zh">${stn.zh}</span> <span class="en">${stn.en}</span>`;
+    const rowsEl = document.createElement('div');
+    rowsEl.className = 'lvl-rows';
+    grp.append(head, rowsEl);
+    list.appendChild(grp);
+    const apply = () => grp.classList.toggle('closed', !openSet.has(sid));
+    head.addEventListener('click', () => {
+      openSet.has(sid) ? openSet.delete(sid) : openSet.add(sid);
+      saveOpen(); apply();
+    });
+    apply();
+    for (const lvl of LEVELS.filter(l => l.station === sid)) {
+      const row = document.createElement('div');
+      row.className = 'lvl-row';
+      row.innerHTML = `
+        <span class="lvl-id">${lvl.id}</span>
+        <span class="lvl-name"><span class="zh">${lvl.zh}</span> <span class="en">${lvl.en}</span></span>
+        <button class="go" data-id="${lvl.uid}">go</button>`;
+      rowsEl.appendChild(row);
+      row.querySelector('.go').addEventListener('click', () => onGoto(lvl.uid, vp[lvl.uid]));
     }
-    const row = document.createElement('div');
-    row.className = 'lvl-row';
-    row.innerHTML = `
-      <span class="lvl-id">${lvl.id}</span>
-      <span class="lvl-name"><span class="zh">${lvl.zh}</span> <span class="en">${lvl.en}</span></span>
-      <button class="go" data-id="${lvl.uid}">go</button>`;
-    rowsEl.appendChild(row);
-    row.querySelector('.go').addEventListener('click', () => onGoto(lvl.uid, vp[lvl.uid]));
   }
 
   // station mini-map — expandable MTR schematic; lit (built) stations
@@ -139,7 +137,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   const mapPanel = document.getElementById('map-panel');
   const mapToggle = document.getElementById('map-toggle');
   const mapSvg = buildMiniMap({ onGoto: uid => { onGoto(uid, vp[uid]); setMap(false); } });
-  document.getElementById('map-body').appendChild(mapSvg);
+  document.getElementById('map-body').replaceChildren(mapSvg);
   // chip thumbnail — <use> re-renders the same #mtr-net group, so the
   // map exists once in the DOM rather than as a cloned duplicate
   const NS = 'http://www.w3.org/2000/svg';
@@ -150,6 +148,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   const use = document.createElementNS(NS, 'use');
   use.setAttribute('href', '#mtr-net');
   thumb.appendChild(use);
+  mapToggle.querySelector('.thumb')?.remove();
   mapToggle.appendChild(thumb);
   const setMap = show => mapPanel.classList.toggle('show', show);
   mapToggle.addEventListener('click', () => setMap(!mapPanel.classList.contains('show')));
@@ -157,6 +156,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
 
   // line legend
   const legend = document.getElementById('legend');
+  legend.replaceChildren();
   for (const l of Object.values(LINES)) {
     const row = document.createElement('div');
     row.className = 'legend-row';
