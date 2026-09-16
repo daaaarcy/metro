@@ -140,21 +140,38 @@ export class Passengers {
     for (const im of Object.values(this.parts)) im.instanceColor.needsUpdate = true;
   }
 
+  // the walkable rect a ped is standing in — destinations stay inside it so
+  // paths never require crossing balustrades, track troughs or the void
+  homeRect(p) {
+    const rects = WALK_RECTS[p.level];
+    return rects.find(r => p.x >= r.x0 && p.x <= r.x1 && p.z >= r.z0 && p.z <= r.z1)
+      || rects.reduce((best, r) => {
+        const d = Math.hypot(p.x - (r.x0 + r.x1) / 2, p.z - (r.z0 + r.z1) / 2);
+        return !best || d < best.d ? { r, d } : best;
+      }, null).r;
+  }
+
   // pick a destination: mostly wander; sometimes ride an escalator or cross a gate
   choose(p) {
     const lvl = p.level;
     const roll = Math.random();
+    const home = this.homeRect(p);
+    const inHome = (x, z) => x >= home.x0 - 0.5 && x <= home.x1 + 0.5 && z >= home.z0 - 0.5 && z <= home.z1 + 0.5;
 
     if (roll < 0.22) {
-      // find a rideable escalator from this level
+      // find a rideable escalator from this level — mouth must be reachable,
+      // i.e. on the same platform strip / bridge section the ped is on
       const opts = ESC_RUNS.filter(r =>
-        (r.going === 'down' && r.from === lvl) || (r.going === 'up' && r.to === lvl));
+        (r.going === 'down' && r.from === lvl) || (r.going === 'up' && r.to === lvl))
+        .map(run => {
+          const top = run.going === 'down';
+          const ex = top ? run.x1 - run.dx * 1.1 : run.x2 + run.dx * 1.1;
+          const ez = top ? run.z1 - run.dz * 1.1 : run.z2 + run.dz * 1.1;
+          return { run, top, l: worldToBox(this.boxOf[lvl], ex, ez) };
+        })
+        .filter(o => inHome(o.l.x, o.l.z));
       if (opts.length) {
-        const run = opts[Math.floor(Math.random() * opts.length)];
-        const top = run.going === 'down';
-        const ex = top ? run.x1 - run.dx * 1.1 : run.x2 + run.dx * 1.1;
-        const ez = top ? run.z1 - run.dz * 1.1 : run.z2 + run.dz * 1.1;
-        const l = worldToBox(this.boxOf[lvl], ex, ez);
+        const { run, top, l } = opts[Math.floor(Math.random() * opts.length)];
         p.run = run; p.rideTop = top;
         p.tx = l.x; p.tz = l.z; p.state = 'toEsc';
         return;
@@ -202,12 +219,10 @@ export class Passengers {
         return;
       }
     }
-    // wander
-    const rects = WALK_RECTS[lvl];
+    // wander — inside the current walkable region only
     for (let tries = 0; tries < 6; tries++) {
-      const r = rects[Math.floor(Math.random() * rects.length)];
-      const tx = THREE.MathUtils.lerp(r.x0 + 1, r.x1 - 1, Math.random());
-      const tz = THREE.MathUtils.lerp(r.z0 + 1, r.z1 - 1, Math.random());
+      const tx = THREE.MathUtils.lerp(home.x0 + 1, home.x1 - 1, Math.random());
+      const tz = THREE.MathUtils.lerp(home.z0 + 1, home.z1 - 1, Math.random());
       if (pointInRects(tx, tz, this.holes[lvl])) continue;
       if (!pathClear(p.x, p.z, tx, tz, this.holes[lvl])) continue;
       if (this.insideSolid(lvl, tx, tz)) continue;
@@ -271,6 +286,7 @@ export class Passengers {
       // frame-start pose — the "from" for the swept wall clamp; if a scripted
       // state teleports the ped across levels the sweep is skipped that frame
       const lvlPre = p.level;
+      const stPre = p.state;
       const wPre = boxToWorld(this.boxOf[lvlPre], p.x, p.z);
 
       switch (p.state) {
@@ -438,17 +454,26 @@ export class Passengers {
         continue;
       }
 
-      // walk-cycle amount eases toward 1 while moving, 0 when standing
+      // walk-cycle amount eases toward 1 while moving, 0 when standing —
+      // and while grinding against a wall (stuck), so limbs stop swinging
       const moved = Math.hypot(p.x - (p.px ?? p.x), p.z - (p.pz ?? p.z));
-      const movingTgt = p.state === 'esc' ? 0 : moved > 0.002 ? 1 : 0;
-      p.moving += (movingTgt - p.moving) * Math.min(1, dt * 8);
       p.px = p.x; p.pz = p.z;
 
-      // pressed against a collider with no progress → give up and re-choose
-      if (MOVING.has(p.state) && moved < 0.004) {
-        p.stuck = (p.stuck || 0) + dt;
-        if (p.stuck > 2.5) { p.state = 'idle'; p.wait = 0.3 + Math.random() * 0.9; p.stuck = 0; }
-      } else p.stuck = 0;
+      // stuck = no progress toward the current target. A ped pressed against
+      // a balustrade still jitters a few mm per frame (collision push-back),
+      // so displacement can't detect it — distance-to-target can.
+      if (p.state !== stPre) { p.stuck = 0; p.lastD = null; }   // new target/state
+      if (MOVING.has(p.state)) {
+        const dist = Math.hypot(p.tx - p.x, p.tz - p.z);
+        if (p.lastD == null || dist < p.lastD - 0.004) { p.stuck = 0; p.lastD = dist; }
+        else {
+          p.stuck = (p.stuck || 0) + dt;
+          if (p.stuck > 2.5) { p.state = 'idle'; p.wait = 0.4 + Math.random() * 0.9; p.stuck = 0; p.lastD = null; }
+        }
+      } else { p.stuck = 0; p.lastD = null; }
+
+      const movingTgt = p.state === 'esc' || p.stuck > 0.6 ? 0 : moved > 0.002 ? 1 : 0;
+      p.moving += (movingTgt - p.moving) * Math.min(1, dt * 8);
       if (p.moving > 0.02) p.phase += moved / 0.38 * Math.PI;
 
       const bx = this.boxOf[p.level];
