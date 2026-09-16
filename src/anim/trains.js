@@ -259,6 +259,7 @@ class Consist {
     scene.add(this.train);
 
     this.i = 0;                       // index of the stop we're at / heading to
+    this.leg = this.legs[0];          // current leg — valid before first _beginRun
     this.ds = null;                   // door set when berthed (null mid-run)
     this.bx = { cx: 0, cz: 0, rot: 0 }; // live frame for the player constraint
     this.tx = 0; this.zc = 0;

@@ -290,6 +290,26 @@ export class CameraRig {
     return [px, pz];
   }
 
+  // The consist the player is riding is leaving the built world (an 'off'
+  // leg — the consist goes invisible in the void). Put them back on the
+  // platform beside the door set they boarded through, at their current x.
+  ejectToPlatform(svc) {
+    const ds = svc.stop?.ds;
+    this._aboard = null;
+    if (!ds) return;
+    const bx = BOXES[levelById(ds.level).box];
+    const lp = worldToBox(bx, this.camera.position.x, this.camera.position.z);
+    const tr = ds.track;
+    const sgn = Math.sign(ds.z - (tr.z0 + tr.z1) / 2) || 1;
+    lp.x = Math.max(tr.x0 + 1, Math.min(tr.x1 - 1, lp.x));
+    lp.z = ds.z + sgn * (RADIUS + 0.25);
+    const w = boxToWorld(bx, lp.x, lp.z);
+    this.camera.position.x = w.x;
+    this.camera.position.z = w.z;
+    this.feetY = levelById(ds.level).y;
+    this.vy = 0;
+  }
+
   setMode(mode) {
     this.mode = mode;
     this.orbit.enabled = mode === 'orbit';

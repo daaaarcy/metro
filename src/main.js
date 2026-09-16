@@ -427,7 +427,14 @@ function tick() {
     ? Math.min(passengers.countNear(camera.position.x, rig.feetY, camera.position.z) / 12, 1)
     : 0);
   const events = trainSim.update(sdt, audio, simNowFn, speed);
-  for (const ev of events) passengers.onTrainEvent(ev, audio);
+  for (const ev of events) {
+    passengers.onTrainEvent(ev, audio);
+    // a consist leaving the built world would carry a rider into the void —
+    // put them back on the platform as the doors close
+    if (ev.type === 'depart' && rig._aboard === ev.service && ev.service.leg?.via === 'off') {
+      rig.ejectToPlatform(ev.service);
+    }
+  }
   if (peopleOn) passengers.update(sdt, escT, trainSim, audio);
   updateGates(sdt);
 
