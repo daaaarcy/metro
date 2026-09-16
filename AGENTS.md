@@ -100,7 +100,15 @@ headways in `TRAIN_SPEC`.
 ## Verifying
 
 1. `npm run build` must exit 0 (the >500 kB chunk warning is known/OK).
-2. Drive it in a browser (`npm run dev` + Playwright). Exposed globals for
+2. Drive it in a browser (`npm run dev` + Playwright/chrome-devtools MCP).
+   **Eval safety**: `browser_evaluate`/`evaluate_script` `await` the returned
+   value with no timeout — a promise that never settles hangs the tool call
+   forever. `~/.config/devin/mcp-eval-guard.mjs` proxies both servers and
+   races evals against `MCP_EVAL_TIMEOUT_MS` (default 60 s, returns
+   `{__evalTimeout: ms}` on expiry). Still write bounded evals: prefer
+   `async () => {…}` over `new Promise(async r => …)` (a throw inside the
+   executor never resolves), and cap long waits with `Promise.race`. Exposed
+   globals for
    checks: `window.__rig` (mode, feetY, floorAt, teleport), `window.__cam`,
    `window.__trains` (services, `tt.byPlat`), `window.__people.list`,
    `window.__renderer` (`renderer.info.render.calls` for draw-call counts).
