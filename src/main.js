@@ -182,7 +182,9 @@ function exposedLevel(uid) {
     && levelGroups[l.uid] && !levelGroups[l.uid].visible);
 }
 function updateLabels() {
-  const camLvl = levelAtY(camera.position.y);
+  // walk mode: only the level box the camera is inside (station-aware —
+  // matching by height alone would show Admiralty's labels at Hong Kong)
+  const camLvl = rig.mode === 'orbit' ? levelAtY(camera.position.y) : levelBoxAt(camera.position);
   const inside = rig.mode === 'orbit' ? levelBoxAt(camera.position) : null;
   for (const o of labelObjs) {
     const lvl = o.userData.level;
@@ -388,7 +390,7 @@ function updatePick(dt) {
   }
   if (!pt && kept) pt = kept.point;
   if (!pt) { showInfo(null); return; }
-  const l = LEVELS.find(l => l.uid === levelAtY(pt.y));
+  const l = LEVELS.find(l => l.uid === levelBoxAt(pt));
   if (!l) { showInfo(null); return; }
   showInfo(`<span class="zh">${l.station === 'ADM' ? '' : l.station + ' · '}${l.id} ${l.zh}</span><span class="en">${l.en}</span>`);
 }

@@ -14,6 +14,24 @@ function viewpoints() {
       continue;
     }
     const bx = BOXES[lvl.box];
+    // street levels (G — ground or check-in hall): stand at the centroid
+    // of the exit fan, looking toward its denser half
+    const exs = lvl.id === 'G' && STATIONS[lvl.uid.split(':')[0]]?.exits;
+    if (exs?.length) {
+      const zr = STATIONS[lvl.uid.split(':')[0]].exitZ || 15;
+      const cx = exs.reduce((s, e) => s + e.x, 0) / exs.length;
+      const cz = exs.reduce((s, e) => s + e.side, 0) / exs.length * zr * 0.5;
+      const east = exs.filter(e => e.x > cx), west = exs.filter(e => e.x <= cx);
+      const far = east.length >= west.length ? east : west;
+      const lx = far.reduce((s, e) => s + e.x, 0) / far.length;
+      const lz = far.reduce((s, e) => s + e.side, 0) / far.length * zr * 0.8;
+      const e0 = boxToWorld(bx, cx, cz), t0 = boxToWorld(bx, lx, lz);
+      v[lvl.uid] = {
+        pos: new THREE.Vector3(e0.x, lvl.y + eye, e0.z),
+        look: new THREE.Vector3(t0.x, lvl.y + 0.6, t0.z),
+      };
+      continue;
+    }
     const spec = PLATFORMS[lvl.uid];
     const zs = spec?.kind === 'single' ? spec.single.side : -1;
     const e = boxToWorld(bx, bx.len / 2 - 16, zs * bx.wid / 5);
