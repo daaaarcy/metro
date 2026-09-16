@@ -75,7 +75,7 @@ export function gateBank(x0, x1, zRow, y, bx = { cx: 0, cz: 0, rot: 0 }, level =
     }
     const w = boxToWorld(bx, xLane, zRow);
     GATES.push({
-      x: w.x, z: w.z, half: clear / 2, open: 0, timer: 0, level,
+      x: w.x, y: y + 1, z: w.z, half: clear / 2, open: 0, timer: 0, level,
       rect: worldRect(xLane - clear / 2, zRow - 0.22, xLane + clear / 2, zRow + 0.22),
       flaps,
     });

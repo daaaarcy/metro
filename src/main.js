@@ -422,6 +422,7 @@ function tick() {
   }
   passengers.hurry = weather.rainAmt > 0.25;   // people hurry on the street in rain
   audio.setRain?.(weather.rainAmt * (camera.position.y > -3 ? 1 : 0.12));
+  audio.setListener?.(rig.mode === 'walk' ? camera.position : rig.orbit.target);
   audio.setCrowd?.(rig.mode === 'walk'
     ? Math.min(passengers.countNear(camera.position.x, rig.feetY, camera.position.z) / 12, 1)
     : 0);

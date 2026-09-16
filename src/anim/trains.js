@@ -216,6 +216,7 @@ class Stop {
     return end === 'x1' ? this.tr.x1 + halfLen + 4 : this.tr.x0 - halfLen - 4;
   }
   worldOf(lx) { return boxToWorld(this.bx, lx, this.zc); }
+  pos() { const w = this.worldOf(this.stopX); return { x: w.x, y: this.levelY, z: w.z }; }
 }
 
 // legs[i] runs from stops[i] to stops[(i+1)%n]:
@@ -348,7 +349,7 @@ class Consist {
     this.t = leg.via === 'tunnel' ? leg.travel : DEP_T;
     this.s = 0;
     this.events.push({ type: 'depart', face: this.stop.face, level: this.stop.uid, service: this });
-    audio?.announceDepart(this.stop.face, this.stop.uid);
+    audio?.announceDepart(this.stop.face, this.stop.pos());
   }
 
   update(dt, audio, tt, simNow, speed) {
@@ -359,9 +360,9 @@ class Consist {
         this.setDoors(!closing, dt);
         if (!this._dwelled && this.t < this.stop.dwell * 0.55) {
           this._dwelled = true;
-          audio?.announceDwell(this.stop.face);
+          audio?.announceDwell(this.stop.face, this.stop.pos());
         }
-        if (closing && !this._chimed) { this._chimed = true; audio?.doorChime(); }
+        if (closing && !this._chimed) { this._chimed = true; audio?.doorChime(this.stop.pos()); }
         if (this.t <= 0) {
           this._chimed = false; this._dwelled = false;
           this._beginRun(audio);
@@ -387,7 +388,7 @@ class Consist {
         if (p > 0.82 && !this._ann) {
           this._ann = true;
           this.events.push({ type: 'arrive', face: B.face, level: B.uid });
-          audio?.announceArrive(B.face, B.uid);
+          audio?.announceArrive(B.face, B.pos());
         }
         if (this.t <= 0) {
           this._ann = false;
@@ -427,7 +428,7 @@ class Consist {
         if (p > 0.6 && !this._ann) {
           this._ann = true;
           this.events.push({ type: 'arrive', face: B.face, level: B.uid });
-          audio?.announceArrive(B.face, B.uid);
+          audio?.announceArrive(B.face, B.pos());
         }
         if (this.t <= 0) {
           this.i = (this.i + 1) % this.stops.length;

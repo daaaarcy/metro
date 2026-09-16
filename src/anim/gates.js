@@ -7,7 +7,7 @@ const SWING = 1.35;      // radians the paddles fold back
 export function openGate(gate, audio) {
   if (gate.timer > 0) return;
   gate.timer = OPEN_TIME;
-  audio?.octopusBeep();
+  audio?.octopusBeep(gate);
 }
 
 export function updateGates(dt) {
