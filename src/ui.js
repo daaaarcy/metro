@@ -122,9 +122,16 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   const mapToggle = document.getElementById('map-toggle');
   const mapSvg = buildMiniMap({ onGoto: uid => { onGoto(uid, vp[uid]); setMap(false); } });
   document.getElementById('map-body').appendChild(mapSvg);
-  const thumb = mapSvg.cloneNode(true);        // inert thumbnail in the chip
+  // chip thumbnail — <use> re-renders the same #mtr-net group, so the
+  // map exists once in the DOM rather than as a cloned duplicate
+  const NS = 'http://www.w3.org/2000/svg';
+  const thumb = document.createElementNS(NS, 'svg');
+  thumb.setAttribute('viewBox', '0 0 1020 680');
   thumb.classList.add('thumb');
-  thumb.querySelectorAll('text').forEach(t => t.remove());
+  thumb.style.pointerEvents = 'none';   // clicks belong to the chip button
+  const use = document.createElementNS(NS, 'use');
+  use.setAttribute('href', '#mtr-net');
+  thumb.appendChild(use);
   mapToggle.appendChild(thumb);
   const setMap = show => mapPanel.classList.toggle('show', show);
   mapToggle.addEventListener('click', () => setMap(!mapPanel.classList.contains('show')));

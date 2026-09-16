@@ -192,11 +192,13 @@ input[type="range"]:disabled { opacity: 0.3; }
 #map-toggle:hover { background: rgba(255,255,255,0.12); }
 #map-toggle .thumb { display: block; width: 108px; height: 62px; margin-top: 4px; opacity: 0.8; }
 #map-panel {
-  display: none; position: absolute; right: 0; bottom: calc(100% + 8px);
-  width: 470px; background: rgba(13,17,23,0.92); backdrop-filter: blur(10px);
+  visibility: hidden; opacity: 0; pointer-events: none;
+  position: absolute; right: 0; bottom: calc(100% + 8px);
+  width: 680px; background: rgba(13,17,23,0.92); backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px 8px;
+  transition: opacity 0.15s ease;
 }
-#map-panel.show { display: block; }
+#map-panel.show { visibility: visible; opacity: 1; pointer-events: auto; }
 #map-close {
   position: absolute; top: 4px; right: 8px;
   background: none; border: none; color: #cfd6df; opacity: 0.5;
@@ -204,8 +206,17 @@ input[type="range"]:disabled { opacity: 0.3; }
 }
 #map-close:hover { opacity: 1; }
 .mtr-svg { display: block; width: 100%; height: auto; }
-.mst .mlab { font-size: 6.2px; fill: #b9c1ca; }
-.mst .mlab.built { font-size: 7.5px; font-weight: 700; fill: #ffffff; }
+.mregion { font-size: 22px; fill: rgba(255,255,255,0.09); font-weight: 600; letter-spacing: 1px; }
+.mlink { stroke: #8b939d; stroke-width: 2; stroke-dasharray: 3 2.4; }
+.mlrt { fill: none; stroke: #d3c329; stroke-width: 2.4; opacity: 0.55; }
+.mst .mdot { fill: #e8eef3; stroke: #22292f; stroke-width: 1.1; }
+.mst .mdot:not(.built) { fill: #8b96a2; stroke: #39424b; }
+.mst .mcap { fill: #dfe6ec; stroke: #22292f; stroke-width: 1; }
+.mst .mcap:not(.built) { fill: #93a0ac; stroke: #39424b; }
+.mst .mlab { font-size: 7.6px; fill: #aeb7c1; }
+.mst .mlab.en { font-size: 6.6px; fill: #848e99; }
+.mst .mlab.built { font-size: 8.4px; font-weight: 700; fill: #ffffff; }
+.mst.go:hover .mdot, .mst.go:hover .mcap { fill: #d2ffd9; }
 .mst .pulse {
   fill: none; stroke: #3ddc74; stroke-width: 1.3; opacity: 0.85;
   transform-box: fill-box; transform-origin: center;
