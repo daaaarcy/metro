@@ -266,12 +266,15 @@ export class Passengers {
   }
 
   cap() {
-    // keep the crowd bounded: recycle 'aboard' passengers
+    // keep the crowd bounded: recycle 'aboard' passengers. Splicing shifts
+    // every later index, so the whole crowd repaints to stay in sync.
+    let culled = false;
     while (this.list.length > this.max - 4) {
       const i = this.list.findIndex(p => p.state === 'aboard');
       if (i < 0) break;
-      this.list.splice(i, 1);
+      this.list.splice(i, 1); culled = true;
     }
+    if (culled) for (const p of this.list) p.dirty = true;
   }
 
   update(dt, t, trainSim, audio) {
@@ -281,6 +284,7 @@ export class Passengers {
 
     for (let i = 0; i < count; i++) {
       const p = this.list[i];
+      if (p.dirty) { this.paint(i); p.dirty = false; }
       let visible = !this.hidden.has(p.level);
 
       // frame-start pose — the "from" for the swept wall clamp; if a scripted
