@@ -16,12 +16,31 @@ const easeIn = p => p * p * p;
 const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc9ced4, roughness: 0.35, metalness: 0.6 });
 const winMat  = new THREE.MeshStandardMaterial({ color: 0x18222e, roughness: 0.2, metalness: 0.3 });
 const doorMat = new THREE.MeshStandardMaterial({ color: 0xb4bac2, roughness: 0.4, metalness: 0.5 });
-const wallMat = new THREE.MeshStandardMaterial({ color: 0xd6dade, roughness: 0.55, metalness: 0.15, side: THREE.BackSide });
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xd6dade, roughness: 0.55, metalness: 0.15, side: THREE.BackSide, emissive: 0x3a3f46, emissiveIntensity: 1 });
 const headMat = new THREE.MeshStandardMaterial({ color: 0xfff6cc, emissive: 0xffedb0, emissiveIntensity: 2.2 });
-const innerMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.1 });
+// cabin furniture is vertex-coloured; a small emissive stands in for the
+// car's own interior lighting so the cabin doesn't read as a cave inside
+// the closed body shell
+const innerMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.1, emissive: 0x34383e, emissiveIntensity: 1 });
 
-// M-Train door positions per car: 5 pairs per side (fractions of car length)
+// M-Train door positions per car: 5 pairs per side (fractions of car length).
+// AEL stock has only 2 pairs per side near the car ends (its baggage K car
+// keeps the full 5). Doors are REAL: PSD bays open only where a consist
+// actually has a door leaf, so platform bays between doors stay sealed.
+const CAR_GAP = 0.55;
 const DOOR_FR = [-0.4, -0.2, 0, 0.2, 0.4];
+const DOOR_FR_AEX = [-0.36, 0.36];
+const doorFrForCar = (line, c, cars) =>
+  line === 'AEX' ? (c === cars - 1 ? DOOR_FR : DOOR_FR_AEX) : DOOR_FR;
+// door leaf x positions in the berthed door-set's frame
+function doorXsFor(spec, line, tx) {
+  const out = [], pitch = spec.carLen + CAR_GAP;
+  for (let c = 0; c < spec.cars; c++) {
+    const cx = tx + (c - (spec.cars - 1) / 2) * pitch;
+    for (const f of doorFrForCar(line, c, spec.cars)) out.push(cx + f * spec.carLen);
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------- geometry
 // vertex-coloured box added to the merged interior geometry
@@ -64,48 +83,160 @@ const ledMat = new THREE.MeshBasicMaterial({
   }),
 });
 
-// interior shell + furniture for one consist, merged to a single draw call.
-// Real M-Train: longitudinal bench seats between the 5 door openings, grab
-// poles at each vestibule, overhead rail + hanging straps, gangway bellows,
-// ceiling light band, priority seats at the car ends.
+// interior shell + furniture for one consist — opaque parts merge to one
+// vertex-coloured mesh, glass (draught screens / SIL cab front) to another.
+// Metro stock (M/R/S/A-train): longitudinal scalloped benches between the
+// doorways, glass draught screens at each seat end, yellow grab poles,
+// centre strap rail for standees, Newsline panels, wheelchair bay, cab-end
+// partitions. AEL stock: 2+2 transverse seats, door + overhead luggage
+// racks, cabin TVs, indigo carpet — and a windowless baggage K car.
 function buildInterior(line, cars, carLen, W, H, gap) {
-  const parts = [];
+  const parts = [], glassParts = [], emitParts = [];
   const floorY = 0.72, winLo = 2.42, winHi = 3.32;
+  const aex = line === 'AEX';
+  const seat = { EAL: 0x4a6474, TCL: 0x8fa4b2, SIL: 0x9aa8b2 }[line] ?? 0x9fb6c4;
+  const seatBk = { EAL: 0x3d5563, TCL: 0x7d93a1, SIL: 0x8997a1 }[line] ?? 0x88a2b0;
+  const POLE = 0xd8b93a;
+  // scalloped longitudinal bench: segmented cushions + backrest read as
+  // individual seats (M-train benches are moulded per-passenger divisions)
+  const bench = (x0, bx, s, pri) => {
+    const len = carLen * 0.155, cx = x0 + bx * carLen, seg = len / 5;
+    const pad = pri ? 0xc0463e : seat, back = pri ? 0xa83c36 : seatBk;
+    for (let i = 0; i < 5; i++) {
+      const sx = cx - len / 2 + seg * (i + 0.5);
+      cbox(parts, seg - 0.045, 0.14, 0.46, pad, sx, floorY + 0.38, s * (W / 2 - 0.34));
+      cbox(parts, seg - 0.045, 0.5, 0.1, back, sx, floorY + 0.68, s * (W / 2 - 0.1));
+    }
+    cbox(parts, len, 0.32, 0.4, 0x7a848c, cx, floorY + 0.17, s * (W / 2 - 0.32));  // seat plinth
+  };
+  // AEL transverse seat: cushion + back + headrest, faces dir (+x/-x)
+  const aexSeat = (x, z, dir, shade) => {
+    const back = shade === 0x35648c ? 0x42719b : 0x46a0b2;
+    cbox(parts, 0.44, 0.34, 0.44, 0xaab0b6, x + dir * 0.02, floorY + 0.17, z);     // base plinth
+    cbox(parts, 0.46, 0.12, 0.5, shade, x, floorY + 0.4, z);
+    cbox(parts, 0.1, 0.62, 0.5, back, x - dir * 0.24, floorY + 0.78, z);
+    cbox(parts, 0.08, 0.14, 0.3, back, x - dir * 0.25, floorY + 1.14, z);          // headrest
+  };
   for (let c = 0; c < cars; c++) {
     const x0 = (c - (cars - 1) / 2) * (carLen + gap);
+    const frs = doorFrForCar(line, c, cars);
+    const baggage = aex && c === cars - 1;
     // floor + ceiling + below-window side walls (drawn inside-out via wallMat)
-    cbox(parts, carLen - 0.2, 0.08, W - 0.3, 0x848b91, x0, floorY - 0.04, 0);          // speckled floor
+    cbox(parts, carLen - 0.2, 0.08, W - 0.3, aex ? 0x46536e : 0x848b91, x0, floorY - 0.04, 0);
     for (const s of [-1, 1]) {
       const zw = s * (W / 2 - 0.06);
       cbox(parts, carLen - 0.2, winLo - floorY, 0.06, 0xe8eaec, x0, (winLo + floorY) / 2, zw);   // wall below glass
       cbox(parts, carLen - 0.2, 0.9, 0.07, 0x22262c, x0, (winLo + winHi) / 2, zw);               // window band from inside
       cbox(parts, carLen - 0.2, H - winHi + 0.4, 0.06, 0xdfe2e5, x0, (H + winHi) / 2 - 0.1, zw); // above window
-      // longitudinal bench seats between the 5 doorways (4 bays + car ends)
-      for (const bx of [-0.3, -0.1, 0.1, 0.3]) {
-        const pri = c === 0 && bx === -0.3 || c === cars - 1 && bx === 0.3;
-        cbox(parts, carLen * 0.155, 0.46, 0.46, pri ? 0xc0463e : 0x9fb6c4, x0 + bx * carLen, floorY + 0.23, s * (W / 2 - 0.34));
-        cbox(parts, carLen * 0.155, 0.5, 0.1, pri ? 0xa83c36 : 0x88a2b0, x0 + bx * carLen, floorY + 0.62, s * (W / 2 - 0.1));
-      }
-      // vestibule grab poles at each door edge
-      for (const f of DOOR_FR) {
+      // window mullions: a post at every door edge + mid-bay breaks the band
+      for (const f of frs) {
         for (const e of [-0.85, 0.85]) {
-          cbox(parts, 0.045, 1.9, 0.045, 0xd8b93a, x0 + f * carLen + e, floorY + 0.95, s * (W / 2 - 0.6));
+          cbox(parts, 0.09, 0.9, 0.09, 0xdfe2e5, x0 + f * carLen + e, (winLo + winHi) / 2, zw);
         }
       }
-      // overhead rail + hanging straps over the benches
-      cbox(parts, carLen - 0.6, 0.05, 0.05, 0xc9ced4, x0, floorY + 1.92, s * (W / 2 - 0.55));
-      for (let i = 0; i < 9; i++) {
-        cbox(parts, 0.05, 0.22, 0.02, 0xe8e2d2, x0 - carLen / 2 + 1.4 + i * (carLen - 2.8) / 8, floorY + 1.78, s * (W / 2 - 0.55));
-        cbox(parts, 0.05, 0.09, 0.09, 0xe8e2d2, x0 - carLen / 2 + 1.4 + i * (carLen - 2.8) / 8, floorY + 1.62, s * (W / 2 - 0.55));
+      for (const bx of [-0.3, -0.1, 0.1, 0.3]) {
+        cbox(parts, 0.09, 0.9, 0.09, 0xdfe2e5, x0 + bx * carLen, (winLo + winHi) / 2, zw);
+      }
+      if (!aex) {
+        // longitudinal benches between the doorways; car-1 north bay of the
+        // second car is the wheelchair space instead (fold-up pad + grab bar)
+        for (const bx of [-0.3, -0.1, 0.1, 0.3]) {
+          const pri = c === 0 && bx === -0.3 || c === cars - 1 && bx === 0.3;
+          if (c === 1 && bx === -0.1 && s === 1) {
+            cbox(parts, 0.6, 0.5, 0.09, 0x7a848c, x0 + bx * carLen, floorY + 0.62, s * (W / 2 - 0.13)); // tip-up pad
+            cbox(parts, 1.0, 0.05, 0.05, POLE, x0 + bx * carLen, floorY + 0.95, s * (W / 2 - 0.2));    // grab bar
+            continue;
+          }
+          bench(x0, bx, s, pri);
+        }
+        // glass draught screens flank every doorway at the seat ends,
+        // with the grab pole at the screen's free edge
+        for (const f of frs) {
+          for (const e of [-0.85, 0.85]) {
+            const sx = x0 + f * carLen + e;
+            const g = new THREE.BoxGeometry(0.05, 1.85, 0.6);
+            g.translate(sx, floorY + 0.925, s * (W / 2 - 0.35));
+            glassParts.push(g);
+            cbox(parts, 0.045, 1.9, 0.045, POLE, sx, floorY + 0.95, s * (W / 2 - 0.6));
+          }
+        }
+        // overhead rail + hanging straps over the benches
+        cbox(parts, carLen - 0.6, 0.05, 0.05, 0xc9ced4, x0, floorY + 1.92, s * (W / 2 - 0.55));
+        for (let i = 0; i < 9; i++) {
+          cbox(parts, 0.05, 0.22, 0.02, 0xe8e2d2, x0 - carLen / 2 + 1.4 + i * (carLen - 2.8) / 8, floorY + 1.78, s * (W / 2 - 0.55));
+          cbox(parts, 0.05, 0.09, 0.09, 0xe8e2d2, x0 - carLen / 2 + 1.4 + i * (carLen - 2.8) / 8, floorY + 1.62, s * (W / 2 - 0.55));
+        }
+      } else {
+        // AEL: vestibule grab poles at each door edge + luggage rack towers
+        for (const f of frs) {
+          for (const e of [-0.9, 0.9]) {
+            cbox(parts, 0.045, 1.9, 0.045, POLE, x0 + f * carLen + e, floorY + 0.95, s * (W / 2 - 0.6));
+          }
+          for (const e of [-1.35, 1.35]) {
+            const rx = x0 + f * carLen + e;
+            for (const ry of [0.45, 0.95, 1.45]) {
+              cbox(parts, 0.7, 0.04, 0.5, 0x8a9298, rx, floorY + ry, s * (W / 2 - 0.4));
+            }
+            for (const dz of [-0.22, 0.22]) {
+              cbox(parts, 0.7, 1.55, 0.04, 0x6a7076, rx, floorY + 0.85, s * (W / 2 - 0.4) + dz);
+            }
+          }
+        }
+      }
+      // door threshold warning strips on the floor
+      for (const f of frs) {
+        cbox(parts, 1.7, 0.015, 0.5, 0x3a3e44, x0 + f * carLen, floorY + 0.012, s * (W / 2 - 0.28));
+        cbox(parts, 1.7, 0.02, 0.07, 0xd8b400, x0 + f * carLen, floorY + 0.015, s * (W / 2 - 0.55));
       }
     }
-    // ceiling + light band + A/C vent strip
+    // ceiling + light band + A/C vent strip — the band is a real emissive
+    // panel so the cabin reads as lit from inside
     cbox(parts, carLen - 0.2, 0.06, W - 0.4, 0xeef0f1, x0, H + 0.02, 0);
-    cbox(parts, carLen - 1.2, 0.05, 0.5, 0xffffff, x0, H - 0.04, 0);
+    cbox(emitParts, carLen - 1.2, 0.05, 0.5, 0xffffff, x0, H - 0.04, 0);
     cbox(parts, carLen - 1.4, 0.04, 0.24, 0xb9bec4, x0, H - 0.05, W / 4);
     cbox(parts, carLen - 1.4, 0.04, 0.24, 0xb9bec4, x0, H - 0.05, -W / 4);
-    // centre ceiling poles near mid-car
-    for (const f of [-0.12, 0.12]) cbox(parts, 0.045, 1.75, 0.045, 0xd8b93a, x0 + f * carLen, floorY + 0.9, 0);
+    if (!aex) {
+      // centre strap rail + grab handles down the aisle for standees
+      cbox(parts, carLen - 1.5, 0.05, 0.05, 0xc9ced4, x0, floorY + 1.98, 0);
+      for (let i = 0; i < 7; i++) {
+        const sx = x0 - carLen / 2 + 2.2 + i * (carLen - 4.4) / 6;
+        cbox(parts, 0.045, 0.2, 0.045, 0xe8e2d2, sx, floorY + 1.86, 0);
+        cbox(parts, 0.16, 0.1, 0.04, 0xe8e2d2, sx, floorY + 1.72, 0);
+      }
+      // centre ceiling poles near mid-car
+      for (const f of [-0.12, 0.12]) cbox(parts, 0.045, 1.75, 0.045, POLE, x0 + f * carLen, floorY + 0.9, 0);
+      // Newsline panels at the ceiling edge above the windows
+      for (const s of [-1, 1]) for (const f of [-0.3, -0.1, 0.1, 0.3]) {
+        cbox(parts, 0.62, 0.38, 0.05, 0x14181d, x0 + f * carLen, floorY + 2.06, s * (W / 2 - 0.42));
+      }
+    } else if (!baggage) {
+      // AEL seating bay: 2+2 transverse seats in the mid-car section
+      const xA = x0 - carLen * 0.28, xB = x0 + carLen * 0.28;
+      let row = 0;
+      for (let x = xA; x <= xB; x += 0.92, row++) {
+        const dir = row % 4 < 2 ? 1 : -1;                 // facing fours like the real AEL
+        const shade = row % 4 < 2 ? 0x35648c : 0x3a8fa0;  // blue / aquamarine mix
+        for (const z of [-1.16, -0.6, 0.6, 1.16]) aexSeat(x, z, dir, shade);
+      }
+      // overhead luggage racks above the window seats
+      for (const s of [-1, 1]) {
+        cbox(parts, carLen * 0.58, 0.05, 0.52, 0x9aa0a6, x0, floorY + 1.6, s * 1.14);
+        cbox(parts, carLen * 0.58, 0.09, 0.05, 0x6a7076, x0, floorY + 1.55, s * 0.88);
+      }
+      // cabin TVs at ceiling centre, alternating facing
+      for (const f of [-0.3, -0.1, 0.1, 0.3]) {
+        cbox(parts, 0.9, 0.5, 0.07, 0x14181d, x0 + f * carLen, H - 0.5, 0);
+      }
+    } else {
+      // baggage K car: continuous 3-tier racks along both walls, open floor
+      for (const s of [-1, 1]) for (const ry of [0.45, 0.95, 1.45]) {
+        cbox(parts, carLen * 0.8, 0.04, 0.5, 0x8a9298, x0, floorY + ry, s * (W / 2 - 0.4));
+      }
+      for (const f of [-0.3, 0, 0.3]) {
+        cbox(parts, 1.1, 0.6, 0.5, 0x6a5540, x0 + f * carLen, floorY + 0.78, 0.9);
+        cbox(parts, 0.9, 0.5, 0.45, 0x54606e, x0 + f * carLen + 0.6, floorY + 1.25, -1.0);
+      }
+    }
     // car-end partition walls with the gangway opening
     for (const s of [-1, 1]) {
       const ex = x0 + s * (carLen / 2 - 0.05);
@@ -113,7 +244,7 @@ function buildInterior(line, cars, carLen, W, H, gap) {
       for (const zs of [-1, 1]) cbox(parts, 0.1, 1.6, W / 2 - 0.5, 0xd0d4d8, ex, floorY + 0.8, zs * (W / 4 + 0.22));
     }
     // door leaves recess + headers get route-map strips (real MTR look)
-    for (const f of DOOR_FR) for (const s of [-1, 1]) {
+    for (const f of frs) for (const s of [-1, 1]) {
       cbox(parts, 1.9, 0.42, 0.08, 0xf0f2f4, x0 + f * carLen, floorY + 1.98, s * (W / 2 - 0.1));
     }
     // gangway bellows between cars — open passage with dark rubber frame
@@ -124,13 +255,39 @@ function buildInterior(line, cars, carLen, W, H, gap) {
       cbox(parts, gap + 0.1, 0.25, 1.3, 0x3a3e44, gx, floorY + 2.0, 0);            // bellows header
     }
   }
+  // consist ends: close the gangway opening with the cab wall — a panel with
+  // door + cab window; SIL is driverless, so its end is a full glass screen
+  // riders can see the tunnel through
+  for (const end of [0, cars - 1]) {
+    const s = end === 0 ? -1 : 1;
+    const ex = (end - (cars - 1) / 2) * (carLen + gap) + s * (carLen / 2 - 0.05);
+    if (line === 'SIL') {
+      const g = new THREE.BoxGeometry(0.06, 1.7, 1.0);
+      g.translate(ex, floorY + 1.0, 0);
+      glassParts.push(g);
+      cbox(parts, 0.09, 0.3, 1.0, 0xd0d4d8, ex, floorY + 1.95, 0);
+    } else {
+      cbox(parts, 0.12, 1.6, 0.96, 0xd0d4d8, ex, floorY + 1.0, 0);                // cab wall fill
+      cbox(parts, 0.14, 1.55, 0.55, 0x9aa0a8, ex - s * 0.02, floorY + 0.98, -0.14); // cab door
+      cbox(parts, 0.15, 0.4, 0.3, 0x22262c, ex - s * 0.04, floorY + 1.45, -0.14);   // door window
+    }
+  }
   const mesh = new THREE.Mesh(mergeGeometries(parts), innerMat);
   mesh.castShadow = mesh.receiveShadow = false;
+  const extras = new THREE.Group();
+  if (glassParts.length) {
+    const g = new THREE.Mesh(mergeGeometries(glassParts), M.glass);
+    g.castShadow = g.receiveShadow = false;
+    extras.add(g);
+  }
+  const emit = new THREE.Mesh(mergeGeometries(emitParts), M.lightStrip);
+  emit.castShadow = emit.receiveShadow = false;
+  extras.add(emit);
   // route-map strips + LED panels above each door — merged to two draw calls
   const mapGeos = [], ledGeos = [];
   for (let c = 0; c < cars; c++) {
     const x0 = (c - (cars - 1) / 2) * (carLen + gap);
-    for (const f of DOOR_FR) for (const s of [-1, 1]) {
+    for (const f of doorFrForCar(line, c, cars)) for (const s of [-1, 1]) {
       const mg = new THREE.PlaneGeometry(1.7, 0.26);
       if (s > 0) mg.rotateY(Math.PI);
       mg.translate(x0 + f * carLen, floorY + 2.02, s * (W / 2 - 0.14));
@@ -141,7 +298,6 @@ function buildInterior(line, cars, carLen, W, H, gap) {
       ledGeos.push(lg);
     }
   }
-  const extras = new THREE.Group();
   extras.add(new THREE.Mesh(mergeGeometries(mapGeos), routeMapMat(line)));
   extras.add(new THREE.Mesh(mergeGeometries(ledGeos), ledMat));
   return { mesh, extras };
@@ -149,7 +305,7 @@ function buildInterior(line, cars, carLen, W, H, gap) {
 
 function buildTrain(line, cars, carLen) {
   const g = new THREE.Group();
-  const W = 3.0, H = 3.3, gap = 0.55;
+  const W = 3.0, H = 3.3, gap = CAR_GAP;
   const stripe = new THREE.MeshStandardMaterial({ color: new THREE.Color(LINES[line].color), roughness: 0.5 });
   // car shells merged per material — one draw call each
   const geos = { body: [], win: [], str: [], inner: [] };
@@ -159,10 +315,16 @@ function buildTrain(line, cars, carLen) {
     const x0 = (c - (cars - 1) / 2) * (carLen + gap);
     const bg = new THREE.BoxGeometry(carLen, H, W); bg.translate(x0, 2.1, 0); geos.body.push(bg);
     const wg = new THREE.BoxGeometry(carLen - 0.5, 0.9, W + 0.04); wg.translate(x0, 2.85, 0); geos.win.push(wg);
-    const sg = new THREE.BoxGeometry(carLen, 0.28, W + 0.06); sg.translate(x0, 1.45, 0); geos.str.push(sg);
+    // livery stripe as two side plates — a full-width solid band would
+    // poke through the cabin as a coloured slab at seat height
+    for (const ss of [-1, 1]) {
+      const sg = new THREE.BoxGeometry(carLen, 0.28, 0.04);
+      sg.translate(x0, 1.45, ss * (W / 2 + 0.03)); geos.str.push(sg);
+    }
     const ig = new THREE.BoxGeometry(carLen - 0.7, H - 0.55, W - 0.55); ig.translate(x0, 2.02, 0); geos.inner.push(ig);
-    // five door pairs per car per side, at the real M-Train positions
-    for (const f of DOOR_FR) for (const side of [-1, 1]) for (const s of [-1, 1]) {
+    // door pairs at the real stock positions — 5/car on metro lines,
+    // 2/car near the ends on AEL stock (5 on its baggage car)
+    for (const f of doorFrForCar(line, c, cars)) for (const side of [-1, 1]) for (const s of [-1, 1]) {
       leafSpecs.push({ x: x0 + f * carLen + s * 0.44, z: side * (W / 2 + 0.02), s, side });
     }
   }
@@ -293,6 +455,9 @@ class Consist {
     this.tx = snap ? stop.stopX : this.tx;
     this.floorY = stop.levelY + 0.08;   // car floor = platform height
     this._place(stop.stopX, stop);
+    // real door positions in this door set's frame — PSD bays open only
+    // where a car door actually is (AEL has 2 pairs/car, metro stock 5)
+    this._doorXs = doorXsFor(this.spec, this.route.line, this.tx);
   }
 
   _place(tx, stop) {
@@ -336,7 +501,7 @@ class Consist {
         // leaf pairs share a bay centre; bays the consist doesn't cover
         // (screen longer than the train) stay shut — bare track behind them
         const bayX = d.leafX[i] - d.leafDir[i] * (BAY / 4);
-        const target = ds && bayCovered(bayX, this) ? o * 0.9 : 0;
+        const target = ds && bayOpen(bayX, this) ? o * 0.9 : 0;
         const cur = d._slides[i];
         if (Math.abs(cur - target) > 0.001) {
           d._slides[i] = cur + Math.sign(target - cur) * Math.min(Math.abs(target - cur), dt * 1.4);
@@ -477,9 +642,10 @@ class Consist {
     const ds = this.ds;
     if (!ds) return [];
     const out = [];
-    const step = Math.max(1, Math.floor(ds.xs.length / n));
-    for (let i = 2; i < ds.xs.length - 2; i += step) {
-      const w = boxToWorld(this.bx, ds.xs[i], ds.z + this.doorSide * off);
+    const xs = this._doorXs?.length ? this._doorXs : ds.xs;
+    const step = Math.max(1, Math.floor(xs.length / n));
+    for (let i = 0; i < xs.length; i += step) {
+      const w = boxToWorld(this.bx, xs[i], ds.z + this.doorSide * off);
       out.push({ x: w.x, z: w.z });
     }
     return out;
@@ -517,10 +683,13 @@ export const ROUTES = [
 // The whole opening must sit inside the car: a bay whose edge hangs past
 // the car end would open onto the gap between cars.
 const bayCovered = (x, s) => Math.abs(x - s.tx) < s.trainLen / 2 - 0.45 - BAY / 2;
+// a bay only opens where the consist really has a door — screen bays are
+// spaced finer than car doors, so positions between doors stay sealed
+const bayOpen = (x, s) => bayCovered(x, s) && s._doorXs?.some(d => Math.abs(x - d) < 1.3);
 export function psdBlocked(bay) {
   const s = bay.ds.openSvc;
   if (!(s && s.state === 'dwell' && s.open > 0.55)) return true;
-  return !bayCovered(bay.x, s);
+  return !bayOpen(bay.x, s);
 }
 
 export class TrainSim {
