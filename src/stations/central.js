@@ -82,7 +82,7 @@ export const CEN = {
   exitLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L'],
 
   lifts: [
-    { frame: 'cenConc', x: -20, z: -6, levels: ['L1', 'L2', 'L3', 'L4'] },
+    { frame: 'cenConc', x: -50, z: 2, levels: ['L1', 'L2', 'L3', 'L4'] },
   ],
 
   gateRows: [

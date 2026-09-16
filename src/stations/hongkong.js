@@ -68,7 +68,7 @@ export const HOK = {
   exitLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
 
   lifts: [
-    { frame: 'hokConc', x: 0, z: 0, levels: ['G', 'L1', 'L2', 'L3', 'L4'] },
+    { frame: 'hokConc', x: 0, z: 2, levels: ['G', 'L1', 'L2', 'L3', 'L4'] },
   ],
 
   gateRows: [

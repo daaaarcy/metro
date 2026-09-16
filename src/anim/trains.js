@@ -242,7 +242,7 @@ function resolveRoute(routeDef, doorSets) {
     const inEnd = B.terminus ? B.outEnd : (B.face.dir > 0 ? 'x0' : 'x1');
     return { via, A, B, inEnd, travel: routeDef.travel ?? 30 };
   });
-  return { stops, legs, line: routeDef.line };
+  return { stops, legs, line: routeDef.line, startIdx: routeDef.startIdx };
 }
 
 // -------------------------------------------------------------- the consist
@@ -258,8 +258,10 @@ class Consist {
     this.trainLen = t.len;
     scene.add(this.train);
 
-    this.i = 0;                       // index of the stop we're at / heading to
-    this.leg = this.legs[0];          // current leg — valid before first _beginRun
+    // stagger the consist along the route — two consists must not start
+    // berthed at the same face (they'd render inside each other)
+    this.i = (route.startIdx ?? idx) % this.stops.length;
+    this.leg = this.legs[this.i];     // current leg — valid before first _beginRun
     this.ds = null;                   // door set when berthed (null mid-run)
     this.bx = { cx: 0, cz: 0, rot: 0 }; // live frame for the player constraint
     this.tx = 0; this.zc = 0;
@@ -274,7 +276,7 @@ class Consist {
     // stagger consists along the route; start parked at a stop
     this.state = 'dwell';
     this.t = (idx * 0.5 + Math.random() * 0.4) * this.spec.headway / total + 4;
-    this._berth(this.stops[0], true);
+    this._berth(this.stops[this.i], true);
     this._pw = { x: this.train.position.x, z: this.train.position.z };
   }
 
@@ -328,16 +330,23 @@ class Consist {
     else if (this._lastDs?.openSvc) this._lastDs = null;  // another consist owns it now
     const d = ds || this._lastDs;
     if (d) {
-      const target = ds ? o * 0.9 : 0;
-      if (d._slide === undefined) d._slide = 0;
-      if (Math.abs(d._slide - target) > 0.001) {
-        d._slide += Math.sign(target - d._slide) * Math.min(Math.abs(target - d._slide), dt * 1.4);
-        for (let i = 0; i < d.leafX.length; i++) {
-          this._m4.makeTranslation(d.leafX[i] + d.leafDir[i] * d._slide, d.y, d.z);
-          d.doors.setMatrixAt(i, this._m4);
+      if (!d._slides) d._slides = new Float32Array(d.leafX.length).fill(d._slide ?? 0);
+      let moving = false;
+      for (let i = 0; i < d.leafX.length; i++) {
+        // leaf pairs share a bay centre; bays the consist doesn't cover
+        // (screen longer than the train) stay shut — bare track behind them
+        const bayX = d.leafX[i] - d.leafDir[i] * (BAY / 4);
+        const target = ds && bayCovered(bayX, this) ? o * 0.9 : 0;
+        const cur = d._slides[i];
+        if (Math.abs(cur - target) > 0.001) {
+          d._slides[i] = cur + Math.sign(target - cur) * Math.min(Math.abs(target - cur), dt * 1.4);
+          moving = true;
         }
-        d.doors.instanceMatrix.needsUpdate = true;
-      } else if (!ds) this._lastDs = null;   // fully shut — release the set
+        this._m4.makeTranslation(d.leafX[i] + d.leafDir[i] * d._slides[i], d.y, d.z);
+        d.doors.setMatrixAt(i, this._m4);
+      }
+      if (moving) d.doors.instanceMatrix.needsUpdate = true;
+      else if (!ds) this._lastDs = null;   // fully shut — release the set
     }
   }
 
@@ -485,7 +494,7 @@ export const ROUTES = [
   // Tsuen Wan Line: Admiralty <-> Central terminus (~850 m, ≈2 min)
   { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1,
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 1, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1,
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1, startIdx: 1,
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
   // Island Line through service looping both stations
   { line: 'ISL', travel: 80, legs: ['off', 'tunnel', 'off', 'tunnel'], consists: 2,
@@ -503,9 +512,15 @@ export const ROUTES = [
 
 // a PSD bay is a solid barrier unless the consist berthed there is dwelling
 // with its doors open (ds.openSvc is set at _berth and cleared at _beginRun)
+// AND the consist fully covers the bay — screens run the full platform
+// length but trains can be shorter, so outboard bays open onto bare track.
+// The whole opening must sit inside the car: a bay whose edge hangs past
+// the car end would open onto the gap between cars.
+const bayCovered = (x, s) => Math.abs(x - s.tx) < s.trainLen / 2 - 0.45 - BAY / 2;
 export function psdBlocked(bay) {
   const s = bay.ds.openSvc;
-  return !(s && s.state === 'dwell' && s.open > 0.55);
+  if (!(s && s.state === 'dwell' && s.open > 0.55)) return true;
+  return !bayCovered(bay.x, s);
 }
 
 export class TrainSim {
@@ -522,7 +537,7 @@ export class TrainSim {
       for (const x of ds.xs) {
         const w = boxToWorld(bx, x, ds.z);
         PSD_BAYS.push({
-          level: ds.level, ds,
+          level: ds.level, ds, x,
           cx: w.x, cz: w.z, hx: BAY / 2, hz: 0.12,
           cos: Math.cos(bx.rot), sin: Math.sin(bx.rot),
           y0: lvl.y - 0.5, y1: lvl.y + 3,
