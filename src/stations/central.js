@@ -77,7 +77,8 @@ export const CEN = {
     { id: 'J3', x: 82,  side: -1, zh: '友邦金融中心・美國銀行中心', en: 'AIA Central · Bank of America Tower' },
     { id: 'J2', x: 88,  side: 1,  zh: '遮打花園・中銀大廈・山頂纜車', en: 'Chater Garden · BOC Tower · Peak Tram' },
   ],
-  exitZ: 15.5,
+  // shaft spans |z| exitZ±6.3 — landings must clear the shop row (±19.6)
+  exitZ: 10.5,
   exitLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L'],
 
   lifts: [

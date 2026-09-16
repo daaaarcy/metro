@@ -159,14 +159,16 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
   for (const r of stn.restaurants || []) g.add(restaurant(r, r.side * (Math.abs(rect.z1) - 3.4), 0, -r.side));
   if (stn.mall) g.add(mallEntrance(stn.mall.x, stn.mall.side * (Math.abs(rect.z1) - 3.4), 0, -stn.mall.side, stn.mall));
   if (stn.seven) g.add(sevenEleven(stn.seven.x, stn.seven.side * (Math.abs(rect.z1) - 3.4), 0, -stn.seven.side));
-  const kioskXs = stn.id === 'ADM' ? [-48, -14, 40, 55] : [-40, -5, 35];
+  // kiosk / booth / toilet positions dodge the exit stair shafts that
+  // descend into the concourse (shaft x = exit.x ±1.7, z = ±exitZ∓6.3)
+  const kioskXs = stn.id === 'ADM' ? [-52, -14, 33, 48] : [-40, -5, 35];
   for (const [i, x] of kioskXs.entries()) g.add(kiosk(x, -(gateZ + 3.8), 0, i + 2));
-  for (const [i, x] of (stn.id === 'ADM' ? [-60, -20, 25, 62] : [-50, 15, 55]).entries()) g.add(kiosk(x, gateZ + 3.8, 0, i + 5));
+  for (const [i, x] of (stn.id === 'ADM' ? [-60, -20, 25, 62] : [-50, 15, 58]).entries()) g.add(kiosk(x, gateZ + 3.8, 0, i + 5));
   g.add(serviceBooth(0, gateZ + 3.6, 0));
-  g.add(serviceBooth(-30, -(gateZ + 3.6), 0));
+  g.add(serviceBooth(-36, -(gateZ + 3.6), 0));
   g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, 0, 3.0, gateZ + 3.6));
-  g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -30, 3.0, -(gateZ + 3.6)));
-  g.add(toilets(rect.x0 + 15, -(gateZ + 4.6), 0));
+  g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, -36, 3.0, -(gateZ + 3.6)));
+  g.add(toilets(stn.id === 'CEN' ? rect.x0 + 18.5 : rect.x0 + 15, -(gateZ + 4.6), 0));
   // end-wall ads + system map + bins + fire cabinets
   g.add(postersEnd(rect, 0, -1, rect.z0 + 4, rect.z1 - 4, 12));
   g.add(postersEnd(rect, 0, 1, rect.z0 + 4, 0, 12));

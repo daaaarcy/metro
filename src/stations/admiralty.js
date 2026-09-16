@@ -87,7 +87,8 @@ export const ADM = {
     { id: 'E2', x: 55,  side: -1, zh: '中信大廈',          en: 'CITIC Tower' },
     { id: 'F',  x: 66,  side: 1,  zh: '太古廣場',          en: 'Pacific Place' },
   ],
-  exitZ: 12.7,
+  // shaft spans |z| exitZ±6.3 — landings must clear the shop row (±17.6)
+  exitZ: 8.5,
   exitLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
 
   lifts: [
