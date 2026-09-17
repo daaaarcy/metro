@@ -35,7 +35,7 @@ export class CameraRig {
     this.keys = new Set();
     this.vy = 0;
     this.feetY = camera.position.y - EYE;
-    this._drag = null;
+    this._last = null;
     this._fly = null;
 
     // static collision world (built once by initColliders)
@@ -46,30 +46,25 @@ export class CameraRig {
 
     dom.addEventListener('pointerdown', e => {
       if (this.mode === 'orbit' || document.pointerLockElement === dom) return;
-      // FPS mouse-look: lock the pointer so plain mouse movement turns the
-      // view (Esc releases). unadjustedMovement skips OS pointer accel where
-      // supported; the drag path below is the fallback when lock is denied.
+      // click optionally captures the pointer for edge-free FPS look
+      // (Esc releases); even without it, movement over the canvas turns
+      // the view — see pointermove below.
       try {
         dom.requestPointerLock({ unadjustedMovement: true })
           ?.catch?.(() => dom.requestPointerLock());
       } catch { try { dom.requestPointerLock(); } catch {} }
-      this._drag = { x: e.clientX, y: e.clientY };
-      try { dom.setPointerCapture(e.pointerId); } catch {}
     });
     dom.addEventListener('pointermove', e => {
-      if (this.mode === 'orbit') return;
-      if (document.pointerLockElement === dom) {
-        this.yaw -= e.movementX * 0.0014;
-        this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * 0.0014, -1.45, 1.45);
-        this._drag = { x: e.clientX, y: e.clientY };   // frozen coords — seamless if lock drops
-        return;
+      if (this.mode === 'orbit') { this._last = null; return; }
+      let dx = e.movementX, dy = e.movementY;
+      if (!Number.isFinite(dx) || !Number.isFinite(dy)) {   // engines without movement deltas
+        dx = this._last ? e.clientX - this._last.x : 0;
+        dy = this._last ? e.clientY - this._last.y : 0;
       }
-      if (!this._drag) return;
-      this.yaw -= (e.clientX - this._drag.x) * 0.0018;
-      this.pitch = THREE.MathUtils.clamp(this.pitch - (e.clientY - this._drag.y) * 0.0018, -1.45, 1.45);
-      this._drag = { x: e.clientX, y: e.clientY };
+      this._last = { x: e.clientX, y: e.clientY };
+      this.yaw -= dx * 0.0014;
+      this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0014, -1.45, 1.45);
     });
-    dom.addEventListener('pointerup', () => { this._drag = null; });
     window.addEventListener('keydown', e => {
       this.keys.add(e.code);
       if (e.code === 'KeyE' && this.mode === 'walk') {
