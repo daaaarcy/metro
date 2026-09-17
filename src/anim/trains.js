@@ -701,11 +701,13 @@ export const ROUTES = [
   // harbour-side crossover box). The crossing legs dive under the sea:
   // the path machinery routes them through each destination's arrival
   // portal so the consist glides in aligned with the platform axis.
-  // Yau Ma Tei is the temporary north end — both its faces dispatch
-  // toward Central and reverse off-map at the west portal, same-portal
-  // scissors (TST/JOR are now through stations on the corridor).
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
-    stops: [{ uid: 'YMT:L2', num: 2 },
+  // Mong Kok is the temporary north end — TWL berths the L2 northbound
+  // face (P1), wraps off-map through the overrun tunnel and re-enters
+  // the L3 southbound face (P2) to head back south (MOK interleaves
+  // TWL/KTL by direction: northbound upstairs, southbound downstairs).
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
+    stops: [{ uid: 'MOK:L3', num: 2 },
+            { uid: 'YMT:L2', num: 2 },
             { uid: 'JOR:L2', num: 2 },
             { uid: 'TST:L2', num: 2 },
             { uid: 'ADM:L2', num: 4 },
@@ -714,7 +716,17 @@ export const ROUTES = [
             { uid: 'ADM:L3', num: 1 },
             { uid: 'TST:L2', num: 1 },
             { uid: 'JOR:L2', num: 1 },
-            { uid: 'YMT:L2', num: 1, dwell: 55 }] },
+            { uid: 'YMT:L2', num: 1 },
+            { uid: 'MOK:L2', num: 1, dwell: 55 }] },
+  // Kwun Tong Line's first leg — the Yau Ma Tei ↔ Mong Kok corridor
+  // pair. Both ends are termini for now: MOK reverses between the L2
+  // northbound face (P3) and L3 southbound face (P4); YMT reverses
+  // between its L3 island's faces at the east portal.
+  { line: 'KTL', travel: 75, legs: ['tunnel', 'off', 'tunnel', 'off'], consists: 2,
+    stops: [{ uid: 'YMT:L3', num: 3 },
+            { uid: 'MOK:L2', num: 3 },
+            { uid: 'MOK:L3', num: 4, dwell: 40 },
+            { uid: 'YMT:L3', num: 4, dwell: 40 }] },
   // Island Line through service: Kennedy Town is the west terminus —
   // consists reverse off-map in the Mount Davis overrun tunnel and head
   // east through Causeway Bay, Tin Hau, Fortress Hill, North Point and the

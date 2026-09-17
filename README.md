@@ -29,7 +29,8 @@ procedural Hong Kong skyline around each station.
 | CHW  | Chai Wan 柴灣 | Island Line (east terminus) |
 | TST  | Tsim Sha Tsui 尖沙咀 | Tsuen Wan Line (across the harbour) |
 | JOR  | Jordan 佐敦 | Tsuen Wan Line |
-| YMT  | Yau Ma Tei 油麻地 | Tsuen Wan Line (north terminus) |
+| YMT  | Yau Ma Tei 油麻地 | Tsuen Wan + Kwun Tong Lines |
+| MOK  | Mong Kok 旺角 | Tsuen Wan + Kwun Tong Lines (cross-platform interchange) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

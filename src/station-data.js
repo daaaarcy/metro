@@ -22,8 +22,9 @@ import { CHW } from './stations/chaiwan.js';
 import { TST } from './stations/tsimshatsui.js';
 import { JOR } from './stations/jordan.js';
 import { YMT } from './stations/yaumatei.js';
+import { MOK } from './stations/mongkok.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
@@ -42,6 +43,7 @@ export const LINES = {
   TCL: { zh: '東涌綫',   en: 'Tung Chung Line',     color: '#F7943E' },
   AEX: { zh: '機場快綫', en: 'Airport Express',     color: '#00888A' },
   TKO: { zh: '將軍澳綫', en: 'Tseung Kwan O Line',  color: '#7D499D' },
+  KTL: { zh: '觀塘綫',   en: 'Kwun Tong Line',      color: '#00AB4E' },
 };
 
 // Island platform half-width / track centre offsets (local Z).
@@ -61,6 +63,7 @@ export const TRAIN_SPEC = {
   TCL: { headway: 60, dwell: 16, cars: 8, carLen: 22.4 },
   AEX: { headway: 95, dwell: 30, cars: 7, carLen: 23.0 },
   TKO: { headway: 55, dwell: 14, cars: 8, carLen: 22.4 },
+  KTL: { headway: 46, dwell: 13, cars: 8, carLen: 22.4 },
 };
 
 export const ESC = { runLen: 12.6, width: 1.15, gap: 0.55 }; // per-escalator width + gap

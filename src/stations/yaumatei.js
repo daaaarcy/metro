@@ -15,25 +15,36 @@ export const YMT = {
   boxes: {
     ymtSite: { cx: 320, cz: -1120, len: 240, wid: 84, rot: 0 }, // G apron
     ymtConc: { cx: 320, cz: -1120, len: 190, wid: 44, rot: 0 }, // L1 concourse
-    ymtPlat: { cx: 320, cz: -1120, len: 200, wid: 24, rot: 0 }, // L2 island
+    ymtPlat: { cx: 320, cz: -1120, len: 200, wid: 24, rot: 0 }, // L2 TWL island
+    ymtKtl:  { cx: 320, cz: -1120, len: 200, wid: 24, rot: 0 }, // L3 KTL island
   },
 
   levels: [
     { id: 'G',  y: 0,   box: 'ymtSite', zh: '地面',       en: 'Ground',   type: 'ground'   },
     { id: 'L1', y: -7,  box: 'ymtConc', zh: '大堂',       en: 'Concourse', type: 'concourse'},
     { id: 'L2', y: -14, box: 'ymtPlat', zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platform', type: 'platform' },
+    { id: 'L3', y: -21, box: 'ymtKtl',  zh: '月台・觀塘綫', en: 'Kwun Tong Line Platform', type: 'platform' },
   ],
 
-  // Island platform. Temporary TWL north end — both faces dispatch to
-  // Central and reverse at the west portal, same-portal scissors like
-  // JOR/CHW. When Mong Kok lands, face 1 becomes 'to Tsuen Wan' (dir +1)
-  // and terminus clears; the arrival portal stays x0 either way.
+  // L2 island: TWL through station — P1 north (dir +1) toward Mong Kok/
+  // Tsuen Wan, P2 south (dir -1) toward Central. L3 island: the KTL's
+  // south end for now — the shuttle to Mong Kok departs both faces and
+  // reverses at the east portal. When Ho Man Tin lands the island goes
+  // through-running (P3 'to Tiu Keng Leng' dir +1 / P4 'to Whampoa'
+  // dir -1) and terminus clears.
   platforms: {
     L2: {
+      kind: 'island',
+      faces: [
+        { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
+        { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },
+      ],
+    },
+    L3: {
       kind: 'island', terminus: true,
       faces: [
-        { num: 1, line: 'TWL', side: -1, dir: -1, to: { zh: '往中環', en: 'to Central' } },
-        { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },
+        { num: 3, line: 'KTL', side: -1, dir: 1,  to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
+        { num: 4, line: 'KTL', side: 1,  dir: 1,  to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
       ],
     },
   },
@@ -41,6 +52,8 @@ export const YMT = {
   escalators: [
     { from: 'L1', to: 'L2', frame: 'ymtPlat', cx: -58, cz: 0, dir: [-1, 0], n: 3 },
     { from: 'L1', to: 'L2', frame: 'ymtPlat', cx:  58, cz: 0, dir: [ 1, 0], n: 3 },
+    { from: 'L2', to: 'L3', frame: 'ymtKtl',  cx: -82, cz: 0, dir: [-1, 0], n: 2 },
+    { from: 'L2', to: 'L3', frame: 'ymtKtl',  cx:  82, cz: 0, dir: [ 1, 0], n: 2 },
   ],
 
   // exit fan — north (-z) side reaches Pitt St / Kwong Wah Hospital /
@@ -58,7 +71,7 @@ export const YMT = {
   exitLetters: ['A', 'B', 'C', 'D'],
 
   lifts: [
-    { frame: 'ymtPlat', x: 0,   z: 0,   levels: ['L1', 'L2'] },         // paid lift
+    { frame: 'ymtPlat', x: 0,   z: 0,   levels: ['L1', 'L2', 'L3'] },   // paid lift, all levels
     { frame: 'ymtConc', x: -86, z: -18, levels: ['G', 'L1'] },          // street lift — Pitt St side
     { frame: 'ymtConc', x: 86,  z: 18,  levels: ['G', 'L1'] },          // street lift — Waterloo side
   ],
@@ -79,7 +92,8 @@ export const YMT = {
     G:  [{ x0: -112, z0: -38, x1: 112, z1: 38 }],
     L1: [{ x0: -88,  z0: -19, x1: 88,  z1: 19 }],
     L2: [{ x0: -92,  z0: -4.9, x1: 92, z1: 4.9 }],
+    L3: [{ x0: -92,  z0: -4.9, x1: 92, z1: 4.9 }],
   },
 
-  people: { G: 16, L1: 46, L2: 38 },
+  people: { G: 16, L1: 46, L2: 38, L3: 30 },
 };

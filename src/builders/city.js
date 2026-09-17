@@ -766,18 +766,42 @@ const SITES = [
       [120, -1140, 30, 24, 34, 'res'],     // Temple St shophouse blocks
       [160, -1160, 28, 22, 38, 'res'],
       [100, -1180, 32, 26, 12, 'mall'],    // Wholesale Fruit Market sheds
-      [150, -1200, 26, 20, 40, 'res'],
       [470, -1100, 30, 24, 36, 'hotel'],   // Metropark Hotel
       [520, -1130, 50, 30, 24, 'office'],  // Kwong Wah Hospital slab
       [480, -1170, 28, 22, 40, 'res'],
       [500, -1070, 30, 20, 30, 'res'],
-      // corridor flanks continue north — x 194..446 stays clear for MOK
-      [150, -1210, 30, 24, 42, 'res'],
-      [490, -1220, 32, 26, 38, 'res'],
-      [130, -1240, 28, 22, 36, 'office'],
     ],
     parks: [[560, -1200, 660, -1100, 20]],     // King's Park west edge
     lamps: [[60, -1120, 190], [450, -1120, 600]],
+  },
+  { // ---- Mong Kok — Nathan Rd × Argyle St, the system's busiest:
+    //     Langham Place's tower west of the dig, MOKO + the Argyle St
+    //     bank canyon east, Ladies' Market stalls along Tung Choi St,
+    //     Mong Kok East's slab further out.
+    id: 'MOK', hole: [194, 446, -1288, -1192],
+    roads: [[60, -1248, 190, -1232],           // Argyle St west
+            [450, -1248, 600, -1232],          // Argyle St east
+            [194, -1312, 446, -1290]],         // Nathan Rd north toward PRE
+    towers: [
+      [140, -1220, 40, 30, 58, 'office'],  // Langham Place tower
+      [120, -1255, 44, 30, 16, 'mall'],    // Langham Place mall podium
+      [160, -1280, 28, 22, 44, 'res'],
+      [100, -1210, 26, 20, 30, 'res'],
+      [150, -1310, 30, 24, 40, 'res'],
+      [120, -1330, 26, 20, 36, 'res'],
+      [490, -1220, 34, 26, 42, 'office'],  // Argyle Centre / bank towers
+      [530, -1260, 40, 28, 30, 'mall'],    // MOKO podium
+      [520, -1210, 30, 22, 38, 'hotel'],
+      [480, -1290, 28, 22, 34, 'res'],
+      [560, -1320, 32, 24, 40, 'office'],
+      [640, -1260, 26, 20, 30, 'res'],
+      [760, -1260, 60, 40, 26, 'office'],  // Mong Kok East slab over the ERL
+      // corridor flanks continue north — x 194..446 stays clear for PRE
+      [150, -1360, 30, 24, 38, 'res'],
+      [490, -1370, 32, 26, 42, 'office'],
+    ],
+    parks: [[580, -1180, 640, -1100, 14]],     // King's Park south edge
+    lamps: [[60, -1240, 190], [450, -1240, 600]],
   },
 ];
 
@@ -840,6 +864,10 @@ const NAMES = [
   ['YMT', 470, 40, -1100, '維景酒店 Metropark Hotel'],
   ['YMT', 520, 30, -1130, '廣華醫院 Kwong Wah Hospital'],
   ['YMT', 610, 22, -1150, '京士柏 King\'s Park'],
+  ['MOK', 140, 62, -1220, '朗豪坊 Langham Place'],
+  ['MOK', 530, 34, -1260, '新世紀廣場 MOKO'],
+  ['MOK', 470, 14, -1268, '女人街 Ladies\' Market'],
+  ['MOK', 760, 30, -1260, '旺角東站 Mong Kok East'],
 ];
 
 export function buildCity() {
