@@ -62,8 +62,8 @@ export class CameraRig {
         dy = this._last ? e.clientY - this._last.y : 0;
       }
       this._last = { x: e.clientX, y: e.clientY };
-      this.yaw -= dx * 0.0014;
-      this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0014, -1.45, 1.45);
+      this.yaw -= dx * 0.0011;
+      this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0011, -1.45, 1.45);
     });
     window.addEventListener('keydown', e => {
       this.keys.add(e.code);
