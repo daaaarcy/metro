@@ -297,18 +297,36 @@ function peakRidges() {
   scatter(EAST, 234.6, 20);
 }
 
-// Kowloon skyline across the harbour — silhouetted towers + the ICC wedge
+// Kowloon — the peninsula across the strait: a waterfront tower band on
+// the new quay, the Nathan Road mid-rise wall behind the corridor, the
+// ICC wedge on the west point, and the Lion Rock silhouette closing the
+// horizon. Towers dodge x 190..450 where the TST dig (and the future
+// Nathan Road chain sites) punch through the ground plane.
 function kowloonSkyline() {
-  block(150, -445, 3500, 260, 0.4, HILL_M, false);                     // far shore
-  const kl = [[-1560, -390, 34, 30, 48], [-1500, -430, 46, 40, 72],
-              [-1380, -410, 44, 36, 66], [-1260, -400, 38, 32, 54], [-1080, -420, 42, 34, 62],
-              [-920, -395, 34, 30, 44], [-700, -410, 40, 32, 56], [-480, -390, 36, 28, 42],
-              [-200, -415, 40, 30, 50], [60, -400, 34, 26, 38], [320, -410, 38, 28, 46]];
+  const kl = [[-1560, -860, 40, 34, 54], [-1480, -870, 46, 40, 78],   // ICC cluster
+              [-1280, -850, 40, 30, 48], [-1100, -860, 42, 34, 58],
+              [-820, -850, 36, 30, 44],  [-560, -855, 40, 32, 52],
+              [-320, -845, 34, 28, 40],  [-80, -850, 36, 30, 46],
+              [140, -845, 30, 26, 36],   [500, -850, 34, 30, 44],
+              [700, -860, 40, 34, 56],   [950, -850, 38, 30, 48],
+              [1250, -855, 36, 30, 42],  [1500, -860, 42, 34, 54],
+              // Nathan Road corridor wall — kept off the x≈320 dig line
+              [-160, -1010, 34, 28, 44], [40, -990, 36, 30, 52],
+              [-420, -995, 38, 30, 56],  [560, -985, 34, 28, 46],
+              [780, -1000, 36, 30, 50],  [1020, -990, 34, 28, 42]];
   for (const [x, z, w, d, h] of kl)
     put(scaleBoxUV(new THREE.BoxGeometry(w, h, d), w, h, d), FACADE.office, x, h / 2, z);
-  // ICC — tallest slab with a tapered crown
-  put(scaleBoxUV(new THREE.BoxGeometry(46, 140, 40), 46, 140, 40), FACADE.glass, -1470, 70, -430);
-  put(scaleBoxUV(new THREE.BoxGeometry(34, 18, 28), 34, 18, 28), FACADE.glass, -1470, 149, -430);
+  // ICC — tallest slab with a tapered crown, on the west point
+  put(scaleBoxUV(new THREE.BoxGeometry(46, 140, 40), 46, 140, 40), FACADE.glass, -1470, 70, -890);
+  put(scaleBoxUV(new THREE.BoxGeometry(34, 18, 28), 34, 18, 28), FACADE.glass, -1470, 149, -890);
+  // Lion Rock — the ridge silhouette far behind Kowloon
+  const LION = [[-2400, 30], [-2000, 44], [-1600, 38], [-1200, 52], [-800, 44],
+                [-400, 62], [0, 48], [400, 58], [800, 42], [1200, 50], [1600, 36], [2000, 40]];
+  const s = new THREE.Shape();
+  s.moveTo(LION[0][0], 0);
+  for (const [px, py] of LION) s.lineTo(px, py);
+  s.lineTo(LION[LION.length - 1][0], 0); s.closePath();
+  put(new THREE.ExtrudeGeometry(s, { depth: 120, bevelEnabled: false }), HILL_M, 0, 0, -1620);
 }
 
 // per-station surroundings — all coords are world space; `hole` is the
@@ -683,6 +701,32 @@ const SITES = [
     parks: [[1860, -45, 1898, -85, 16]],                                  // Victoria Park
     lamps: [[1590, 41.5, 1810], [1590, -41.5, 1810]],
   },
+  { // ---- Tsim Sha Tsui — first district on the Kowloon shore: Star
+    //     Ferry pier + Clock Tower + Cultural Centre on the point,
+    //     Harbour City west and The Peninsula east along Salisbury Rd,
+    //     the Nathan Road canyon behind the dig, Kowloon Park NW.
+    id: 'TST', hole: [194, 446, -928, -832],
+    roads: [[140, -830, 560, -812],            // Salisbury Rd waterfront strip
+            [456, -940, 470, -820]],           // Chatham Rd lane east of dig
+    towers: [
+      [90,  -840, 34, 26, 30, 'office'],   // Star House / Harbour City west
+      [30,  -846, 40, 30, 42, 'office'],
+      [-60, -850, 44, 34, 54, 'glass'],
+      [470, -840, 40, 24, 14, 'mall'],     // Cultural Centre low slab
+      [560, -838, 30, 22, 40, 'hotel'],    // The Peninsula
+      [640, -846, 26, 20, 34, 'res'],
+      [311, -808, 30, 14, 8,  'mall'],     // Star Ferry terminal
+      [300, -962, 34, 30, 52, 'res'],      // iSQUARE-ish tower over the mall
+      [360, -972, 30, 26, 46, 'res'],      // Chungking Mansions slab
+      [430, -958, 32, 28, 48, 'office'],   // K11 / Hart Ave side
+      [240, -966, 30, 26, 44, 'res'],      // The ONE-ish
+      [120, -952, 34, 28, 40, 'office'],
+    ],
+    cyls: [[452, -842, 2.4, 17, 'office']],    // Clock Tower on the point
+    parks: [[60, -950, 180, -1080, 30]],       // Kowloon Park
+    piers: [[292, -796, 330, -758]],           // Star Ferry finger pier
+    lamps: [[150, -806, 560]],                 // Avenue of Stars lamp row
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -698,7 +742,7 @@ const NAMES = [
   ['CEN', -932, 17, 86, '終審法院 Court of Final Appeal'],
   ['HOK', -1445, 134, -100, '國際金融中心 IFC'],
   ['HOK', -1400, 28, -104, '摩天輪 Observation Wheel'],
-  ['HOK', -1470, 162, -430, '環球貿易廣場 ICC'],
+  ['HOK', -1470, 162, -890, '環球貿易廣場 ICC'],
   ['SHW', -2108, 50, -74, '信德中心 Shun Tak Centre'],
   ['SHW', -2104, 16, 56, '西港城 Western Market'],
   ['SHW', -2090, 14, -118, '港澳碼頭 Macau Ferry'],
@@ -726,6 +770,13 @@ const NAMES = [
   ['CHW', 7410, 10, 57, '柴灣公共運輸交匯處 Chai Wan PTI'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
+  ['TST', 311, 14, -780, '尖沙咀天星碼頭 Star Ferry Pier'],
+  ['TST', 452, 20, -842, '尖沙咀鐘樓 Clock Tower'],
+  ['TST', 560, 44, -838, '半島酒店 The Peninsula'],
+  ['TST', 30, 46, -846, '海港城 Harbour City'],
+  ['TST', 300, 56, -962, 'iSQUARE'],
+  ['TST', 120, 10, -1000, '九龍公園 Kowloon Park'],
+  ['TST', 0, 80, -1480, '獅子山 Lion Rock'],
 ];
 
 export function buildCity() {
@@ -767,23 +818,27 @@ export function buildCity() {
     if (uid) labels.push({ level: uid, cls: 'city', html: txt, pos: new THREE.Vector3(x, y, z) });
   }
 
-  // ---- the harbour: water plane along -z, quay wall + promenade, boats.
-  // The shore strip spans every site hole so the waterline keeps running
-  // as stations extend west/east.
-  const SHORE = -95;
+  // ---- the harbour: a strait between the island shore (-95) and the
+  // Kowloon shore (-800). Quay walls + promenades line both sides; the
+  // strip spans every site hole so the waterline keeps running as
+  // stations extend west/east.
+  const SHORE = -95, KSHORE = -800;
   const seaX0 = Math.min(...SITES.map(s => s.hole[0])) - 450;
   const seaX1 = Math.max(...SITES.map(s => s.hole[1])) + 350;
   const seaW = seaX1 - seaX0, seaCx = (seaX0 + seaX1) / 2;
-  const sea = new THREE.PlaneGeometry(seaW, 1500);
+  const sea = new THREE.PlaneGeometry(seaW, SHORE - KSHORE);
   sea.rotateX(-Math.PI / 2);
-  put(sea, WATER_M, seaCx, 0.03, SHORE - 750);
-  block(seaCx, SHORE + 0.6, seaW, 1.2, 1.4, QUAY_M, false);          // seawall lip
-  block(seaCx, SHORE + 4, seaW, 7, 0.1, QUAY_M, false);              // promenade strip
+  put(sea, WATER_M, seaCx, 0.03, (SHORE + KSHORE) / 2);
+  block(seaCx, SHORE + 0.6, seaW, 1.2, 1.4, QUAY_M, false);          // island seawall
+  block(seaCx, SHORE + 4, seaW, 7, 0.1, QUAY_M, false);              // island promenade
+  block(seaCx, KSHORE - 0.6, seaW, 1.2, 1.4, QUAY_M, false);         // Kowloon seawall
+  block(seaCx, KSHORE - 4.5, seaW, 8, 0.1, QUAY_M, false);           // Avenue of Stars
   // typhoon-shelter breakwater arm off Causeway Bay
   block(1855, -102, 90, 4, 1.6, QUAY_M, false);
   block(1732, -115, 4, 30, 1.6, QUAY_M, false);
   // boats — tiny hulls + cabins scattered on the shelter + off the piers
-  for (const [bx, bz] of [[1800, -115], [1840, -122], [1885, -112], [1870, -135], [-1420, -128], [-1520, -130], [1010, -105]]) {
+  for (const [bx, bz] of [[1800, -115], [1840, -122], [1885, -112], [1870, -135], [-1420, -128], [-1520, -130], [1010, -105],
+                          [280, -420], [640, -350], [-200, -560]]) {
     const ry = ((bx * 7) % 10) / 14;
     put(new THREE.BoxGeometry(4, 0.9, 1.6), QUAY_M, bx, 0.4, bz, ry);
     put(new THREE.BoxGeometry(1.6, 0.8, 1.1), ROOF, bx, 1.1, bz, ry);

@@ -392,16 +392,17 @@ function resolveRoute(routeDef, doorSets) {
   });
   const legs = routeDef.legs.map((via, i) => {
     const A = stops[i], B = stops[(i + 1) % stops.length];
+    // portal B's consist enters through: termini take the same portal they
+    // depart from, through services enter opposite the travel direction
+    const inEnd = B.terminus ? B.outEnd : (B.face.dir > 0 ? 'x0' : 'x1');
     if (via === 'tunnel') {
       const wA = A.worldOf(A.stopX), wB = B.worldOf(B.stopX);
       const dist = Math.hypot(wB.x - wA.x, wB.z - wA.z);
       const dir = Math.sign(wB.x - wA.x) || 1;          // plan travel direction
       return { via, A, B, dist, travel: routeDef.travel ?? Math.max(40, dist / 13),
-               dir, yA: A.levelY, yB: B.levelY };
+               dir, yA: A.levelY, yB: B.levelY, inEnd };
     }
-    // off-map leg: depart A through its dir portal; re-enter B — through
-    // services come back from B's opposite end, termini reverse at the same end
-    const inEnd = B.terminus ? B.outEnd : (B.face.dir > 0 ? 'x0' : 'x1');
+    // off-map leg: depart A through its dir portal; re-enter B through inEnd
     return { via, A, B, inEnd, travel: routeDef.travel ?? 30 };
   });
   return { stops, legs, line: routeDef.line, startIdx: routeDef.startIdx };
@@ -563,12 +564,32 @@ class Consist {
         const k = p < 0.35 ? easeOut(p / 0.35) * 0.5
                  : p < 0.65 ? 0.5 + (p - 0.35) / 0.3 * 0.28
                  : 0.78 + easeIn((p - 0.65) / 0.35) * 0.22;
-        const wA = A.worldOf(A.portalX(A.outEnd === 'x1' ? 'x1' : 'x0', this.trainLen / 2));
-        const wB = B.worldOf(B.stopX);
-        const x = THREE.MathUtils.lerp(wA.x, wB.x, k);
-        const z = THREE.MathUtils.lerp(wA.z, wB.z, k);
+        // path: departure portal -> B's arrival portal -> berth. The final
+        // segment runs along B's track axis, so non-collinear legs (the
+        // harbour crossing) still glide in through the portal aligned.
+        // For collinear legs the waypoint lies on the axis — same path.
+        if (!leg._path) {
+          const pts = [
+            A.worldOf(A.portalX(A.outEnd, this.trainLen / 2)),
+            B.worldOf(B.portalX(leg.inEnd, this.trainLen / 2)),
+            B.worldOf(B.stopX),
+          ];
+          const segs = [];
+          let total = 0;
+          for (let i = 0; i < pts.length - 1; i++) {
+            const len = Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].z - pts[i].z);
+            segs.push({ a: pts[i], b: pts[i + 1], len, acc: total });
+            total += len;
+          }
+          leg._path = { segs, total };
+        }
+        const d = k * leg._path.total;
+        const s = leg._path.segs.find(sg => d <= sg.acc + sg.len) || leg._path.segs.at(-1);
+        const f = s.len ? Math.min(1, (d - s.acc) / s.len) : 0;
+        const x = THREE.MathUtils.lerp(s.a.x, s.b.x, f);
+        const z = THREE.MathUtils.lerp(s.a.z, s.b.z, f);
         const y = THREE.MathUtils.lerp(A.levelY, B.levelY, k);
-        const yaw = Math.atan2(wB.z - wA.z, wB.x - wA.x);
+        const yaw = Math.atan2(s.b.z - s.a.z, s.b.x - s.a.x);
         this._runPlace(x, z, yaw, y);
         if (p > 0.82 && !this._ann) {
           this._ann = true;
@@ -674,11 +695,19 @@ class Consist {
 // 'off' = off-map loop (through services re-enter the far portal, termini
 // reverse from the same portal). Travel times ≈ the real inter-station runs.
 export const ROUTES = [
-  // Tsuen Wan Line: Admiralty <-> Central terminus (~850 m, ≈2 min)
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1,
-    stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 1, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1, startIdx: 1,
-    stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
+  // Tsuen Wan Line: Central terminus <-> Admiralty -> harbour crossing ->
+  // Tsim Sha Tsui, the line's north end for now. Both termini reverse at
+  // the portal their services depart through (CEN east / TST west — the
+  // harbour-side crossover box). The crossing legs dive under the sea:
+  // the path machinery routes them through each destination's arrival
+  // portal so the consist glides in aligned with the platform axis.
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'off'], consists: 2,
+    stops: [{ uid: 'TST:L2', num: 2 },
+            { uid: 'ADM:L2', num: 4 },
+            { uid: 'CEN:L3', num: 1, dwell: 55 },
+            { uid: 'CEN:L3', num: 2 },
+            { uid: 'ADM:L3', num: 1 },
+            { uid: 'TST:L2', num: 1, dwell: 55 }] },
   // Island Line through service: Kennedy Town is the west terminus —
   // consists reverse off-map in the Mount Davis overrun tunnel and head
   // east through Causeway Bay, Tin Hau, Fortress Hill, North Point and the

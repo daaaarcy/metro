@@ -37,7 +37,7 @@ export const ADM = {
     L3: {
       kind: 'island',
       faces: [
-        { num: 1, line: 'TWL', side: -1, dir: -1, to: { zh: '往荃灣',     en: 'to Tsuen Wan' } },
+        { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣',     en: 'to Tsuen Wan' } },
         { num: 2, line: 'ISL', side: 1,  dir: -1, to: { zh: '往堅尼地城', en: 'to Kennedy Town' } },
       ],
     },

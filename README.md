@@ -27,6 +27,7 @@ procedural Hong Kong skyline around each station.
 | SKW  | Shau Kei Wan 筲箕灣 | Island Line |
 | HFC  | Heng Fa Chuen 杏花邨 | Island Line |
 | CHW  | Chai Wan 柴灣 | Island Line (east terminus) |
+| TST  | Tsim Sha Tsui 尖沙咀 | Tsuen Wan Line (north terminus, across the harbour) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run
