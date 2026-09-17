@@ -4,6 +4,7 @@
 
 export const HOK = {
   id: 'HOK', zh: '香港', en: 'Hong Kong',
+  livery: '#c9ced3',   // light neutral — the 90s Airport Railway white/grey
 
   boxes: {
     hokSite: { cx: -1480, cz: 0,  len: 190, wid: 76, rot: 0 },  // G in-town check-in hall

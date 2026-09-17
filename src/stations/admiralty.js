@@ -3,6 +3,7 @@
 
 export const ADM = {
   id: 'ADM', zh: '金鐘', en: 'Admiralty',
+  livery: '#1e5aa8',   // Admiralty's signature blue mosaic tile
 
   boxes: {
     main:  { cx: 0,  cz: 0,  len: 200, wid: 26, rot: 0 },     // L2 / L3 platform box
@@ -19,8 +20,8 @@ export const ADM = {
     { id: 'L2', y: -14, box: 'main',  zh: '月台・港島綫/荃灣綫', en: 'Platforms – Island / Tsuen Wan Line', type: 'platform' },
     { id: 'L3', y: -21, box: 'main',  zh: '月台・荃灣綫/港島綫', en: 'Platforms – Tsuen Wan / Island Line', type: 'platform' },
     { id: 'L4', y: -28, box: 'lobby', zh: '轉車大堂', en: 'Transfer Lobby',    type: 'lobby'    },
-    { id: 'L5', y: -35, box: 'ext',   zh: '月台・東鐵綫', en: 'Platforms – East Rail Line',   type: 'platform' },
-    { id: 'L6', y: -42, box: 'ext',   zh: '月台・南港島綫', en: 'Platforms – South Island Line', type: 'platform' },
+    { id: 'L5', y: -35, box: 'ext',   zh: '月台・東鐵綫', en: 'Platforms – East Rail Line',   type: 'platform', livery: '#dfe3e6' },
+    { id: 'L6', y: -42, box: 'ext',   zh: '月台・南港島綫', en: 'Platforms – South Island Line', type: 'platform', livery: '#dfe3e6' },
   ],
 
   // Platform faces per level (keyed by the level's SHORT id within this station).

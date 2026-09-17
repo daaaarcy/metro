@@ -430,6 +430,8 @@ class Consist {
     this.doorSide = 1;
     this.floorY = -14;
     this.dwx = 0; this.dwz = 0;         // world displacement this frame (carry)
+    this.drot = 0;                      // frame yaw delta this frame (carry)
+    this.hasRider = false;              // set from the main loop each frame
     this.open = 0;
     this.nextAt = null;
     this.events = [];
@@ -440,6 +442,7 @@ class Consist {
     this.t = (idx * 0.5 + Math.random() * 0.4) * this.spec.headway / total + 4;
     this._berth(this.stops[this.i], true);
     this._pw = { x: this.train.position.x, z: this.train.position.z };
+    this._prot = this.bx ? this.bx.rot : 0;
   }
 
   get color() { return LINES[this.route.line].color; }
@@ -463,6 +466,13 @@ class Consist {
   _place(tx, stop) {
     const w = boxToWorld(stop.bx, tx, stop.zc);
     this.tx = tx;
+    // the frame the player constraint resolves against must follow the
+    // consist — off-legs re-place into the NEXT stop's box, so bx/zc/etc
+    // have to move too or a rider's local coords resolve in the old frame
+    this.bx = stop.bx;
+    this.zc = stop.zc;
+    this.doorSide = stop.doorSide;
+    this.floorY = stop.levelY + 0.08;
     this.train.position.set(w.x, stop.levelY - 0.62, w.z);
     this.train.rotation.y = stop.bx.rot;
   }
@@ -583,7 +593,10 @@ class Consist {
         if (this.t <= 0) {
           this.state = 'offWait';
           this.t = this._offWait(tt, simNow, speed);
-          this.train.visible = false;
+          // a rider aboard shouldn't sit in the void through a full
+          // layover — turn the consist around quickly and keep it visible
+          if (this.hasRider) this.t = Math.min(this.t, 9);
+          this.train.visible = !this.hasRider;
         }
         break;
       }
@@ -614,9 +627,13 @@ class Consist {
         break;
       }
     }
-    // world displacement for carrying a standing player
+    // world displacement for carrying a standing player — translation of
+    // the consist plus rotation of its constraint frame (run-frames yaw
+    // through tunnel curves)
     this.dwx = this.train.position.x - this._pw.x;
     this.dwz = this.train.position.z - this._pw.z;
+    this.drot = this.bx.rot - this._prot;
+    this._prot = this.bx.rot;
     this._pw.x = this.train.position.x; this._pw.z = this.train.position.z;
   }
 
@@ -662,17 +679,23 @@ export const ROUTES = [
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 1, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
   { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1, startIdx: 1,
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
-  // Island Line through service looping both stations
-  { line: 'ISL', travel: 80, legs: ['off', 'tunnel', 'off', 'tunnel'], consists: 2,
+  // Island Line through service: Kennedy Town direction loops CEN L4->L2
+  // off-map, then runs east through Admiralty and Wan Chai; the consist
+  // reverses off-map at Wan Chai's east portal (Chai Wan direction) and
+  // comes back west through ADM L3 to Central L4.
+  { line: 'ISL', travel: 80, legs: ['off', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel'], consists: 3,
     stops: [{ uid: 'CEN:L4', num: 4 }, { uid: 'CEN:L2', num: 3 },
-            { uid: 'ADM:L2', num: 3 }, { uid: 'ADM:L3', num: 2 }] },
-  // single-face loops for the remaining lines
-  { line: 'EAL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L5', num: 7 }] },
-  { line: 'EAL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L5', num: 8 }] },
-  { line: 'SIL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L6', num: 5 }] },
-  { line: 'SIL', legs: ['off'], consists: 1, stops: [{ uid: 'ADM:L6', num: 6 }] },
-  { line: 'TCL', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L4', num: 3 }] },
-  { line: 'TCL', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L4', num: 4 }] },
+            { uid: 'ADM:L2', num: 3 }, { uid: 'WAC:L2', num: 1 },
+            { uid: 'WAC:L3', num: 2 }, { uid: 'ADM:L3', num: 2 }] },
+  // terminus reversals: each line's island has two faces — a consist
+  // departs one face through its portal and re-enters berthing at the
+  // other (a rider gets carried across to the opposite platform edge)
+  { line: 'EAL', legs: ['off', 'off'], consists: 2,
+    stops: [{ uid: 'ADM:L5', num: 7 }, { uid: 'ADM:L5', num: 8 }] },
+  { line: 'SIL', legs: ['off', 'off'], consists: 2,
+    stops: [{ uid: 'ADM:L6', num: 5 }, { uid: 'ADM:L6', num: 6 }] },
+  { line: 'TCL', legs: ['off', 'off'], consists: 2,
+    stops: [{ uid: 'HOK:L4', num: 3 }, { uid: 'HOK:L4', num: 4 }] },
   { line: 'AEX', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L2', num: 1 }] },
 ];
 

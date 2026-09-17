@@ -70,10 +70,11 @@ mergeStation(scene, root, levelGroups, togglables);
 // show the underground stacks instead of an opaque lid. Shape XY maps to
 // world X,-Z after the -90° X rotation.
 const groundShape = new THREE.Shape();
-groundShape.absarc(-650, 0, 1450, 0, Math.PI * 2);
+groundShape.absarc(-500, 0, 1650, 0, Math.PI * 2);
 for (const [x0, x1, z0, z1] of [[-105, 105, -49, 41],       // Admiralty
                                 [-1150, -950, -57, 57],     // Central
-                                [-1615, -1345, -67, 67]]) { // Hong Kong
+                                [-1615, -1345, -67, 67],    // Hong Kong
+                                [785, 975, -33, 33]]) {     // Wan Chai
   const dig = new THREE.Path();
   dig.moveTo(x0, -z1); dig.lineTo(x1, -z1);
   dig.lineTo(x1, -z0); dig.lineTo(x0, -z0); dig.closePath();
@@ -428,14 +429,12 @@ function tick() {
   audio.setCrowd?.(rig.mode === 'walk'
     ? Math.min(passengers.countNear(camera.position.x, rig.feetY, camera.position.z) / 12, 1)
     : 0);
+  // riders stay aboard through 'off' legs — the consist carries them
+  // through the void to the route's next face (terminus reversal)
+  for (const s of trainSim.services) s.hasRider = rig._aboard === s;
   const events = trainSim.update(sdt, audio, simNowFn, speed);
   for (const ev of events) {
     passengers.onTrainEvent(ev, audio);
-    // a consist leaving the built world would carry a rider into the void —
-    // put them back on the platform as the doors close
-    if (ev.type === 'depart' && rig._aboard === ev.service && ev.service.leg?.via === 'off') {
-      rig.ejectToPlatform(ev.service);
-    }
   }
   if (peopleOn) passengers.update(sdt, escT, trainSim, audio);
   updateGates(sdt);

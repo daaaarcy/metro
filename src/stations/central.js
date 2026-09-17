@@ -4,6 +4,7 @@
 
 export const CEN = {
   id: 'CEN', zh: '中環', en: 'Central',
+  livery: '#a62b2b',   // Central's firebrick/crimson mosaic tile
 
   boxes: {
     cenSite: { cx: -1050, cz: 0,  len: 200, wid: 70, rot: 0 },  // G ground slab
@@ -17,7 +18,7 @@ export const CEN = {
     { id: 'G',  y: 0,   box: 'cenSite', zh: '地面',   en: 'Ground',                  type: 'ground'   },
     { id: 'L1', y: -7,  box: 'cenConc', zh: '大堂',   en: 'Concourse',               type: 'concourse'},
     { id: 'L2', y: -14, box: 'cenIsl',  zh: '月台・港島綫', en: 'Island Line Platform',  type: 'platform' },
-    { id: 'L3', y: -21, box: 'cenTwl',  zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platforms', type: 'platform' },
+    { id: 'L3', y: -21, box: 'cenTwl',  zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platforms', type: 'platform', livery: '#4e3a2c' },
     { id: 'L4', y: -28, box: 'cenIsl4', zh: '月台・港島綫', en: 'Island Line Platform',  type: 'platform' },
   ],
 

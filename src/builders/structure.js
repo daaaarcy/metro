@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { M } from './materials.js';
+import { M, mosaicMat } from './materials.js';
 import { FLOOR_H, SLAB_T, WALL_T, BOXES, worldToBox } from '../station-data.js';
 import { solid, walkable } from '../registry.js';
 
@@ -89,11 +89,16 @@ function kerb(h, y) {
 // link corridors). end: 'x0' | 'x1' | 'both' (default) selects the wall(s).
 // portalsZ: [{x0,x1,h,side}] openings in the Z-side walls (street doorways).
 // side: 'z0' | 'z1' | 'both' (default).
-export function walls(rect, y, height = FLOOR_H - SLAB_T - 0.5, mat = M.wall, portalsX = [], portalsZ = []) {
+export function walls(rect, y, height = FLOOR_H - SLAB_T - 0.5, mat = M.wall, portalsX = [], portalsZ = [], livery = null) {
   const g = new THREE.Group();
   const t = WALL_T, cy = y + height / 2;
+  // livery set → station-colour mosaic tiles; the repeat keeps each tile
+  // ~0.3 m square whatever the piece's length
+  const pick = livery
+    ? (w, h) => mosaicMat(livery, Math.max(1, Math.round(w / 9.6)), Math.max(1, Math.round(h / 2.4)))
+    : () => mat;
   const mk = (w, d, cx, cz, h = height) => {
-    const m = box(w, h, d, mat); m.position.set(cx, y + h / 2, cz); g.add(solid(m));
+    const m = box(w, h, d, pick(Math.max(w, d), h)); m.position.set(cx, y + h / 2, cz); g.add(solid(m));
   };
   for (const zSide of [rect.z0, rect.z1]) {
     const sideKey = zSide === rect.z0 ? 'z0' : 'z1';
@@ -111,7 +116,7 @@ export function walls(rect, y, height = FLOOR_H - SLAB_T - 0.5, mat = M.wall, po
     for (const p of openings) {
       const lh = height - p.h;
       if (lh <= 0) continue;
-      const m = box(p.x1 - p.x0, lh, t, mat);
+      const m = box(p.x1 - p.x0, lh, t, pick(p.x1 - p.x0, lh));
       m.position.set((p.x0 + p.x1) / 2, y + p.h + lh / 2, zw);
       g.add(solid(m));
     }
@@ -134,7 +139,7 @@ export function walls(rect, y, height = FLOOR_H - SLAB_T - 0.5, mat = M.wall, po
     for (const p of openings) {
       const lh = height - p.h;
       if (lh <= 0) continue;
-      const m = box(t, lh, p.z1 - p.z0, mat);
+      const m = box(t, lh, p.z1 - p.z0, pick(p.z1 - p.z0, lh));
       m.position.set(xw, y + p.h + lh / 2, (p.z0 + p.z1) / 2);
       g.add(solid(m));
     }
@@ -163,13 +168,13 @@ export function ceiling(rect, y, mat = M.ceiling) {
 }
 
 // ---------- columns on a grid, skipping floor openings
-export function columns(rect, y, zs, spacing, holes = []) {
+export function columns(rect, y, zs, spacing, holes = [], mat = M.column) {
   const g = new THREE.Group();
   const geo = new THREE.BoxGeometry(0.9, FLOOR_H - SLAB_T - 0.5, 0.9);
   for (const z of zs) {
     for (let x = rect.x0 + spacing / 2; x < rect.x1 - 1; x += spacing) {
       if (pointInRects(x, z, holes)) continue;
-      const c = new THREE.Mesh(geo, M.column);
+      const c = new THREE.Mesh(geo, mat);
       c.position.set(x, y + (FLOOR_H - SLAB_T - 0.5) / 2, z);
       c.castShadow = c.receiveShadow = true;
       g.add(solid(c));

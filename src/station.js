@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { M, lineMat } from './builders/materials.js';
+import { M, lineMat, mosaicMat } from './builders/materials.js';
 import {
   STATIONS, LEVELS, BOXES, ESCALATORS, EXITS, LIFTS, PLATFORMS, LINES,
   ESC, LIFT_SIZE, FLOOR_H, SLAB_T, GATE_ROWS,
@@ -89,6 +89,8 @@ function ceilingWithHoles(rect, holes, y) {
 function dressPlatform(g, stn, lvl, spec, rect, floorHoles) {
   const single = spec.kind === 'single';
   const ps = single ? spec.single.side : 0;    // single-platform side (+z/-z)
+  const liv = lvl.livery ?? stn.livery;
+  const livMat = liv ? lineMat(liv) : M.column;
   // wall colour bands per face (each face's line on its platform-side wall)
   for (const f of spec.faces) {
     const band = box(rect.x1 - rect.x0 - 1, 1.1, 0.08, lineMat(LINES[f.line].color));
@@ -102,7 +104,7 @@ function dressPlatform(g, stn, lvl, spec, rect, floorHoles) {
     g.add(band);
   }
   const colZ = spec.kind === 'island' ? [0] : single ? [ps * 5.2] : [-10, 10];
-  g.add(columns(rect, 0, colZ, 15, floorHoles));
+  g.add(columns(rect, 0, colZ, 15, floorHoles, livMat));
   g.add(lightStrips(rect, 0, spec.kind === 'island' ? [0, -8.6, 8.6] : single ? [-4, 4.5] : [-10, 0, 10]));
   g.add(hvac(rect, 0, spec.kind === 'island' ? [0] : single ? [4] : [-10, 10]));
   // platform signage every ~38 m on each face, over the platform side
@@ -120,7 +122,7 @@ function dressPlatform(g, stn, lvl, spec, rect, floorHoles) {
   end.position.set(-rect.x1 + 1.2, 3.2, 0);
   end.rotation.y = Math.PI / 2;
   g.add(end);
-  g.add(calligraphy(rect, 0, stn));
+  g.add(calligraphy(rect, 0, stn, liv));
   for (const s of [-1, 1]) {
     g.add(posters(rect.x0 + 34, rect.x1 - 34, s * (Math.abs(rect.z1) - 0.62), 0, s < 0 ? 0 : Math.PI, 38));
     g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 56));
@@ -142,7 +144,8 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
   const gateZ = gateRows.length ? Math.abs(gateRows[0].z) : 9.4;
   for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -gateZ + 0.4, z1: gateZ - 0.4 }, floorHoles)) tint(r, M.paid);
   for (const s of [-1, 1]) {
-    for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: s * (gateZ + 2) - 4.75, z1: s * (gateZ + 2) + 4.75 }, floorHoles)) tint(r, M.unpaid);
+    const a = s * (gateZ - 2.75), b = s * (Math.abs(rect.z1) - 0.8);
+    for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: Math.min(a, b), z1: Math.max(a, b) }, floorHoles)) tint(r, M.unpaid);
   }
   // shop rows skip exit stairs + reserved units on each side
   const exitsHere = EXITS.filter(e => e.stn === stn.id);
@@ -155,6 +158,40 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
     g.add(shops(rect.x0 + 8, rect.x1 - 10, s * (Math.abs(rect.z1) - 3.4), 0, -s, gaps));
   }
   for (const r of gateRows) g.add(gateBank(r.x0, r.x1, r.z, 0, bx, lvl.uid));
+  // glass railings seal the rest of each gate line — wall to wall between and
+  // beyond the banks — so the only way through is a gate lane
+  const rail = (x0, z0, x1, z1) => {
+    if (x1 - x0 < 0.4 && z1 - z0 < 0.4) return;
+    const w = Math.max(x1 - x0, 0.16), d = Math.max(z1 - z0, 0.16);
+    const pane = box(w, 1.02, d, M.balGlass);
+    pane.position.set((x0 + x1) / 2, 0.55, (z0 + z1) / 2);
+    const top = box(w, 0.09, d, M.signPost);
+    top.position.set((x0 + x1) / 2, 1.11, (z0 + z1) / 2);
+    g.add(solid(pane), solid(top));
+  };
+  // a rail never spans a floor opening (escalator wells crossing the line)
+  const clipRail = (isX, fixed, a0, a1) => {
+    let segs = [[a0, a1]];
+    for (const h of floorHoles) {
+      const lo = isX ? h.z0 : h.x0, hi = isX ? h.z1 : h.x1;
+      if (!(lo < fixed && fixed < hi)) continue;
+      const h0 = (isX ? h.x0 : h.z0) - 0.4, h1 = (isX ? h.x1 : h.z1) + 0.4;
+      segs = segs.flatMap(([s0, s1]) =>
+        h1 <= s0 || h0 >= s1 ? [[s0, s1]] : [[s0, h0], [h1, s1]].filter(([a, b]) => b - a > 0.5));
+    }
+    return segs;
+  };
+  const byZ = new Map();
+  for (const r of gateRows) byZ.set(r.z, [...(byZ.get(r.z) || []), r]);
+  for (const [zf, rows] of byZ) {
+    rows.sort((a, b) => a.x0 - b.x0);
+    let cur = rect.x0 + 0.6;
+    for (const r of rows) {
+      for (const [a, b] of clipRail(true, zf, cur, r.x0)) rail(a, zf - 0.08, b, zf + 0.08);
+      cur = Math.max(cur, r.x1);
+    }
+    for (const [a, b] of clipRail(true, zf, cur, rect.x1 - 0.6)) rail(a, zf - 0.08, b, zf + 0.08);
+  }
   // dedicated tenants (Admiralty's restaurant row / mall / 7-Eleven)
   for (const r of stn.restaurants || []) g.add(restaurant(r, r.side * (Math.abs(rect.z1) - 3.4), 0, -r.side));
   if (stn.mall) g.add(mallEntrance(stn.mall.x, stn.mall.side * (Math.abs(rect.z1) - 3.4), 0, -stn.mall.side, stn.mall));
@@ -184,7 +221,17 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
     const cz = ex.side * ex.exitZ, half = ESC.runLen / 2;
     return { x0: ex.x - 2.2, x1: ex.x + 2.2, z0: cz - half - 0.6, z1: cz + half + 0.6 };
   });
-  g.add(columns(rect, 0, [-16, -5.5, 5.5, 16], 16, [...floorHoles, ...exitHoles]));
+  // station-colour columns + a mosaic fascia band along both long walls —
+  // the way real MTR concourses carry the station livery without tiling
+  // every surface
+  const livMat = stn.livery ? lineMat(stn.livery) : M.column;
+  for (const s of [-1, 1]) {
+    const band = box(rect.x1 - rect.x0 - 1, 0.9, 0.08,
+      mosaicMat(stn.livery || '#8a9096', Math.max(2, Math.round((rect.x1 - rect.x0) / 9.6)), 1));
+    band.position.set(0, 4.75, s * (Math.abs(rect.z1) - 0.56));
+    g.add(band);
+  }
+  g.add(columns(rect, 0, [-16, -5.5, 5.5, 16], 16, [...floorHoles, ...exitHoles], livMat));
   g.add(lightStrips(rect, 0, [-15, -5, 5, 15]));
   g.add(hvac(rect, 0, [-10, 0, 10]));
   // line chips this station serves
@@ -354,7 +401,11 @@ export function buildStation() {
         }));
         g.add(walls(rect, 0, INTERIOR_H, M.glassDark, portalsX, doorsZ));
       } else {
-        g.add(walls(rect, 0, INTERIOR_H, M.wall, portalsX));
+        // platform levels get the station's mosaic-tile livery on every wall
+        // (that's the surface the calligraphy plates sit on); other levels
+        // keep neutral panels — concourses carry colour via columns/bands
+        const liv = lvl.type === 'platform' ? (lvl.livery ?? stn.livery) : null;
+        g.add(walls(rect, 0, INTERIOR_H, M.wall, portalsX, [], liv));
       }
       g.add(ceilingWithHoles(rect, ceilHoles, 0));
       for (const tr of trackRects) {

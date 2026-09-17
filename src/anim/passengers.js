@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ESC_RUNS, GATES, STAIR_RUNS, PSD_BAYS } from '../registry.js';
 import { psdBlocked } from './trains.js';
-import { WALK_RECTS, BOXES, PEOPLE_N, levelById, boxToWorld, worldToBox, concourseId } from '../station-data.js';
+import { WALK_RECTS, BOXES, PEOPLE_N, PAID_CORE, levelById, boxToWorld, worldToBox, concourseId } from '../station-data.js';
 import { pointInRects, worldRectToLocal } from '../builders/structure.js';
 import { openGate, gateBlocks } from './gates.js';
 import { resolvePed, clampRect, clampOBB, PED_RADIUS } from '../colliders.js';
@@ -67,7 +67,9 @@ export class Passengers {
     this._wyOf = {};                                  // level id -> floor y
     for (const id of Object.keys(N_LEVELS)) this._wyOf[id] = levelById(id).y;
 
-    this.max = 340;
+    // instanced capacity = the whole crowd + headroom for dwell-time
+    // boarding/alighting spawns (cap() recycles 'aboard' peds past this)
+    this.max = this.list.length + 80;
     this._m4 = new THREE.Matrix4();
     this._lm = new THREE.Matrix4();
     this._pm = new THREE.Matrix4();
@@ -151,14 +153,40 @@ export class Passengers {
       }, null).r;
   }
 
+  // a grounded ped that ends up off the walkable floor or inside a floor
+  // opening (slid there by collision, or a stale position from before) gets
+  // pulled back to the nearest walkable spot — they can't float mid-air
+  rehome(p) {
+    const rects = WALK_RECTS[p.level] || [];
+    const holes = this.holes[p.level] || [];
+    const inRect = rects.some(r => p.x >= r.x0 && p.x <= r.x1 && p.z >= r.z0 && p.z <= r.z1);
+    const inHole = pointInRects(p.x, p.z, holes);
+    if (inRect && !inHole) return;
+    for (const h of holes) {
+      if (p.x <= h.x0 || p.x >= h.x1 || p.z <= h.z0 || p.z >= h.z1) continue;
+      const dxl = p.x - h.x0, dxr = h.x1 - p.x, dzl = p.z - h.z0, dzr = h.z1 - p.z;
+      const m = Math.min(dxl, dxr, dzl, dzr);
+      if (m === dxl) p.x = h.x0 - 0.4; else if (m === dxr) p.x = h.x1 + 0.4;
+      else if (m === dzl) p.z = h.z0 - 0.4; else p.z = h.z1 + 0.4;
+    }
+    const r = this.homeRect(p);
+    p.x = Math.max(r.x0 + 0.4, Math.min(r.x1 - 0.4, p.x));
+    p.z = Math.max(r.z0 + 0.4, Math.min(r.z1 - 0.4, p.z));
+  }
+
   // pick a destination: mostly wander; sometimes ride an escalator or cross a gate
   choose(p) {
     const lvl = p.level;
     const roll = Math.random();
     const home = this.homeRect(p);
     const inHome = (x, z) => x >= home.x0 - 0.5 && x <= home.x1 + 0.5 && z >= home.z0 - 0.5 && z <= home.z1 + 0.5;
+    const lvlType = levelById(lvl).type;
+    // the paid strip is sealed by gate banks + railings — a ped only targets
+    // what its own side can reach; crossing the line means taking a gate
+    const core = PAID_CORE[lvl];
+    const inCore = !!core && Math.abs(p.z) < core.z;
 
-    if (roll < 0.22) {
+    if (roll < 0.22 && !(core && !inCore && lvlType === 'concourse')) {
       // find a rideable escalator from this level — mouth must be reachable,
       // i.e. on the same platform strip / bridge section the ped is on
       const opts = ESC_RUNS.filter(r =>
@@ -177,14 +205,20 @@ export class Passengers {
         return;
       }
     }
-    const lvlType = levelById(lvl).type;
     if (lvlType === 'concourse' && roll < 0.4) {
+      const bx0 = this.boxOf[lvl];
       const lanes = GATES.filter(g => g.level === lvl);
-      const g = lanes[Math.floor(Math.random() * lanes.length)];
+      // outside the paid strip only this side's gate rows are reachable —
+      // the opposite line is behind the railings
+      const pick = core && !inCore
+        ? lanes.filter(g => Math.sign(worldToBox(bx0, g.x, g.z).z) === Math.sign(p.z))
+        : lanes;
+      const g = pick[Math.floor(Math.random() * pick.length)];
       if (g) {
-        const bx0 = this.boxOf[lvl];
         const lg = worldToBox(bx0, g.x, g.z);
-        const approach = p.z < lg.z ? -1 : 1;       // approach side (local)
+        const approach = core
+          ? (inCore ? -Math.sign(lg.z) : Math.sign(lg.z))
+          : (p.z < lg.z ? -1 : 1);
         p.gate = g; p.gateSide = approach;
         p.tx = lg.x; p.tz = lg.z + approach * 1.7;
         p.state = 'toGate';
@@ -208,11 +242,18 @@ export class Passengers {
         return;
       }
     }
-    // people leaving: concourse/bridge -> street via an exit stair
-    if ((lvlType === 'concourse' || lvlType === 'bridge') && roll < 0.08) {
+    // people leaving: concourse/bridge -> street via an exit stair — the
+    // stair landings are all in the unpaid bands, so a paid-strip ped has to
+    // tap out through a gate first; an unpaid ped only picks its own side
+    // (the two bands are separated by the sealed strip)
+    if ((lvlType === 'concourse' || lvlType === 'bridge') && roll < 0.08 && !inCore) {
       const up = STAIR_RUNS.filter(r => r.to === lvl);
-      if (up.length) {
-        const r = up[Math.floor(Math.random() * up.length)];
+      const bx0 = this.boxOf[lvl];
+      const sameSide = core ? up.filter(r =>
+        Math.sign(worldToBox(bx0, r.bot.x, r.bot.z).z) === Math.sign(p.z)) : up;
+      const pick = sameSide.length ? sameSide : up;
+      if (pick.length) {
+        const r = pick[Math.floor(Math.random() * pick.length)];
         const l = worldToBox(this.boxOf[lvl], r.bot.x + r.ux * 1.4, r.bot.z + r.uz * 1.4);
         p.stair = { r, down: false };
         p.tx = l.x; p.tz = l.z; p.state = 'toStair';
@@ -226,6 +267,8 @@ export class Passengers {
       if (pointInRects(tx, tz, this.holes[lvl])) continue;
       if (!pathClear(p.x, p.z, tx, tz, this.holes[lvl])) continue;
       if (this.insideSolid(lvl, tx, tz)) continue;
+      // wander stays on the ped's own side of the paid boundary
+      if (core && Math.abs(tz) < core.z !== inCore) continue;
       p.tx = tx; p.tz = tz; p.state = 'walk';
       return;
     }
@@ -354,7 +397,16 @@ export class Passengers {
           p.wy = r.top.y - r.drop * f;
           p.yaw = Math.atan2(st.down ? r.ux : -r.ux, st.down ? r.uz : -r.uz);
           if (f <= 0 || f >= 1) {
-            p.level = st.down ? r.to : r.from;
+            const nl = st.down ? r.to : r.from;
+            if (nl !== p.level) {
+              // arrival level can live in a different station box (ADM's ext
+              // box is rotated) — re-express the position or the ped keeps
+              // old-box coords and teleports onto the void/track
+              const w = boxToWorld(this.boxOf[p.level], p.x, p.z);
+              const l2 = worldToBox(this.boxOf[nl], w.x, w.z);
+              p.x = l2.x; p.z = l2.z;
+            }
+            p.level = nl;
             p.state = 'seek'; p.stair = null; p.wy = null;
           }
           break;
@@ -379,7 +431,13 @@ export class Passengers {
           p.wy = run.y1 - (hx / run.len) * run.drop;   // ride the ramp down/up
           p.yaw = Math.atan2(run.dx * d, run.dz * d);
           if (done) {
-            p.level = p.rideTop ? run.to : run.from;
+            const nl = p.rideTop ? run.to : run.from;
+            if (nl !== p.level) {
+              const w = boxToWorld(this.boxOf[p.level], p.x, p.z);
+              const l2 = worldToBox(this.boxOf[nl], w.x, w.z);
+              p.x = l2.x; p.z = l2.z;
+            }
+            p.level = nl;
             p.state = 'seek'; p.run = null; p.wy = null;
           }
           break;
@@ -410,9 +468,11 @@ export class Passengers {
           break;
         }
         case 'seek':
-          // just arrived somewhere (off an escalator, stair, or train) — pick
-          // a fresh destination; walking on toward the stale target would push
-          // the ped across walls/balustrades
+          // just arrived somewhere (off an escalator, stair, or train) — pull
+          // back onto solid footing if the landing left it over an opening,
+          // then pick a fresh destination; walking on toward a stale target
+          // would push the ped across walls/balustrades
+          this.rehome(p);
           this.choose(p);
           break;
         default:   // 'walk'

@@ -184,6 +184,21 @@ export class CameraRig {
         const d = Math.sqrt(d2);
         px = nx + dx / d * RADIUS; pz = nz + dz / d * RADIUS;
       }
+      // closed PSD bays need a persistent push-out, not just the swept
+      // clamp — that one snaps to the razor edge of the hit zone, which
+      // FP reads as "inside" next frame and the wall stops existing.
+      // Always eject to the platform side, never into the track.
+      if (bayList) {
+        for (const b of bayList) {
+          const lx = (px - b.cx) * b.cos - (pz - b.cz) * b.sin;
+          const lz = (px - b.cx) * b.sin + (pz - b.cz) * b.cos;
+          if (Math.abs(lx) >= b.hx + RADIUS || Math.abs(lz) >= b.hz + RADIUS) continue;
+          const side = Math.sign(b.ds.z - (b.ds.track.z0 + b.ds.track.z1) / 2) || 1;
+          const lz2 = side * (b.hz + RADIUS + 1e-3);
+          px = b.cx + lx * b.cos + lz2 * b.sin;
+          pz = b.cz - lx * b.sin + lz2 * b.cos;
+        }
+      }
     }
     return [px, pz];
   }
@@ -210,29 +225,30 @@ export class CameraRig {
       const inBay = x => ds && ds.xs.some(b => Math.abs(x - b) < BAY / 2 + 0.05);
       const put = () => { const w = boxToWorld(svc.bx, lp.x, lp.z); px = w.x; pz = w.z; };
 
+      // carry a rider by the consist's full frame delta — translation AND
+      // rotation — BEFORE resolving the local frame. Off-leg arrivals
+      // re-place into a new box and run-frames yaw through tunnel curves,
+      // so a stale pre-carry position reads far outside and drops the rider
       let lp = worldToBox(svc.bx, px, pz);
+      if (this._aboard === svc && (svc.dwx || svc.dwz || svc.drot)) {
+        const ox = px - (svc.train.position.x - svc.dwx);
+        const oz = pz - (svc.train.position.z - svc.dwz);
+        const c = Math.cos(svc.drot), s = Math.sin(svc.drot);
+        px = svc.train.position.x + ox * c + oz * s;
+        pz = svc.train.position.z - ox * s + oz * c;
+        lp = worldToBox(svc.bx, px, pz);
+      }
       let relX = lp.x - svc.tx;
       let u = (lp.z - zc) * dSide;
-      if (Math.abs(relX) > halfLen + 4 || u < -2.5 || u > psdU + 3) continue;
-
-      // ended up on the track bed — recover to the platform edge
-      if (ds && this.feetY < lvlY - 0.5) {
-        lp.z = zc + dSide * (psdU + RADIUS + 0.3);
-        floor = Math.max(floor, lvlY);
-        put();
-        continue;
-      }
-
       const inX = Math.abs(relX) < halfLen - 0.45;
-      if (this._aboard === svc && inX && Math.abs(u) < INNER + 0.15) {
+
+      // a rider stays aboard unless they're stepping out through an open
+      // bay while berthed — a consist on the move carries and contains them
+      // unconditionally (no dead zone between the car wall and the range
+      // check for them to be dropped through)
+      const exiting = this._aboard === svc && ds && open && u > INNER + 0.1 && inX && inBay(lp.x);
+      if (this._aboard === svc && !exiting) {
         sawAboard = true;
-        // carried by the train's world displacement — works while berthed,
-        // running the tunnel leg, and parked off-map
-        if (svc.dwx || svc.dwz) {
-          px += svc.dwx; pz += svc.dwz;
-          lp = worldToBox(svc.bx, px, pz);
-          relX = lp.x - svc.tx; u = (lp.z - zc) * dSide;
-        }
         floor = Math.max(floor, svc.floorY);
         const maxX = halfLen - 0.55;
         if (relX > maxX) lp.x = svc.tx + maxX;
@@ -241,6 +257,15 @@ export class CameraRig {
         if (Math.abs(lp.z - zc) > lim && !(open && u > 0 && inBay(lp.x))) {
           lp.z = zc + Math.sign(lp.z - zc) * lim;
         }
+        put();
+        continue;
+      }
+      if (Math.abs(relX) > halfLen + 4 || u < -2.5 || u > psdU + 3) continue;
+
+      // ended up on the track bed — recover to the platform edge
+      if (ds && this.feetY < lvlY - 0.5) {
+        lp.z = zc + dSide * (psdU + RADIUS + 0.3);
+        floor = Math.max(floor, lvlY);
         put();
         continue;
       }
@@ -288,26 +313,6 @@ export class CameraRig {
       }
     }
     return [px, pz];
-  }
-
-  // The consist the player is riding is leaving the built world (an 'off'
-  // leg — the consist goes invisible in the void). Put them back on the
-  // platform beside the door set they boarded through, at their current x.
-  ejectToPlatform(svc) {
-    const ds = svc.stop?.ds;
-    this._aboard = null;
-    if (!ds) return;
-    const bx = BOXES[levelById(ds.level).box];
-    const lp = worldToBox(bx, this.camera.position.x, this.camera.position.z);
-    const tr = ds.track;
-    const sgn = Math.sign(ds.z - (tr.z0 + tr.z1) / 2) || 1;
-    lp.x = Math.max(tr.x0 + 1, Math.min(tr.x1 - 1, lp.x));
-    lp.z = ds.z + sgn * (RADIUS + 0.25);
-    const w = boxToWorld(bx, lp.x, lp.z);
-    this.camera.position.x = w.x;
-    this.camera.position.z = w.z;
-    this.feetY = levelById(ds.level).y;
-    this.vy = 0;
   }
 
   setMode(mode) {

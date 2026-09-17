@@ -4,8 +4,9 @@
 import { ADM } from './stations/admiralty.js';
 import { CEN } from './stations/central.js';
 import { HOK } from './stations/hongkong.js';
+import { WAC } from './stations/wanchai.js';
 
-export const STATIONS = { ADM, CEN, HOK };
+export const STATIONS = { ADM, CEN, HOK, WAC };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
@@ -96,6 +97,17 @@ for (const stn of Object.values(STATIONS)) {
     PEOPLE_N[`${stn.id}:${lvlId}`] = n;
   }
   if (stn.gateRows) GATE_ROWS[stn.id] = stn.gateRows;
+}
+
+// Paid zone per concourse level — the gate lines run wall to wall (banks +
+// railings), so "paid" is simply the strip |z| < gateZ. Passengers use it to
+// keep wander targets on their own side of the gate line.
+export const PAID_CORE = {};
+for (const stn of Object.values(STATIONS)) {
+  if (!stn.gateRows?.length) continue;
+  const z = Math.max(...stn.gateRows.map(r => Math.abs(r.z)));
+  for (const l of stn.levels)
+    if (l.type === 'concourse') PAID_CORE[`${stn.id}:${l.id}`] = { z };
 }
 
 // U1 footbridge is Admiralty-specific street furniture.

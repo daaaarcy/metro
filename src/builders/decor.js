@@ -16,16 +16,21 @@ export function canvasTex(w, h, draw) {
   return t;
 }
 
-// ---- platform calligraphy: giant 金鐘 characters + ADMIRALTY on the tiled
-// wall behind the tracks — the signature MTR platform-wall treatment ---------
-export function calligraphy(rect, y, stn = { zh: '金鐘', en: 'ADMIRALTY' }) {
+// ---- platform calligraphy: giant station-name characters + EN on the tiled
+// wall behind the tracks — the signature MTR platform-wall treatment. The
+// plate takes the station's mosaic livery; glyphs go white on dark tile,
+// charcoal on light tile (e.g. Admiralty's EAL/SIL expansion halls).
+export function calligraphy(rect, y, stn = { zh: '金鐘', en: 'ADMIRALTY' }, livery = '#122a4e') {
   const g = new THREE.Group();
+  const c = new THREE.Color(livery);
+  const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  const ink = lum > 0.55 ? '#2b343c' : '#ffffff';
   const tex = canvasTex(640, 200, (ctx, w, h) => {
-    ctx.fillStyle = '#122a4e'; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillStyle = livery; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = lum > 0.55 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.08)';
     for (let x = 0; x < w; x += 26) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
     for (let yy = 0; yy < h; yy += 26) { ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke(); }
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = ink;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '700 128px "PingFang HK","Songti SC","STSong",serif';
     ctx.fillText(stn.zh, w / 2, h * 0.40);

@@ -41,3 +41,34 @@ export function lineMat(hex) {
   if (!m) lineCache.set(hex, m = new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.55 }));
   return m;
 }
+
+// Station liveries — the small-square mosaic tiles that give every classic
+// MTR station its colour (Admiralty blue, Central crimson, Wan Chai lime…).
+// A canvas texture of shade-jittered tiles over dark grout; callers pass a
+// repeat so a tile stays ~0.3 m square whatever the wall piece's length.
+const TILES_X = 32, TILES_Y = 8;
+const mosaicCache = new Map();
+export function mosaicMat(hex, rx = 8, ry = 2) {
+  const key = `${hex}|${rx}|${ry}`;
+  let m = mosaicCache.get(key);
+  if (!m) {
+    const c = document.createElement('canvas');
+    c.width = TILES_X * 8; c.height = TILES_Y * 8;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#26292e'; ctx.fillRect(0, 0, c.width, c.height);   // grout
+    const base = new THREE.Color(hex), cc = new THREE.Color();
+    for (let y = 0; y < TILES_Y; y++) for (let x = 0; x < TILES_X; x++) {
+      const j = Math.abs((Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1);
+      cc.copy(base).multiplyScalar(0.88 + j * 0.24);
+      ctx.fillStyle = `#${cc.getHexString()}`;
+      ctx.fillRect(x * 8 + 0.5, y * 8 + 0.5, 7, 7);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(rx, ry);
+    tex.anisotropy = 4;
+    mosaicCache.set(key, m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.72 }));
+  }
+  return m;
+}
