@@ -42,12 +42,26 @@ export class CameraRig {
     this.ramps = [];
 
     dom.addEventListener('pointerdown', e => {
-      if (this.mode === 'orbit') return;
+      if (this.mode === 'orbit' || document.pointerLockElement === dom) return;
+      // FPS mouse-look: lock the pointer so plain mouse movement turns the
+      // view (Esc releases). unadjustedMovement skips OS pointer accel where
+      // supported; the drag path below is the fallback when lock is denied.
+      try {
+        dom.requestPointerLock({ unadjustedMovement: true })
+          ?.catch?.(() => dom.requestPointerLock());
+      } catch { try { dom.requestPointerLock(); } catch {} }
       this._drag = { x: e.clientX, y: e.clientY };
-      dom.setPointerCapture(e.pointerId);
+      try { dom.setPointerCapture(e.pointerId); } catch {}
     });
     dom.addEventListener('pointermove', e => {
-      if (!this._drag || this.mode === 'orbit') return;
+      if (this.mode === 'orbit') return;
+      if (document.pointerLockElement === dom) {
+        this.yaw -= e.movementX * 0.0026;
+        this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * 0.0026, -1.45, 1.45);
+        this._drag = { x: e.clientX, y: e.clientY };   // frozen coords — seamless if lock drops
+        return;
+      }
+      if (!this._drag) return;
       this.yaw -= (e.clientX - this._drag.x) * 0.0032;
       this.pitch = THREE.MathUtils.clamp(this.pitch - (e.clientY - this._drag.y) * 0.0032, -1.45, 1.45);
       this._drag = { x: e.clientX, y: e.clientY };
@@ -318,6 +332,7 @@ export class CameraRig {
   setMode(mode) {
     this.mode = mode;
     this.orbit.enabled = mode === 'orbit';
+    if (mode === 'orbit' && document.pointerLockElement) document.exitPointerLock();
     if (mode !== 'orbit') {
       const e = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
       this.yaw = e.y; this.pitch = e.x;

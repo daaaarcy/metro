@@ -194,10 +194,11 @@ input[type="range"]:disabled { opacity: 0.3; }
 #map-panel {
   visibility: hidden; opacity: 0; pointer-events: none;
   position: absolute; right: 0; bottom: calc(100% + 8px);
-  width: 680px; background: rgba(13,17,23,0.92); backdrop-filter: blur(10px);
+  width: min(1080px, 94vw); background: rgba(13,17,23,0.92); backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px 8px;
   transition: opacity 0.15s ease;
 }
+#map-body { max-height: calc(100vh - 190px); overflow-y: auto; }
 #map-panel.show { visibility: visible; opacity: 1; pointer-events: auto; }
 #map-close {
   position: absolute; top: 4px; right: 8px;
