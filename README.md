@@ -31,6 +31,7 @@ procedural Hong Kong skyline around each station.
 | JOR  | Jordan 佐敦 | Tsuen Wan Line |
 | YMT  | Yau Ma Tei 油麻地 | Tsuen Wan + Kwun Tong Lines |
 | MOK  | Mong Kok 旺角 | Tsuen Wan + Kwun Tong Lines (cross-platform interchange) |
+| PRE  | Prince Edward 太子 | Tsuen Wan + Kwun Tong Lines (mirrored cross-platform) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

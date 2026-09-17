@@ -797,11 +797,30 @@ const SITES = [
       [640, -1260, 26, 20, 30, 'res'],
       [760, -1260, 60, 40, 26, 'office'],  // Mong Kok East slab over the ERL
       // corridor flanks continue north — x 194..446 stays clear for PRE
-      [150, -1360, 30, 24, 38, 'res'],
-      [490, -1370, 32, 26, 42, 'office'],
+      [490, -1400, 32, 26, 42, 'office'],
     ],
     parks: [[580, -1180, 640, -1100, 14]],     // King's Park south edge
     lamps: [[60, -1240, 190], [450, -1240, 600]],
+  },
+  { // ---- Prince Edward — Nathan Rd x Prince Edward Rd West, the
+    //     second TWL/KTL cross-platform interchange: Mong Kok Stadium
+    //     + playing fields west, Flower Market / Bird Garden north,
+    //     dense commercial east.
+    id: 'PRE', hole: [194, 446, -1408, -1312],
+    roads: [[60, -1374, 190, -1356],           // Prince Edward Rd W
+            [450, -1374, 600, -1356],          // Prince Edward Rd E
+            [194, -1435, 446, -1410]],         // Nathan Rd toward SSP
+    towers: [
+      [500, -1340, 32, 24, 36, 'office'],
+      [540, -1390, 34, 26, 30, 'res'],
+      [490, -1430, 30, 22, 34, 'res'],
+      [620, -1360, 30, 24, 28, 'res'],
+      [160, -1445, 30, 20, 14, 'mall'],    // Flower Market sheds
+      [160, -1485, 26, 20, 30, 'res'],
+    ],
+    parks: [[70, -1410, 180, -1345, 34],       // Mong Kok Stadium + playing fields
+            [60, -1470, 140, -1420, 14]],      // Yuen Po St Bird Garden
+    lamps: [[60, -1365, 190], [450, -1365, 600]],
   },
 ];
 
@@ -868,6 +887,9 @@ const NAMES = [
   ['MOK', 530, 34, -1260, '新世紀廣場 MOKO'],
   ['MOK', 470, 14, -1268, '女人街 Ladies\' Market'],
   ['MOK', 760, 30, -1260, '旺角東站 Mong Kok East'],
+  ['PRE', 125, 18, -1378, '旺角大球場 Mong Kok Stadium'],
+  ['PRE', 100, 10, -1445, '花墟・雀鳥花園 Flower Market'],
+  ['PRE', 500, 40, -1340, '金都商場 Golden Plaza'],
 ];
 
 export function buildCity() {

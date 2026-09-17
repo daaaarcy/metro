@@ -4,10 +4,10 @@
 // (tied with East TST for the most in the MTR) and TWO stacked islands —
 // the cross-platform-by-direction pair: L2 holds TWL P1 + KTL P3
 // (northbound faces), L3 holds TWL P2 + KTL P4 (southbound faces).
-// For now both lines terminate here — each consist arrives on the
-// upper island (L2 northbound) then wraps off-map to the lower island
-// (L3 southbound) to head back. When Prince Edward lands, terminus
-// clears and both lines through-run north.
+// Both lines through-run: TWL continues north to Prince Edward (and
+// eventually Tsuen Wan), KTL continues to Prince Edward then turns
+// east toward Shek Kip Mei. Northbound faces sign 'to Tsuen Wan' /
+// 'to Tiu Keng Leng', southbound 'to Central' / 'to Whampoa'.
 // Livery: red / medium grey.
 
 export const MOK = {
@@ -30,19 +30,17 @@ export const MOK = {
 
   // Two stacked islands — northbound upstairs, southbound downstairs,
   // TWL on each island's north face and KTL on its south face (the real
-  // cross-platform pairing). Temporary termini: northbound faces sign
-  // 'to Tsuen Wan'/'to Tiu Keng Leng' (dir +1, east portal), southbound
-  // 'to Central'/'to Whampoa' (dir -1, west portal).
+  // cross-platform pairing).
   platforms: {
     L2: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1, to: { zh: '往荃灣',   en: 'to Tsuen Wan' } },
         { num: 3, line: 'KTL', side: 1,  dir: 1, to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
       ],
     },
     L3: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 2, line: 'TWL', side: -1, dir: -1, to: { zh: '往中環', en: 'to Central' } },
         { num: 4, line: 'KTL', side: 1,  dir: -1, to: { zh: '往黃埔', en: 'to Whampoa' } },

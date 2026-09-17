@@ -701,12 +701,14 @@ export const ROUTES = [
   // harbour-side crossover box). The crossing legs dive under the sea:
   // the path machinery routes them through each destination's arrival
   // portal so the consist glides in aligned with the platform axis.
-  // Mong Kok is the temporary north end — TWL berths the L2 northbound
-  // face (P1), wraps off-map through the overrun tunnel and re-enters
-  // the L3 southbound face (P2) to head back south (MOK interleaves
-  // TWL/KTL by direction: northbound upstairs, southbound downstairs).
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
-    stops: [{ uid: 'MOK:L3', num: 2 },
+  // Prince Edward is the temporary north end — TWL berths the L2
+  // northbound face (P1), wraps off-map and re-enters the L3 southbound
+  // face (P4) to head back south. MOK/PRE interleave TWL/KTL crosswise:
+  // MOK pairs by direction (north upstairs), PRE mirrors it (the KTL
+  // dives between the levels in the tunnel between them).
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
+    stops: [{ uid: 'PRE:L3', num: 4 },
+            { uid: 'MOK:L3', num: 2 },
             { uid: 'YMT:L2', num: 2 },
             { uid: 'JOR:L2', num: 2 },
             { uid: 'TST:L2', num: 2 },
@@ -717,15 +719,18 @@ export const ROUTES = [
             { uid: 'TST:L2', num: 1 },
             { uid: 'JOR:L2', num: 1 },
             { uid: 'YMT:L2', num: 1 },
-            { uid: 'MOK:L2', num: 1, dwell: 55 }] },
-  // Kwun Tong Line's first leg — the Yau Ma Tei ↔ Mong Kok corridor
-  // pair. Both ends are termini for now: MOK reverses between the L2
-  // northbound face (P3) and L3 southbound face (P4); YMT reverses
-  // between its L3 island's faces at the east portal.
-  { line: 'KTL', travel: 75, legs: ['tunnel', 'off', 'tunnel', 'off'], consists: 2,
+            { uid: 'MOK:L2', num: 1 },
+            { uid: 'PRE:L2', num: 1, dwell: 55 }] },
+  // Kwun Tong Line — Yau Ma Tei ↔ Mong Kok ↔ Prince Edward. Both ends
+  // are termini for now: PRE reverses between its L3 northbound face
+  // (P3) and L2 southbound face (P2); YMT reverses between its L3
+  // island's faces at the east portal.
+  { line: 'KTL', travel: 75, legs: ['tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'off'], consists: 2,
     stops: [{ uid: 'YMT:L3', num: 3 },
             { uid: 'MOK:L2', num: 3 },
-            { uid: 'MOK:L3', num: 4, dwell: 40 },
+            { uid: 'PRE:L3', num: 3, dwell: 40 },
+            { uid: 'PRE:L2', num: 2, dwell: 40 },
+            { uid: 'MOK:L3', num: 4 },
             { uid: 'YMT:L3', num: 4, dwell: 40 }] },
   // Island Line through service: Kennedy Town is the west terminus —
   // consists reverse off-map in the Mount Davis overrun tunnel and head
