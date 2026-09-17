@@ -150,7 +150,7 @@ export function platformLevel(levelDef, rect) {
       const zc = s * TRACK_Z;
       const tr = { x0: rect.x0 + 1.5, z0: zc - BED_HALF, x1: rect.x1 - 1.5, z1: zc + BED_HALF, sides: [] };
       trackRects.push(tr);
-      g.add(track(tr, y, { buffers: !!spec.terminus }));
+      g.add(track(tr, y, { buffers: spec.buffers ?? !!spec.terminus, bufDir: spec.bufDir ?? -1 }));
       addFace(tr, s * (TRACK_Z - BED_HALF) - s * 0.06, -s, spec.faces[i]);
     }
     g.add(benches(rect.x0 + 12, rect.x1 - 12, 0, y));

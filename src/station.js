@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M, lineMat, mosaicMat } from './builders/materials.js';
 import {
   STATIONS, LEVELS, BOXES, ESCALATORS, EXITS, LIFTS, PLATFORMS, LINES,
-  ESC, LIFT_SIZE, FLOOR_H, SLAB_T, GATE_ROWS,
+  ESC, LIFT_SIZE, FLOOR_H, SLAB_T, WALL_T, GATE_ROWS,
   boxToWorld, escalatorRuns, liftWorldRect, levelById,
 } from './station-data.js';
 import {
@@ -14,7 +14,7 @@ import { escalatorRun, runWorldRect, exitShaft, exitDoor, liftShaft, footbridge 
 import { makeSign, hangingSign, platformSign, exitTotem } from './builders/signage.js';
 import { gateBank, serviceBooth, shops, toilets, kiosk, hvac, restaurant, mallEntrance, sevenEleven } from './builders/props.js';
 import { calligraphy, posters, postersEnd, binPair, fireCabinets, mapBoard } from './builders/decor.js';
-import { tunnelTube } from './builders/tracks.js';
+import { tunnelTube, trackExtension } from './builders/tracks.js';
 import { linkCorridor, LINK } from './builders/link.js';
 import { FITTINGS, solid, STAIR_RUNS } from './registry.js';
 
@@ -33,15 +33,24 @@ export function computeOpenings() {
     const horiz = Math.abs(e.dir[0]) >= Math.abs(e.dir[1]);
     const lat = horiz ? ['z0', 'z1'] : ['x0', 'x1'];
     const u = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
-    let deepEnd = null;
+    let deepEnd = null, shallowEnd = null;
     for (const r of escalatorRuns(e)) {
       const wr = runWorldRect(r);
       u.x0 = Math.min(u.x0, wr.x0); u.x1 = Math.max(u.x1, wr.x1);
       u.z0 = Math.min(u.z0, wr.z0); u.z1 = Math.max(u.z1, wr.z1);
       deepEnd = horiz ? (r.x2 > r.x1 ? 'x1' : 'x0') : (r.z2 > r.z1 ? 'z1' : 'z0');
+      shallowEnd = horiz ? (r.x2 > r.x1 ? 'x0' : 'x1') : (r.z2 > r.z1 ? 'z0' : 'z1');
     }
-    add(e.from, { ...u, sides: [...lat, deepEnd] });
-    add(e.to + ':ceil', { ...u, sides: lat });
+    if (levelById(e.to).y > levelById(e.from).y) {
+      // ascending run (elevated platforms, e.g. CHW): the ramp pierces the
+      // lower level's ceiling and emerges through the upper level's floor —
+      // kerb the edge where the ramp dives away below the upper slab.
+      add(e.from + ':ceil', { ...u, sides: lat });
+      add(e.to, { ...u, sides: [...lat, shallowEnd] });
+    } else {
+      add(e.from, { ...u, sides: [...lat, deepEnd] });
+      add(e.to + ':ceil', { ...u, sides: lat });
+    }
   }
   for (const ex of EXITS) {
     const stn = STATIONS[ex.stn];
@@ -85,8 +94,18 @@ export function computeOpenings() {
       z0: p.z - LIFT_SIZE.d / 2 - 0.2, z1: p.z + LIFT_SIZE.d / 2 + 0.2,
       sides: ['x0', 'x1', 'z0', 'z1'].filter(s => s !== doorSide),
     };
-    l.levels.slice(0, -1).forEach(id => add(id, wr));       // pierced floor slabs
-    l.levels.slice(1).forEach(id => add(id + ':ceil', wr)); // pierced ceilings
+    // the shaft stands on the LOWEST landing's floor and pierces every
+    // slab above it (incl. the top landing — the car emerges through it);
+    // ceilings pierce below the top landing. Order l.levels by height so
+    // ascending lifts (CHW's U1->U2) behave like descending ones.
+    const byY = [...l.levels].sort((a, b) => levelById(b).y - levelById(a).y);
+    byY.slice(0, -1).forEach(id => add(id, wr));       // pierced floor slabs
+    byY.slice(1).forEach(id => add(id + ':ceil', wr)); // pierced ceilings
+    // when the top landing IS the station's topmost level the shaft
+    // overruns through its roof slab (elevated termini / HFC's deck)
+    const topLvl = levelById(byY[0]);
+    const above = LEVELS.some(l2 => l2.station === topLvl.station && l2.y > topLvl.y);
+    if (!above) add(byY[0] + ':ceil', wr);
   }
   return open;
 }
@@ -435,17 +454,22 @@ export function buildStation() {
     const ceilHoles = localHoles(openings, lvl.uid + ':ceil', bx);
 
     // circulation that STANDS on this slab without piercing it — escalator
-    // arrivals and lift-shaft bottoms. Columns must dodge these too or
-    // they sprout mid-well on island platforms. (Exit stairs are dodged
-    // separately via exitHoles — STAIR_RUNS fills lazily during this loop.)
+    // arrivals AND (for ascending runs) boarding mouths, plus lift-shaft
+    // bases. Columns must dodge these too or they sprout mid-well on island
+    // platforms. (Exit stairs are dodged separately via exitHoles —
+    // STAIR_RUNS fills lazily during this loop.)
     const standHoles = [...floorHoles];
     for (const e of ESCALATORS) {
-      if (e.to !== lvl.uid) continue;
+      const arrives = e.to === lvl.uid;
+      const boardsUp = e.from === lvl.uid && levelById(e.to).y > lvl.y;
+      if (!arrives && !boardsUp) continue;
       for (const r of escalatorRuns(e))
         standHoles.push(worldRectToLocal(bx, runWorldRect(r, 1.1)));
     }
     for (const l of LIFTS) {
-      if (l.levels[l.levels.length - 1] !== lvl.uid) continue;
+      // the shaft stands on its lowest landing's floor
+      const lowest = l.levels.reduce((a, b) => levelById(a).y <= levelById(b).y ? a : b);
+      if (lowest !== lvl.uid) continue;
       const p = liftWorldRect(l);
       standHoles.push(worldRectToLocal(bx, {
         x0: p.x - LIFT_SIZE.w / 2 - 0.4, x1: p.x + LIFT_SIZE.w / 2 + 0.4,
@@ -487,8 +511,14 @@ export function buildStation() {
       }
       g.add(ceilingWithHoles(rect, ceilHoles, 0));
       for (const tr of trackRects) {
-        g.add(tunnelTube(tr, 0, 1));
-        g.add(tunnelTube(tr, 0, -1));
+        if (lvl.y < -0.5) {          // underground — bored tubes past the portals
+          g.add(tunnelTube(tr, 0, 1));
+          g.add(tunnelTube(tr, 0, -1));
+        } else {                     // at-grade/elevated — open track continues
+          const tail = PLATFORMS[lvl.uid]?.tail ?? 0;   // buffered overrun end
+          g.add(trackExtension(tr, 0, 1, lvl.y, { buffer: tail === 1, len: tail === 1 ? 88 : 52 }));
+          g.add(trackExtension(tr, 0, -1, lvl.y, { buffer: tail === -1, len: tail === -1 ? 88 : 52 }));
+        }
       }
     }
 
@@ -497,6 +527,31 @@ export function buildStation() {
     else if (lvl.type === 'concourse') dressConcourse(g, stn, lvl, rect, standHoles, bx);
     else if (lvl.type === 'lobby') dressLobby(g, stn, lvl, rect, standHoles);
     else if (lvl.type === 'checkin') dressCheckin(g, stn, lvl, rect, standHoles, bx);
+
+    // elevated slab support: 'podium' = an inset station block under the
+    // slab (down to grade) plus a colonnade at the slab edge so the
+    // cantilevered gallery reads as held up (CHW's building-under-viaduct)
+    if (lvl.podium != null && lvl.y > 0) {
+      const inset = lvl.podium, top = -SLAB_T, bot = -lvl.y;
+      const h = top - bot, cy = bot + h / 2;
+      const zi = Math.abs(rect.z1) - inset, xi = rect.x1 - inset;
+      for (const s of [-1, 1]) {
+        const wz = box(xi * 2, h, WALL_T, M.wallDark);
+        wz.position.set((rect.x0 + rect.x1) / 2, cy, s * zi);
+        g.add(solid(wz));
+        const wx = box(WALL_T, h, zi * 2, M.wallDark);
+        wx.position.set(s * xi, cy, 0);
+        g.add(solid(wx));
+        // colonnade under the cantilevered slab edge — skip exit slots
+        const exitsSide = (stn.exits || []).filter(ex => Math.sign(ex.side) === s).map(ex => ex.x);
+        for (let x = rect.x0 + 7; x < rect.x1 - 4; x += 16) {
+          if (exitsSide.some(ex => Math.abs(x - ex) < 4.2)) continue;
+          const c = box(0.7, h - 0.4, 0.7, M.column);
+          c.position.set(x, bot + h / 2 - 0.2, s * (Math.abs(rect.z1) - 0.9));
+          g.add(solid(c));
+        }
+      }
+    }
 
     levelGroups[lvl.uid] = g;
     root.add(g);
@@ -551,7 +606,8 @@ export function buildStation() {
   }
   for (const l of LIFTS) {
     const p = liftWorldRect(l);
-    const levels = l.levels.map(id => ({ uid: id, y: levelById(id).y }));
+    const levels = l.levels.map(id => ({ uid: id, y: levelById(id).y }))
+      .sort((a, b) => b.y - a.y);   // LiftSim expects landings top→bottom
     // doorway faces the box centre unless the entry says otherwise
     const door = l.door ?? -(Math.sign(l.z) || 1);
     const ys = levels.map(l2 => l2.y);

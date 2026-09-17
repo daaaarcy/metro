@@ -47,7 +47,7 @@ export function escalatorRun(run) {
     // the tilted pane's world AABB inflates into a full-height wall across
     // the whole diagonal — collide with a vertical wall on the balustrade
     // line instead (the group carries the plan yaw, so it becomes an OBB)
-    const barrier = box(L + 0.9, D + 1.5, 0.06, M.balGlass);
+    const barrier = box(L + 0.9, Math.abs(D) + 1.5, 0.06, M.balGlass);
     barrier.position.set(L / 2, (0.6 - D) / 2, s * (w / 2 + 0.05));
     barrier.visible = false;
     barrier.userData.mergeSkip = true;   // collider-only — merging would render it
@@ -61,9 +61,10 @@ export function escalatorRun(run) {
     g.add(skirt);
   }
 
-  // soffit strips on the lower level's ceiling at the well mouth — the lit
-  // portal frame you see when looking up/down the shaft
-  const soffitY = -D + FLOOR_H - SLAB_T - 0.12;
+  // soffit strips on the ceiling at the well mouth — the lit portal frame.
+  // Descending runs sit under the upper slab; ascending runs (elevated
+  // platforms like CHW) sit under the slab the ramp climbs through.
+  const soffitY = D > 0 ? -D + FLOOR_H - SLAB_T - 0.12 : -D - SLAB_T - 0.55;
   for (const s of [-1, 1]) {
     const rim = box(L * 0.94, 0.05, 0.08, M.lightStrip);
     rim.position.set(L / 2, soffitY, s * (w / 2 + 0.28));

@@ -5,8 +5,9 @@ import { solid, walkable } from '../registry.js';
 import { box } from './structure.js';
 
 // Track trough for one track: floor at y-TRACK_DROP, rails + sleepers.
-// rect = trough rect in local frame.
-export function track(rect, y, { buffers = false } = {}) {
+// rect = trough rect in local frame. bufDir: which end the buffers sit on
+// (default -1 = west end; +1 = east, e.g. Chai Wan's tail tracks).
+export function track(rect, y, { buffers = false, bufDir = -1 } = {}) {
   const g = new THREE.Group();
   const w = rect.x1 - rect.x0, d = rect.z1 - rect.z0;
   const cx = (rect.x0 + rect.x1) / 2, cz = (rect.z0 + rect.z1) / 2;
@@ -34,12 +35,13 @@ export function track(rect, y, { buffers = false } = {}) {
   inst.receiveShadow = true;
   g.add(inst);
 
-  // buffer stops (terminus end, -X)
+  // buffer stops (terminus end — -X by default, +X when bufDir > 0)
   if (buffers) {
+    const bx = bufDir > 0 ? rect.x1 - 2.2 : rect.x0 + 2.2;
     const buf = box(1.2, 1.1, GAUGE + 1.2, M.buffer);
-    buf.position.set(rect.x0 + 2.2, floorY + 0.75, cz);
+    buf.position.set(bx, floorY + 0.75, cz);
     const lamp = box(0.25, 0.25, 0.25, new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 2 }));
-    lamp.position.set(rect.x0 + 2.2, floorY + 1.5, cz);
+    lamp.position.set(bx, floorY + 1.5, cz);
     g.add(solid(buf), lamp);
   }
   return g;
@@ -77,5 +79,52 @@ export function tunnelTube(rect, y, dir, len = 42) {
   const cap = box(0.3, h, w, new THREE.MeshBasicMaterial({ color: 0x04060a }));
   cap.position.set(edgeX + dir * (len - 0.2), floorY + h / 2, cz);
   g.add(cap);
+  return g;
+}
+
+// Open-air track continuing past a ground/elevated platform's end wall:
+// bed + rails + sleepers. `elevY` = the level's world height — when > 4 the
+// run rides on a viaduct deck with edge beams + piers down to grade
+// (Chai Wan's elevated overrun tail). `buffer` plants a stop block at the
+// far end (terminus tail track).
+export function trackExtension(rect, y, dir, elevY = 0, { buffer = false, len = 52 } = {}) {
+  const g = new THREE.Group();
+  const floorY = y - TRACK_DROP;
+  const cz = (rect.z0 + rect.z1) / 2, w = rect.z1 - rect.z0;
+  const edgeX = dir > 0 ? rect.x1 : rect.x0;
+  const midX = edgeX + dir * len / 2;
+
+  const elevated = elevY > 4;
+  const bed = box(len, elevated ? 0.7 : 0.25, w + (elevated ? 1.2 : 0), M.bed);
+  bed.position.set(midX, floorY - (elevated ? 0.35 : 0.125), cz);
+  g.add(elevated ? solid(bed) : walkable(bed));
+  for (const s of [-1, 1]) {
+    const rail = box(len, 0.16, 0.09, M.rail);
+    rail.position.set(midX, floorY + 0.22, cz + s * GAUGE / 2);
+    g.add(rail);
+    if (elevated) {
+      const parapet = box(len, 1.0, 0.18, M.wallDark);
+      parapet.position.set(midX, floorY + 0.5, cz + s * (w / 2 + 0.5));
+      g.add(solid(parapet));
+    }
+  }
+  if (elevated) {
+    // piers drop from the deck underside to grade (local frame: grade is
+    // at -elevY, deck bed underside at floorY - 0.35)
+    const ph = elevY - TRACK_DROP - 0.6;
+    for (let d = 8; d < len - 4; d += 16) {
+      const pier = box(0.9, ph, 0.9, M.column);
+      pier.position.set(edgeX + dir * d, floorY - 0.35 - ph / 2, cz);
+      g.add(solid(pier));
+    }
+  }
+  if (buffer) {
+    const bx = edgeX + dir * (len - 2.6);
+    const buf = box(1.2, 1.1, GAUGE + 1.2, M.buffer);
+    buf.position.set(bx, floorY + 0.75, cz);
+    const lamp = box(0.25, 0.25, 0.25, new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 2 }));
+    lamp.position.set(bx, floorY + 1.5, cz);
+    g.add(solid(buf), lamp);
+  }
   return g;
 }

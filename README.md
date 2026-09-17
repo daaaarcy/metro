@@ -26,6 +26,7 @@ procedural Hong Kong skyline around each station.
 | SWH  | Sai Wan Ho 西灣河 | Island Line |
 | SKW  | Shau Kei Wan 筲箕灣 | Island Line |
 | HFC  | Heng Fa Chuen 杏花邨 | Island Line |
+| CHW  | Chai Wan 柴灣 | Island Line (east terminus) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

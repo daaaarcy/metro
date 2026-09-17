@@ -632,6 +632,32 @@ const SITES = [
     parks: [[6490, -52, 6700, -88, 8]],     // harbourfront promenade green
     lamps: [[6500, 48, 6700], [6500, -52, 6700]],
   },
+  { // ---- Chai Wan — the elevated terminus stands over the public
+    //     transport interchange: New Jade Gardens towers north, Hing Wah
+    //     Estate + Youth Square south, industrial blocks toward the depot
+    //     and Chai Wan Park on the shore side
+    id: 'CHW', hole: [7279, 7521, -48, 48],
+    roads: [[7285, 44, 7515, 56], [7452, -44, 7464, 40]],
+    towers: [
+      [7310, -66, 24, 18, 44, 'res'],       // New Jade Gardens towers
+      [7345, -72, 22, 16, 40, 'res'],
+      [7380, -64, 22, 16, 38, 'res'],
+      [7460, -62, 24, 18, 42, 'res'],       // Neptune Terrace-ish
+      [7500, -70, 20, 16, 36, 'res'],
+      [7440, 66, 22, 16, 38, 'res'],        // Hing Wah Estate
+      [7480, 72, 22, 16, 40, 'res'],
+      [7520, 64, 20, 16, 34, 'res'],
+      [7322, 62, 26, 18, 62, 'office'],     // Youth Square tower
+      [7322, 84, 24, 14, 30, 'office'],     // Y Loft hostel block
+      [7292, 70, 24, 18, 26, 'office'],     // industrial blocks west
+      [7292, 94, 22, 16, 22, 'office'],
+      [7370, 96, 22, 16, 20, 'office'],
+      [7490, 96, 24, 18, 30, 'res'],        // toward Siu Sai Wan
+      [7410, 57, 90, 12, 5, 'mall'],        // PTI canopy — bus bays south
+    ],
+    parks: [[7460, -80, 7540, -100, 8]],    // Chai Wan Park strip
+    lamps: [[7300, 48, 7500], [7300, -52, 7500]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -695,6 +721,9 @@ const NAMES = [
   ['HFC', 6520, 12, 62, '杏花新城 Paradise Mall'],
   ['HFC', 6760, 16, -20, '港鐵柴灣車廠 Chai Wan Depot'],
   ['HFC', 6590, 40, 86, '杏花邨 Heng Fa Chuen'],
+  ['CHW', 7322, 68, 62, '青年廣場 Youth Square'],
+  ['CHW', 7310, 50, -66, '新翠花園 New Jade Gardens'],
+  ['CHW', 7410, 10, 57, '柴灣公共運輸交匯處 Chai Wan PTI'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];
