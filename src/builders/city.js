@@ -258,7 +258,8 @@ function twoIfc(x, z) {
 // Victoria Peak — extruded ridged silhouette south of Central/Admiralty,
 // plus the Tai Hang / Jardine's Lookout hills behind Wan Chai
 function peakRidges() {
-  const PEAK = [[-1560, 40], [-1380, 100], [-1260, 145], [-1140, 168], [-1020, 118],
+  const PEAK = [[-3050, 24], [-2760, 38], [-2460, 50], [-2160, 44], [-1860, 58],
+                [-1560, 40], [-1380, 100], [-1260, 145], [-1140, 168], [-1020, 118],
                 [-930, 138], [-800, 105], [-620, 126], [-460, 86], [-300, 62], [-140, 44]];
   const EAST = [[420, 34], [620, 58], [880, 76], [1180, 62], [1480, 88], [1700, 66], [1845, 48]];
   const ridge = (pts, z, depth) => {
@@ -417,6 +418,24 @@ const SITES = [
     parks: [[-2160, 76, -2112, 96, 8]],                        // Blake Garden side
     lamps: [[-2150, 46, -1950], [-2150, -58, -1950]],
   },
+  { // ---- Sai Ying Pun — Mid-Levels old town: low-rise res blocks, the
+    //     lift-tower exits, Sun Yat Sen Memorial Park on the waterfront
+    id: 'SYP', hole: [-2966, -2734, -38, 38],
+    roads: [[-2955, 40, -2745, 52], [-2955, -64, -2745, -52], [-2862, -36, -2850, 36]],
+    towers: [
+      [-2910, -66, 26, 20, 34, 'res'],     // Island Crest-ish
+      [-2945, -70, 22, 18, 40, 'res'],     // The Nova-ish
+      [-2880, -70, 22, 16, 30, 'res'],
+      [-2800, -68, 24, 18, 36, 'res'], [-2760, -64, 20, 16, 28, 'res'],
+      [-2950, 60, 22, 16, 26, 'res'], [-2900, 62, 24, 18, 32, 'res'],
+      [-2830, 58, 20, 16, 24, 'res'], [-2790, 62, 22, 16, 28, 'res'],
+      [-2870, 80, 20, 14, 20, 'res'], [-2920, 82, 18, 14, 18, 'res'],
+      [-2810, 92, 24, 18, 32, 'res'],      // hillside towers south
+      [-2860, 90, 22, 16, 30, 'res'],
+    ],
+    parks: [[-2958, -72, -2896, -92, 10]],  // Sun Yat Sen Memorial Park
+    lamps: [[-2940, 46, -2760], [-2940, -58, -2760]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -461,6 +480,7 @@ const NAMES = [
   ['SHW', -2108, 50, -74, '信德中心 Shun Tak Centre'],
   ['SHW', -2104, 16, 56, '西港城 Western Market'],
   ['SHW', -2090, 14, -118, '港澳碼頭 Macau Ferry'],
+  ['SYP', -2927, 16, -82, '中山紀念公園 Sun Yat Sen Park'],
   ['WAC', 905, 104, -64, '中環廣場 Central Plaza'],
   ['WAC', 795, 68, 66, '合和中心 Hopewell Centre'],
   ['CAB', 1612, 58, 60, '時代廣場 Times Square'],

@@ -10,6 +10,7 @@ procedural Hong Kong skyline around each station.
 
 | Code | Station | Lines |
 |------|---------|-------|
+| SYP  | Sai Ying Pun 西營盤 | Island Line |
 | SHW  | Sheung Wan 上環 | Island Line |
 | CEN  | Central 中環 | Island + Tsuen Wan Lines |
 | ADM  | Admiralty 金鐘 | Island + Tsuen Wan + East Rail + South Island Lines |
