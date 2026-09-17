@@ -258,7 +258,8 @@ function twoIfc(x, z) {
 // Victoria Peak — extruded ridged silhouette south of Central/Admiralty,
 // plus the Tai Hang / Jardine's Lookout hills behind Wan Chai
 function peakRidges() {
-  const PEAK = [[-3050, 24], [-2760, 38], [-2460, 50], [-2160, 44], [-1860, 58],
+  const PEAK = [[-4600, 26], [-4350, 52], [-4050, 44], [-3750, 34], [-3350, 36],
+                [-3050, 24], [-2760, 38], [-2460, 50], [-2160, 44], [-1860, 58],
                 [-1560, 40], [-1380, 100], [-1260, 145], [-1140, 168], [-1020, 118],
                 [-930, 138], [-800, 105], [-620, 126], [-460, 86], [-300, 62], [-140, 44]];
   const EAST = [[420, 34], [620, 58], [880, 76], [1180, 62], [1480, 88], [1700, 66], [1845, 48]];
@@ -459,6 +460,25 @@ const SITES = [
     parks: [[-3660, -80, -3590, -100, 8]], // Belcher Bay Park (waterfront)
     lamps: [[-3640, 46, -3460], [-3640, -58, -3460]],
   },
+  { // ---- Kennedy Town — The Merton trio, Manhattan Heights, old-town
+    //     grid, Kennedy Town Playground + bus terminus by the shore
+    id: 'KET', hole: [-4366, -4134, -38, 38],
+    roads: [[-4355, 40, -4145, 52], [-4355, -64, -4145, -52], [-4256, -36, -4244, 36], [-4310, -36, -4298, 36]],
+    towers: [
+      [-4340, -70, 24, 20, 58, 'res'],     // The Merton 1 (New Praya)
+      [-4306, -74, 24, 20, 58, 'res'],     // The Merton 2
+      [-4270, -68, 22, 18, 44, 'res'],     // Manhattan Heights
+      [-4220, -72, 24, 18, 32, 'res'],     // Lexington Hill
+      [-4170, -66, 20, 16, 26, 'res'],
+      [-4340, 66, 22, 18, 34, 'res'],      // old-town grid south
+      [-4300, 62, 20, 16, 28, 'res'],
+      [-4220, 66, 22, 16, 30, 'res'],      // Kennedy Town Centre
+      [-4180, 62, 20, 16, 24, 'res'],
+      [-4145, 70, 18, 14, 22, 'res'],
+    ],
+    parks: [[-4250, -84, -4170, -100, 8]], // Kennedy Town shore promenade
+    lamps: [[-4340, 46, -4160], [-4340, -58, -4160]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -506,6 +526,7 @@ const NAMES = [
   ['SYP', -2927, 16, -82, '中山紀念公園 Sun Yat Sen Park'],
   ['HKU', -3622, 60, 82, '寶翠園 The Belcher\'s'],
   ['HKU', -3560, 34, 118, '香港大學 HKU'],
+  ['KET', -4323, 64, -82, '泓都 The Merton'],
   ['WAC', 905, 104, -64, '中環廣場 Central Plaza'],
   ['WAC', 795, 68, 66, '合和中心 Hopewell Centre'],
   ['CAB', 1612, 58, 60, '時代廣場 Times Square'],
