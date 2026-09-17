@@ -92,6 +92,9 @@ export const CEN = {
     { z: 9.4, x0: -60, x1: -14 },
     { z: 9.4, x0: 14, x1: 60 },
   ],
+  // the paid strip reaches the west wall — the HK Station subway mouths
+  // there and is a paid-area link; the east end caps at the gate banks
+  gateEnds: { x0: 'wall' },
 
   walkRects: {
     G:  [{ x0: -92, z0: -30, x1: 92, z1: 30 }],

@@ -78,6 +78,9 @@ export const HOK = {
     { z: 8.4, x0: -50, x1: -10 },
     { z: 8.4, x0: 10, x1: 50 },
   ],
+  // the paid strip reaches the east wall — the Central subway mouths there
+  // (a paid-area link) and the AEX escalators land inside it; west end caps
+  gateEnds: { x1: 'wall' },
 
   walkRects: {
     G:  [{ x0: -88, z0: -34, x1: 88, z1: 34 }],

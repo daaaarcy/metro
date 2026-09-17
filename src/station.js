@@ -142,17 +142,35 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
   };
   const gateRows = stn.gateRows || [];
   const gateZ = gateRows.length ? Math.abs(gateRows[0].z) : 9.4;
-  for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: -gateZ + 0.4, z1: gateZ - 0.4 }, floorHoles)) tint(r, M.paid);
+  // where the paid strip ends in x: 'wall' runs the gate lines into the end
+  // wall (the CEN/HOK subway mouths sit inside paid); otherwise the strip is
+  // capped at the outermost gate bank and the unpaid band wraps the end —
+  // the yellow ring around the paid blob on the official plans
+  const ge = stn.gateEnds || {};
+  const open0 = ge.x0 === 'wall', open1 = ge.x1 === 'wall';
+  const capX0 = !gateRows.length ? rect.x0 + 0.6
+    : open0 ? rect.x0 + 0.6 : (ge.x0 ?? Math.min(...gateRows.map(r => r.x0)));
+  const capX1 = !gateRows.length ? rect.x1 - 0.6
+    : open1 ? rect.x1 - 0.6 : (ge.x1 ?? Math.max(...gateRows.map(r => r.x1)));
+  for (const r of rectSubtract({ x0: capX0 + (open0 ? 1.4 : 0.25), x1: capX1 - (open1 ? 1.4 : 0.25), z0: -gateZ + 0.4, z1: gateZ - 0.4 }, floorHoles)) tint(r, M.paid);
   for (const s of [-1, 1]) {
     const a = s * (gateZ - 2.75), b = s * (Math.abs(rect.z1) - 0.8);
     for (const r of rectSubtract({ x0: rect.x0 + 2, x1: rect.x1 - 2, z0: Math.min(a, b), z1: Math.max(a, b) }, floorHoles)) tint(r, M.unpaid);
   }
-  // shop rows skip exit stairs + reserved units on each side
+  // unpaid tint wraps the strip's ends where the caps fall short of the walls
+  for (const [xa, xb] of [[rect.x0 + 2, capX0 - 0.25], [capX1 + 0.25, rect.x1 - 2]]) {
+    if (xb - xa < 0.6) continue;
+    for (const r of rectSubtract({ x0: xa, x1: xb, z0: -gateZ + 0.4, z1: gateZ - 0.4 }, floorHoles)) tint(r, M.unpaid);
+  }
+  // shop rows skip exit stairs + reserved units on each side, plus any lift
+  // shaft standing in that side's unpaid band (Wan Chai's street lift)
   const exitsHere = EXITS.filter(e => e.stn === stn.id);
+  const liftsHere = LIFTS.filter(l => l.stn === stn.id && l.levels.includes(lvl.uid) && Math.abs(l.z) > gateZ);
   const reserved = (stn.restaurants || []).concat(stn.mall ? [stn.mall] : [], stn.seven ? [stn.seven] : []);
   for (const s of [-1, 1]) {
     const gaps = {
-      exits: exitsHere.filter(e => e.side === s).map(e => e.x),
+      exits: exitsHere.filter(e => e.side === s).map(e => e.x)
+        .concat(liftsHere.filter(l => Math.sign(l.z) === s).map(l => l.x)),
       reserved: reserved.filter(r => r.side === s),
     };
     g.add(shops(rect.x0 + 8, rect.x1 - 10, s * (Math.abs(rect.z1) - 3.4), 0, -s, gaps));
@@ -185,12 +203,18 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
   for (const r of gateRows) byZ.set(r.z, [...(byZ.get(r.z) || []), r]);
   for (const [zf, rows] of byZ) {
     rows.sort((a, b) => a.x0 - b.x0);
-    let cur = rect.x0 + 0.6;
+    let cur = capX0;
     for (const r of rows) {
       for (const [a, b] of clipRail(true, zf, cur, r.x0)) rail(a, zf - 0.08, b, zf + 0.08);
       cur = Math.max(cur, r.x1);
     }
-    for (const [a, b] of clipRail(true, zf, cur, rect.x1 - 0.6)) rail(a, zf - 0.08, b, zf + 0.08);
+    for (const [a, b] of clipRail(true, zf, cur, capX1)) rail(a, zf - 0.08, b, zf + 0.08);
+  }
+  // end caps close the strip where it stops short of a wall — the unpaid
+  // band wraps around them, like the yellow blob on the official plans
+  for (const [xf, open] of [[capX0, open0 || !gateRows.length], [capX1, open1 || !gateRows.length]]) {
+    if (open) continue;
+    for (const [a, b] of clipRail(false, xf, -gateZ, gateZ)) rail(xf - 0.08, a, xf + 0.08, b);
   }
   // dedicated tenants (Admiralty's restaurant row / mall / 7-Eleven)
   for (const r of stn.restaurants || []) g.add(restaurant(r, r.side * (Math.abs(rect.z1) - 3.4), 0, -r.side));

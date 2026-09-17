@@ -184,7 +184,11 @@ export class Passengers {
     // the paid strip is sealed by gate banks + railings — a ped only targets
     // what its own side can reach; crossing the line means taking a gate
     const core = PAID_CORE[lvl];
-    const inCore = !!core && Math.abs(p.z) < core.z;
+    const inCore = !!core && Math.abs(p.z) < core.z && p.x > core.x0 && p.x < core.x1;
+    // an unpaid ped inside the strip's z-range but beyond an end cap is in
+    // the wraparound — it can't reach a gate lane without first getting to
+    // a side band, so gate/escalator choices wait until |z| clears the caps
+    const inWrap = !!core && !inCore && Math.abs(p.z) < core.z;
 
     if (roll < 0.22 && !(core && !inCore && lvlType === 'concourse')) {
       // find a rideable escalator from this level — mouth must be reachable,
@@ -205,7 +209,7 @@ export class Passengers {
         return;
       }
     }
-    if (lvlType === 'concourse' && roll < 0.4) {
+    if (lvlType === 'concourse' && roll < 0.4 && !inWrap) {
       const bx0 = this.boxOf[lvl];
       const lanes = GATES.filter(g => g.level === lvl);
       // outside the paid strip only this side's gate rows are reachable —
@@ -249,8 +253,17 @@ export class Passengers {
     if ((lvlType === 'concourse' || lvlType === 'bridge') && roll < 0.08 && !inCore) {
       const up = STAIR_RUNS.filter(r => r.to === lvl);
       const bx0 = this.boxOf[lvl];
-      const sameSide = core ? up.filter(r =>
-        Math.sign(worldToBox(bx0, r.bot.x, r.bot.z).z) === Math.sign(p.z)) : up;
+      const sameSide = core ? up.filter(r => {
+        const bl = worldToBox(bx0, r.bot.x, r.bot.z);
+        // wraparound peds: reachable only if the straight path crosses the
+        // gate line beyond the cap — otherwise it runs into an end fence
+        if (inWrap) {
+          const t = (Math.sign(bl.z) * core.z - p.z) / (bl.z - p.z);
+          const xc = p.x + t * (bl.x - p.x);
+          return p.x > core.x1 ? xc > core.x1 : xc < core.x0;
+        }
+        return Math.sign(bl.z) === Math.sign(p.z);
+      }) : up;
       const pick = sameSide.length ? sameSide : up;
       if (pick.length) {
         const r = pick[Math.floor(Math.random() * pick.length)];
@@ -268,7 +281,28 @@ export class Passengers {
       if (!pathClear(p.x, p.z, tx, tz, this.holes[lvl])) continue;
       if (this.insideSolid(lvl, tx, tz)) continue;
       // wander stays on the ped's own side of the paid boundary
-      if (core && Math.abs(tz) < core.z !== inCore) continue;
+      if (core) {
+        const tCore = Math.abs(tz) < core.z && tx > core.x0 && tx < core.x1;
+        if (tCore !== inCore) continue;
+        // wraparound peds: targets within the strip z-range stay this end;
+        // targets into a band must cross the gate line beyond the cap —
+        // anything else is a straight-line path into an end fence
+        if (inWrap) {
+          if (Math.abs(tz) < core.z) {
+            if (p.x > core.x1 ? tx < core.x1 : tx > core.x0) continue;
+          } else {
+            const t = (Math.sign(tz) * core.z - p.z) / (tz - p.z);
+            if (p.x > core.x1 ? p.x + t * (tx - p.x) < core.x1
+                              : p.x + t * (tx - p.x) > core.x0) continue;
+          }
+        // a band ped aiming into a wraparound has to cross the gate line
+        // outside the caps — inside them it runs into a z-line railing
+        } else if (!inCore && Math.abs(tz) < core.z && (tx < core.x0 || tx > core.x1)) {
+          const t = (Math.sign(p.z) * core.z - p.z) / (tz - p.z);
+          const xc = p.x + t * (tx - p.x);
+          if (xc > core.x0 && xc < core.x1) continue;
+        }
+      }
       p.tx = tx; p.tz = tz; p.state = 'walk';
       return;
     }

@@ -99,15 +99,20 @@ for (const stn of Object.values(STATIONS)) {
   if (stn.gateRows) GATE_ROWS[stn.id] = stn.gateRows;
 }
 
-// Paid zone per concourse level — the gate lines run wall to wall (banks +
-// railings), so "paid" is simply the strip |z| < gateZ. Passengers use it to
-// keep wander targets on their own side of the gate line.
+// Paid zone per concourse level — bounded by the gate lines and their end
+// caps. gateEnds 'wall' means the strip runs into that end wall (the CEN/HOK
+// subway mouths stay inside paid); otherwise it ends at the outermost bank
+// and the unpaid band wraps around it. Passengers use it to keep wander
+// targets on their own side of the gate line.
 export const PAID_CORE = {};
 for (const stn of Object.values(STATIONS)) {
   if (!stn.gateRows?.length) continue;
   const z = Math.max(...stn.gateRows.map(r => Math.abs(r.z)));
+  const ge = stn.gateEnds || {};
+  const x0 = ge.x0 === 'wall' ? -1e9 : (ge.x0 ?? Math.min(...stn.gateRows.map(r => r.x0)));
+  const x1 = ge.x1 === 'wall' ?  1e9 : (ge.x1 ?? Math.max(...stn.gateRows.map(r => r.x1)));
   for (const l of stn.levels)
-    if (l.type === 'concourse') PAID_CORE[`${stn.id}:${l.id}`] = { z };
+    if (l.type === 'concourse') PAID_CORE[`${stn.id}:${l.id}`] = { x0, x1, z };
 }
 
 // U1 footbridge is Admiralty-specific street furniture.

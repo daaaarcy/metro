@@ -71,7 +71,10 @@ export const WAC = {
   exitLetters: ['A', 'B', 'C', 'D'],
 
   lifts: [
-    { frame: 'wacConc', x: 15, z: 2, levels: ['L1', 'L2', 'L3'] },
+    { frame: 'wacConc', x: 15, z: 2,    levels: ['L1', 'L2', 'L3'] },
+    // street lift in the unpaid band beside exits A4/A5, per the plan's
+    // lift icons on the Hennessy Road side
+    { frame: 'wacConc', x: 50, z: 14.5, levels: ['G', 'L1'] },
   ],
 
   // Octopus gate lanes on the paid/unpaid boundary — the official plan's
@@ -82,6 +85,9 @@ export const WAC = {
     { z: 8,  x0: -55, x1: -10 },
     { z: 8,  x0: 10,  x1: 55 },
   ],
+  // end caps just clear of the B2/A5 stair shafts (x∈±[54.8,57.2]) so the
+  // unpaid band wraps both ends like the plan's yellow ring
+  gateEnds: { x0: -58.5, x1: 58.5 },
 
   walkRects: {
     G:  [{ x0: -88, z0: -28, x1: 88, z1: 28 }],
