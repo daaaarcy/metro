@@ -701,17 +701,20 @@ export const ROUTES = [
   // harbour-side crossover box). The crossing legs dive under the sea:
   // the path machinery routes them through each destination's arrival
   // portal so the consist glides in aligned with the platform axis.
-  // Jordan is the temporary north end — both its faces dispatch toward
-  // Central and reverse off-map at the west portal, same-portal scissors.
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
-    stops: [{ uid: 'JOR:L2', num: 2 },
+  // Yau Ma Tei is the temporary north end — both its faces dispatch
+  // toward Central and reverse off-map at the west portal, same-portal
+  // scissors (TST/JOR are now through stations on the corridor).
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
+    stops: [{ uid: 'YMT:L2', num: 2 },
+            { uid: 'JOR:L2', num: 2 },
             { uid: 'TST:L2', num: 2 },
             { uid: 'ADM:L2', num: 4 },
             { uid: 'CEN:L3', num: 1, dwell: 55 },
             { uid: 'CEN:L3', num: 2 },
             { uid: 'ADM:L3', num: 1 },
             { uid: 'TST:L2', num: 1 },
-            { uid: 'JOR:L2', num: 1, dwell: 55 }] },
+            { uid: 'JOR:L2', num: 1 },
+            { uid: 'YMT:L2', num: 1, dwell: 55 }] },
   // Island Line through service: Kennedy Town is the west terminus —
   // consists reverse off-map in the Mount Davis overrun tunnel and head
   // east through Causeway Bay, Tin Hau, Fortress Hill, North Point and the

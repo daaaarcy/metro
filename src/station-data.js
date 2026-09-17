@@ -21,8 +21,9 @@ import { HFC } from './stations/hengfachuen.js';
 import { CHW } from './stations/chaiwan.js';
 import { TST } from './stations/tsimshatsui.js';
 import { JOR } from './stations/jordan.js';
+import { YMT } from './stations/yaumatei.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

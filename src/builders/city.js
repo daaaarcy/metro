@@ -749,14 +749,35 @@ const SITES = [
       [560, -1000, 44, 26, 14, 'mall'],    // Diocesan Girls' School low block
       [640, -1030, 52, 36, 26, 'office'],  // Queen Elizabeth Hospital slab
       [610, -965, 30, 20, 38, 'res'],
-      // corridor flanks continue north — the x 194..446 strip stays clear
-      [150, -1100, 32, 26, 44, 'res'],
-      [490, -1090, 30, 24, 40, 'res'],
-      [130, -1130, 28, 22, 36, 'res'],
-      [480, -1120, 32, 26, 42, 'office'],
     ],
     parks: [[520, -1090, 600, -1040, 14]],     // Diocesan sports field
     lamps: [[60, -1004, 190], [450, -1004, 590]],
+  },
+  { // ---- Yau Ma Tei — the Nathan Rd × Waterloo Rd junction: Temple
+    //     Street night-market low-rise + Yau Ma Tei Theatre west of the
+    //     dig; Metropark Hotel, Kwong Wah Hospital and King's Park east;
+    //     Wholesale Fruit Market (果欄) to the northwest.
+    id: 'YMT', hole: [194, 446, -1168, -1072],
+    roads: [[60, -1128, 190, -1112],           // Waterloo Rd west
+            [450, -1128, 600, -1112],          // Waterloo Rd east
+            [194, -1194, 446, -1172]],         // Nathan Rd north toward MOK
+    towers: [
+      [140, -1100, 40, 26, 20, 'office'],  // Yau Ma Tei Theatre / service bldg
+      [120, -1140, 30, 24, 34, 'res'],     // Temple St shophouse blocks
+      [160, -1160, 28, 22, 38, 'res'],
+      [100, -1180, 32, 26, 12, 'mall'],    // Wholesale Fruit Market sheds
+      [150, -1200, 26, 20, 40, 'res'],
+      [470, -1100, 30, 24, 36, 'hotel'],   // Metropark Hotel
+      [520, -1130, 50, 30, 24, 'office'],  // Kwong Wah Hospital slab
+      [480, -1170, 28, 22, 40, 'res'],
+      [500, -1070, 30, 20, 30, 'res'],
+      // corridor flanks continue north — x 194..446 stays clear for MOK
+      [150, -1210, 30, 24, 42, 'res'],
+      [490, -1220, 32, 26, 38, 'res'],
+      [130, -1240, 28, 22, 36, 'office'],
+    ],
+    parks: [[560, -1200, 660, -1100, 20]],     // King's Park west edge
+    lamps: [[60, -1120, 190], [450, -1120, 600]],
   },
 ];
 
@@ -813,6 +834,12 @@ const NAMES = [
   ['JOR', 505, 40, -1020, '恒豐中心 Prudential Centre'],
   ['JOR', 560, 18, -1000, '拔萃女書院 Diocesan Girls\''],
   ['JOR', 640, 30, -1030, '伊利沙伯醫院 Queen Elizabeth Hosp.'],
+  ['YMT', 120, 10, -1140, '廟街夜市 Temple Street'],
+  ['YMT', 140, 24, -1100, '油麻地戲院 Yau Ma Tei Theatre'],
+  ['YMT', 100, 16, -1180, '果欄 Fruit Market'],
+  ['YMT', 470, 40, -1100, '維景酒店 Metropark Hotel'],
+  ['YMT', 520, 30, -1130, '廣華醫院 Kwong Wah Hospital'],
+  ['YMT', 610, 22, -1150, '京士柏 King\'s Park'],
 ];
 
 export function buildCity() {

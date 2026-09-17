@@ -23,15 +23,15 @@ export const JOR = {
     { id: 'L2', y: -14, box: 'jorPlat', zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platform', type: 'platform' },
   ],
 
-  // Island platform. Temporary TWL north end — both faces dispatch to
-  // Central and reverse at the west portal, same-portal scissors like
-  // TST/CHW. When Yau Ma Tei lands, face 1 becomes 'to Tsuen Wan'
-  // (dir +1) and terminus clears; the arrival portal stays x0 either way.
+  // Island platform — through station on the Nathan Rd corridor.
+  // P1 dispatches north (dir +1) toward Yau Ma Tei/Tsuen Wan; P2 south
+  // (dir -1) toward Central. TWL northbound faces depart the east
+  // portal everywhere along the line.
   platforms: {
     L2: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
-        { num: 1, line: 'TWL', side: -1, dir: -1, to: { zh: '往中環', en: 'to Central' } },
+        { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
         { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },
       ],
     },
