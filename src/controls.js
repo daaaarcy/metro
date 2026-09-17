@@ -59,14 +59,14 @@ export class CameraRig {
     dom.addEventListener('pointermove', e => {
       if (this.mode === 'orbit') return;
       if (document.pointerLockElement === dom) {
-        this.yaw -= e.movementX * 0.0018;
-        this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * 0.0018, -1.45, 1.45);
+        this.yaw -= e.movementX * 0.0014;
+        this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * 0.0014, -1.45, 1.45);
         this._drag = { x: e.clientX, y: e.clientY };   // frozen coords — seamless if lock drops
         return;
       }
       if (!this._drag) return;
-      this.yaw -= (e.clientX - this._drag.x) * 0.0022;
-      this.pitch = THREE.MathUtils.clamp(this.pitch - (e.clientY - this._drag.y) * 0.0022, -1.45, 1.45);
+      this.yaw -= (e.clientX - this._drag.x) * 0.0018;
+      this.pitch = THREE.MathUtils.clamp(this.pitch - (e.clientY - this._drag.y) * 0.0018, -1.45, 1.45);
       this._drag = { x: e.clientX, y: e.clientY };
     });
     dom.addEventListener('pointerup', () => { this._drag = null; });
