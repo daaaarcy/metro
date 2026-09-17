@@ -20,6 +20,7 @@ const FEEDS = [
   ['TWL', 'YMT'], ['KTL', 'YMT'],
   ['TWL', 'MOK'], ['KTL', 'MOK'],
   ['TWL', 'PRE'], ['KTL', 'PRE'],
+  ['TWL', 'SSP'],
 ];
 const POLL_S = 45;
 

@@ -32,6 +32,7 @@ procedural Hong Kong skyline around each station.
 | YMT  | Yau Ma Tei 油麻地 | Tsuen Wan + Kwun Tong Lines |
 | MOK  | Mong Kok 旺角 | Tsuen Wan + Kwun Tong Lines (cross-platform interchange) |
 | PRE  | Prince Edward 太子 | Tsuen Wan + Kwun Tong Lines (mirrored cross-platform) |
+| SSP  | Sham Shui Po 深水埗 | Tsuen Wan Line (north terminus) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

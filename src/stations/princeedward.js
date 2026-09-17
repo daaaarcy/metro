@@ -34,21 +34,22 @@ export const PRE = {
 
   // Mirrored cross-platform pair: L2 pairs TWL-north with KTL-south,
   // L3 pairs TWL-south with KTL-north (the KTL crosses levels in the
-  // tunnel between here and Mong Kok). Temporary termini — TWL wraps
-  // P1->P4, KTL wraps P3->P2.
+  // tunnel between here and Mong Kok). TWL through-runs to Sham Shui
+  // Po; the KTL still terminates here — P3 (northbound arrival) wraps
+  // off-map to P2 (southbound departure).
   platforms: {
     L2: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
-        { num: 2, line: 'KTL', side: 1,  dir: -1, to: { zh: '往黃埔', en: 'to Whampoa' } },
+        { num: 2, line: 'KTL', side: 1,  dir: -1, terminus: true, to: { zh: '往黃埔', en: 'to Whampoa' } },
       ],
     },
     L3: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 4, line: 'TWL', side: -1, dir: -1, to: { zh: '往中環',   en: 'to Central' } },
-        { num: 3, line: 'KTL', side: 1,  dir: 1,  to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
+        { num: 3, line: 'KTL', side: 1,  dir: 1,  terminus: true, to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
       ],
     },
   },

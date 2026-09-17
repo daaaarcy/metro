@@ -816,11 +816,35 @@ const SITES = [
       [490, -1430, 30, 22, 34, 'res'],
       [620, -1360, 30, 24, 28, 'res'],
       [160, -1445, 30, 20, 14, 'mall'],    // Flower Market sheds
-      [160, -1485, 26, 20, 30, 'res'],
+      [160, -1475, 26, 20, 30, 'res'],
     ],
     parks: [[70, -1410, 180, -1345, 34],       // Mong Kok Stadium + playing fields
             [60, -1470, 140, -1420, 14]],      // Yuen Po St Bird Garden
     lamps: [[60, -1365, 190], [450, -1365, 600]],
+  },
+  { // ---- Sham Shui Po — Cheung Sha Wan Rd x Kweilin/Pei Ho, the
+    //     market district: Apliu St electronics bazaar, Fuk Wa St toy
+    //     stalls, Pei Ho St municipal block. Dense low-rise fabric —
+    //     Golden Computer Arcade + Dragon Centre the anchors.
+    id: 'SSP', hole: [194, 446, -1528, -1432],
+    roads: [[60, -1488, 190, -1472],           // Cheung Sha Wan Rd west
+            [450, -1488, 600, -1472],          // Cheung Sha Wan Rd east
+            [194, -1560, 446, -1530]],         // toward Lai Chi Kok Rd
+    towers: [
+      [110, -1500, 30, 24, 26, 'res'],     // fabric quarter low-rise
+      [150, -1530, 28, 22, 22, 'res'],
+      [100, -1560, 30, 24, 24, 'res'],
+      [140, -1590, 28, 22, 28, 'res'],
+      [510, -1455, 32, 26, 30, 'mall'],    // Golden Computer Arcade side
+      [520, -1510, 36, 30, 40, 'mall'],    // Dragon Centre
+      [560, -1545, 30, 24, 34, 'office'],
+      [490, -1570, 28, 22, 30, 'res'],
+      // corridor flanks continue north — x 194..446 stays clear for CSW
+      [150, -1600, 28, 22, 30, 'res'],
+      [490, -1610, 30, 24, 32, 'res'],
+    ],
+    parks: [],
+    lamps: [[60, -1480, 190], [450, -1480, 600]],
   },
 ];
 
@@ -890,6 +914,9 @@ const NAMES = [
   ['PRE', 125, 18, -1378, '旺角大球場 Mong Kok Stadium'],
   ['PRE', 100, 10, -1445, '花墟・雀鳥花園 Flower Market'],
   ['PRE', 500, 40, -1340, '金都商場 Golden Plaza'],
+  ['SSP', 510, 34, -1455, '黃金電腦商場 Golden Computer Arcade'],
+  ['SSP', 520, 44, -1510, '西九龍中心 Dragon Centre'],
+  ['SSP', 300, 8, -1480, '鴨寮街 Apliu Street'],
 ];
 
 export function buildCity() {

@@ -24,8 +24,9 @@ import { JOR } from './stations/jordan.js';
 import { YMT } from './stations/yaumatei.js';
 import { MOK } from './stations/mongkok.js';
 import { PRE } from './stations/princeedward.js';
+import { SSP } from './stations/shamshuipo.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
