@@ -436,6 +436,29 @@ const SITES = [
     parks: [[-2958, -72, -2896, -92, 10]],  // Sun Yat Sen Memorial Park
     lamps: [[-2940, 46, -2760], [-2940, -58, -2760]],
   },
+  { // ---- HKU / Shek Tong Tsui — The Belcher's twin cluster, Westwood,
+    //     Hill Rd / Whitty St res towers, HKU campus uphill to the south,
+    //     Western Wholesale Food Market sheds on the waterfront
+    id: 'HKU', hole: [-3666, -3434, -38, 38],
+    roads: [[-3655, 40, -3445, 52], [-3655, -64, -3445, -52], [-3562, -36, -3550, 36], [-3612, -36, -3600, 36]],
+    towers: [
+      [-3640, 70, 26, 22, 55, 'res'],      // The Belcher's tower
+      [-3605, 74, 26, 22, 55, 'res'],      // The Belcher's tower 2
+      [-3630, 96, 24, 20, 48, 'res'],      // Belcher's rear row
+      [-3598, 96, 24, 20, 48, 'res'],
+      [-3550, 60, 22, 18, 36, 'res'],      // Westwood-ish
+      [-3510, 66, 22, 16, 30, 'res'],      // Chong Yip Centre
+      [-3470, 62, 24, 18, 34, 'res'],      // Hong Kong Plaza
+      [-3445, 70, 20, 16, 26, 'res'],
+      [-3480, -68, 22, 16, 30, 'res'],     // Hill Rd towers
+      [-3610, -70, 24, 18, 22, 'res'],     // Harbour One waterfront
+      [-3560, 108, 30, 24, 26, 'office'],  // HKU campus on the hillside
+      [-3495, 112, 26, 20, 24, 'office'],
+      [-3630, 114, 24, 18, 22, 'office'],
+    ],
+    parks: [[-3660, -80, -3590, -100, 8]], // Belcher Bay Park (waterfront)
+    lamps: [[-3640, 46, -3460], [-3640, -58, -3460]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -481,6 +504,8 @@ const NAMES = [
   ['SHW', -2104, 16, 56, '西港城 Western Market'],
   ['SHW', -2090, 14, -118, '港澳碼頭 Macau Ferry'],
   ['SYP', -2927, 16, -82, '中山紀念公園 Sun Yat Sen Park'],
+  ['HKU', -3622, 60, 82, '寶翠園 The Belcher\'s'],
+  ['HKU', -3560, 34, 118, '香港大學 HKU'],
   ['WAC', 905, 104, -64, '中環廣場 Central Plaza'],
   ['WAC', 795, 68, 66, '合和中心 Hopewell Centre'],
   ['CAB', 1612, 58, 60, '時代廣場 Times Square'],

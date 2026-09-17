@@ -10,6 +10,7 @@ procedural Hong Kong skyline around each station.
 
 | Code | Station | Lines |
 |------|---------|-------|
+| HKU  | HKU 香港大學 | Island Line |
 | SYP  | Sai Ying Pun 西營盤 | Island Line |
 | SHW  | Sheung Wan 上環 | Island Line |
 | CEN  | Central 中環 | Island + Tsuen Wan Lines |

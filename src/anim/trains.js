@@ -679,19 +679,19 @@ export const ROUTES = [
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 1, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
   { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1, startIdx: 1,
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
-  // Island Line through service: Sai Ying Pun is the west end — consists
-  // reverse off-map in the overrun tunnel and head east through Sheung
-  // Wan, Central, Admiralty, Wan Chai and Causeway Bay; the consist
-  // reverses off-map at Causeway Bay's east portal (Chai Wan direction)
-  // and comes back west through WAC/ADM/CEN L4/SHW to Sai Ying Pun.
-  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
-    stops: [{ uid: 'SYP:L2', num: 1 }, { uid: 'SHW:L2', num: 1 },
-            { uid: 'CEN:L2', num: 3 },
+  // Island Line through service: HKU is the west end — consists reverse
+  // off-map in the overrun tunnel and head east through Sai Ying Pun,
+  // Sheung Wan, Central, Admiralty, Wan Chai and Causeway Bay; the
+  // consist reverses off-map at Causeway Bay's east portal (Chai Wan
+  // direction) and comes back west through WAC/ADM/CEN/SHW/SYP to HKU.
+  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
+    stops: [{ uid: 'HKU:L2', num: 1 }, { uid: 'SYP:L2', num: 1 },
+            { uid: 'SHW:L2', num: 1 }, { uid: 'CEN:L2', num: 3 },
             { uid: 'ADM:L2', num: 3 }, { uid: 'WAC:L2', num: 1 },
             { uid: 'CAB:L2', num: 1 }, { uid: 'CAB:L3', num: 2 },
             { uid: 'WAC:L3', num: 2 }, { uid: 'ADM:L3', num: 2 },
             { uid: 'CEN:L4', num: 4 }, { uid: 'SHW:L2', num: 2 },
-            { uid: 'SYP:L2', num: 2 }] },
+            { uid: 'SYP:L2', num: 2 }, { uid: 'HKU:L2', num: 2 }] },
   // terminus reversals: each line's island has two faces — a consist
   // departs one face through its portal and re-enters berthing at the
   // other (a rider gets carried across to the opposite platform edge)
