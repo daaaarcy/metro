@@ -35,7 +35,8 @@ procedural Hong Kong skyline around each station.
 | SSP  | Sham Shui Po 深水埗 | Tsuen Wan Line |
 | CSW  | Cheung Sha Wan 長沙灣 | Tsuen Wan Line |
 | LCK  | Lai Chi Kok 荔枝角 | Tsuen Wan Line |
-| MEF  | Mei Foo 美孚 | Tsuen Wan + Tuen Ma Lines (north terminus; split-site interchange, L1 subway link) |
+| MEF  | Mei Foo 美孚 | Tsuen Wan + Tuen Ma Lines (split-site interchange, L1 subway link) |
+| LAK  | Lai King 荔景 | Tsuen Wan + Tung Chung Lines (north terminus; stacked cross-platform pair) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

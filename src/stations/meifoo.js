@@ -45,7 +45,7 @@ export const MEF = {
       ],
     },
     L3: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 3, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
         { num: 4, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },

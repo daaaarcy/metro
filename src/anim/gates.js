@@ -1,4 +1,5 @@
 import { GATES } from '../registry.js';
+import { levelById } from '../station-data.js';
 
 const OPEN_TIME = 3.2;   // seconds the flaps stay open after a tap
 const SWING = 1.35;      // radians the paddles fold back
@@ -25,10 +26,13 @@ export function updateGates(dt) {
 // Is the lane blocking right now? (closed = solid)
 export function gateBlocks(g) { return g.open < 0.6; }
 
-// nearest gate lane to a world point within maxDist
-export function nearestGate(x, z, maxDist = 2.2) {
+// nearest gate lane to a world point within maxDist — when feetY is given,
+// only lanes on the level we're standing on count (stacked concourses put
+// gates at identical x/z on different floors)
+export function nearestGate(x, z, maxDist = 2.2, feetY = null) {
   let best = null, bd = maxDist;
   for (const g of GATES) {
+    if (feetY !== null && g.level && Math.abs(feetY - levelById(g.level).y) > 1.4) continue;
     const d = Math.hypot(x - g.x, z - g.z);
     if (d < bd) { bd = d; best = g; }
   }

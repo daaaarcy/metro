@@ -433,7 +433,7 @@ export class CameraRig {
     this.camera.position.y = this.feetY + EYE;
 
     // octopus gate prompt — the nearest lane on the level we're standing on
-    const ng = nearestGate(px, pz, 2.4);
+    const ng = nearestGate(px, pz, 2.4, this.feetY);
     this.nearGate = ng && Math.abs(this.feetY - (ng.level ? levelById(ng.level).y : -7)) < 1.4 ? ng : null;
   }
 }

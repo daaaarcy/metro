@@ -914,8 +914,30 @@ const SITES = [
       [-120, -1810, 26, 20, 24, 'res'],   // Ching Lai Court by the shed
       [-160, -1845, 26, 20, 24, 'res'],
     ],
-    parks: [[-120, -2060, 460, -1895, 24]],   // Lai Chi Kok Park
+    parks: [[-120, -2060, 60, -1895, 24]],    // Lai Chi Kok Park
     lamps: [[-60, -1783, 440], [-120, -1888, 460]],
+  },
+  { // ---- Lai King — stacked cross-platform interchange terraced into
+    //     the hill below Lai King Hill Road. Lai King Estate slabs step
+    //     down the south slope; Yin Lai Court west; container terminals
+    //     toward the water southwest. Lai King Hill greens the north.
+    id: 'LAK', hole: [192, 448, -2010, -1910],
+    roads: [[140, -2034, 500, -2016],         // Lai King Hill Rd along the crest
+            [200, -1908, 470, -1894]],        // estate road, south edge
+    towers: [
+      // Lai King Estate — slab blocks stepping down the south slope
+      [480, -1950, 30, 22, 26, 'res'], [520, -1950, 30, 22, 24, 'res'],
+      [560, -1950, 30, 22, 28, 'res'],
+      [480, -1995, 30, 22, 30, 'res'], [520, -1995, 30, 22, 24, 'res'],
+      [560, -1995, 30, 22, 26, 'res'],
+      [480, -2040, 30, 22, 22, 'res'], [530, -2040, 30, 22, 28, 'res'],
+      // Yin Lai Court — west of the dig, south of the park strip
+      [150, -2050, 28, 20, 26, 'res'],
+      [110, -2010, 26, 20, 24, 'res'],
+      [100, -1960, 26, 20, 22, 'res'],
+    ],
+    parks: [[140, -2080, 470, -2036, 18]],    // Lai King Hill slope
+    lamps: [[140, -2025, 500, 30], [200, -1900, 470, 30]],
   },
 ];
 
@@ -999,6 +1021,10 @@ const NAMES = [
   ['MEF', 265, 20, -1762, '美孚廣場 Mount Sterling Mall'],
   ['MEF', -140, 30, -1828, '清麗苑 Ching Lai Court'],
   ['MEF', 270, 8, -1890, '荔景山路 Lai King Hill Road'],
+  ['LAK', 520, 40, -1995, '荔景邨 Lai King Estate'],
+  ['LAK', 140, 34, -2030, '賢麗苑 Yin Lai Court'],
+  ['LAK', 60, 12, -1920, '葵青貨櫃碼頭 Kwai Chung Container Terminals'],
+  ['LAK', 300, 26, -2060, '荔景山 Lai King Hill'],
 ];
 
 export function buildCity() {
