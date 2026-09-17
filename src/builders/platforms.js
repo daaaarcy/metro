@@ -86,13 +86,15 @@ function screenDoors(x0, x1, z, y, faceDir) {
   }
   g.add(doors);
 
-  // floor decals: queue arrows + gap-warning strip on the platform side
+  // floor decals: queue arrows + gap-warning strip on the platform side —
+  // beyond the tactile strip (edgeMarkings puts it at 0.9 ± 0.275), or the
+  // raised strip would bury the flat plane
   const decals = new THREE.InstancedMesh(new THREE.PlaneGeometry(BAY + 0.25, 0.62), decalMat, n);
   const flip = new THREE.Matrix4().makeRotationY(Math.PI);
   for (let i = 0; i < n; i++) {
     m4.makeRotationX(-Math.PI / 2);
     if (faceDir < 0) m4.premultiply(flip);   // canvas top always faces the track
-    m4.setPosition(xs[i], y + 0.015, z + faceDir * 1.05);
+    m4.setPosition(xs[i], y + 0.015, z + faceDir * 1.62);
     decals.setMatrixAt(i, m4);
   }
   g.add(decals);
