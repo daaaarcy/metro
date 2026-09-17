@@ -5,11 +5,9 @@
 // Tsuen Wan / TCL P3 to Tung Chung) and the lower island (L5) the inbound
 // pair (TWL P2 to Central / TCL P4 to Hong Kong), sandwiching the L4
 // concourse. Entrances fan out of the L1 passageway; the Airport Express
-// threads through non-stop (not modelled). Temporary TWL north end: P1
-// berths arrivals from the east portal, wraps off-map and re-enters P2
-// (a level down) to head back south. When Kwai Fong lands, P1 goes
-// through and terminus clears. No TCL service yet — Nam Cheong/Tsing Yi
-// aren't built. Livery: crimson red mosaic (LAK is the red station
+// threads through non-stop (not modelled). Through station on the TWL
+// corridor now; TCL faces dressed but unserved until the corridor
+// extends. Livery: crimson red mosaic (LAK is the red station
 // between blue Mei Foo and orange Lai Chi Kok).
 // Exits (5): A1 Lai King Hill Rd, A2 Yin Lai Court, A3 Lai King Estate,
 // B Kwai Chung Container Terminal, C HKEAA Lai King Assessment Centre.
@@ -36,19 +34,18 @@ export const LAK = {
 
   // Stacked cross-platform interchange — same-direction faces pair up:
   // outbound upstairs (TWL P1 / TCL P3), inbound downstairs (TWL P2 /
-  // TCL P4). Both islands terminus-flagged: the wrap is P1 (upper) ->
-  // off-map -> P2 (lower) until Kwai Fong lands. TCL faces are dressed
-  // but unserved until the corridor extends.
+  // TCL P4). Through station now KWF is live; TCL faces are dressed but
+  // unserved until the corridor extends.
   platforms: {
     L3: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1, to: { zh: '往荃灣',   en: 'to Tsuen Wan' } },
         { num: 3, line: 'TCL', side: 1,  dir: 1, to: { zh: '往東涌',   en: 'to Tung Chung' } },
       ],
     },
     L5: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 4, line: 'TCL', side: -1, dir: -1, to: { zh: '往香港', en: 'to Hong Kong' } },
         { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },

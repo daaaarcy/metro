@@ -936,8 +936,28 @@ const SITES = [
       [110, -2010, 26, 20, 24, 'res'],
       [100, -1960, 26, 20, 22, 'res'],
     ],
-    parks: [[140, -2080, 470, -2036, 18]],    // Lai King Hill slope
+    parks: [[140, -2160, 470, -2140, 18]],    // Lai King Hill slope (crest continues behind Kwai Fong)
     lamps: [[140, -2025, 500, 30], [200, -1900, 470, 30]],
+  },
+  { // ---- Kwai Fong — elevated station over the grade concourse; Metroplaza
+    //     tower east, Kwai Fong Estate + Gardens west, theatre/plaza south.
+    id: 'KWF', hole: [192, 448, -2136, -2024],
+    roads: [[200, -2022, 470, -2012],         // Kwai Fong Rd between the digs
+            [470, -2160, 492, -2020]],        // Kwai Chung Rd east flank
+    towers: [
+      [490, -2090, 34, 30, 64, 'com'],        // Metroplaza office tower
+      [462, -2090, 20, 28, 14, 'com'],        // Metroplaza mall podium
+      // Kwai Fong Estate / New Kwai Fong Gardens — west of the dig
+      [150, -2120, 28, 20, 26, 'res'], [110, -2120, 28, 20, 22, 'res'],
+      [150, -2160, 30, 20, 24, 'res'], [110, -2160, 30, 20, 28, 'res'],
+      [140, -2080, 30, 20, 24, 'res'],
+      [140, -1980, 28, 20, 22, 'res'],        // south-west infill between the digs
+      // Kwai Chung Plaza / theatre block — east, south of Metroplaza
+      [480, -2030, 26, 20, 20, 'com'], [520, -2030, 26, 20, 24, 'res'],
+      [560, -2060, 30, 22, 26, 'res'], [560, -2110, 30, 22, 24, 'res'],
+    ],
+    parks: [[460, -2000, 540, -1960, 10]],    // Hibiscus Park
+    lamps: [[200, -2017, 470, 30]],
   },
 ];
 
@@ -1024,7 +1044,11 @@ const NAMES = [
   ['LAK', 520, 40, -1995, '荔景邨 Lai King Estate'],
   ['LAK', 140, 34, -2030, '賢麗苑 Yin Lai Court'],
   ['LAK', 60, 12, -1920, '葵青貨櫃碼頭 Kwai Chung Container Terminals'],
-  ['LAK', 300, 26, -2060, '荔景山 Lai King Hill'],
+  ['LAK', 300, 26, -2150, '荔景山 Lai King Hill'],
+  ['KWF', 492, 70, -2090, '新都會廣場 Metroplaza'],
+  ['KWF', 130, 36, -2140, '葵芳邨 Kwai Fong Estate'],
+  ['KWF', 500, 30, -2030, '葵涌廣場 Kwai Chung Plaza'],
+  ['KWF', 290, 8, -2017, '葵芳道 Kwai Fong Road'],
 ];
 
 export function buildCity() {

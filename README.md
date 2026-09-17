@@ -36,7 +36,8 @@ procedural Hong Kong skyline around each station.
 | CSW  | Cheung Sha Wan 長沙灣 | Tsuen Wan Line |
 | LCK  | Lai Chi Kok 荔枝角 | Tsuen Wan Line |
 | MEF  | Mei Foo 美孚 | Tsuen Wan + Tuen Ma Lines (split-site interchange, L1 subway link) |
-| LAK  | Lai King 荔景 | Tsuen Wan + Tung Chung Lines (north terminus; stacked cross-platform pair) |
+| LAK  | Lai King 荔景 | Tsuen Wan + Tung Chung Lines (stacked cross-platform pair) |
+| KWF  | Kwai Fong 葵芳 | Tsuen Wan Line (north terminus; elevated side platforms, Metroplaza footbridge) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run
