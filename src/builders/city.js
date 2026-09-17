@@ -608,6 +608,30 @@ const SITES = [
     parks: [[6040, -78, 6120, -108, 6]],   // museum grounds / promenade
     lamps: [[5910, 46, 6090], [5910, -58, 6090]],
   },
+  { // ---- Heng Fa Chuen — the at-grade station sits in the estate apron:
+    //     Paradise Mall podium + the estate's tower arcs south/west, Chai
+    //     Wan Depot sheds east of the platforms, harbourfront promenade north
+    id: 'HFC', hole: [6479, 6721, -48, 48],
+    roads: [[6480, 44, 6720, 56], [6714, -44, 6726, 40]],
+    towers: [
+      [6520, 62, 60, 22, 8, 'mall'],        // Paradise Mall podium
+      [6450, 58, 22, 18, 30, 'res'],        // estate arc — south
+      [6490, 76, 22, 18, 34, 'res'],
+      [6540, 82, 22, 18, 32, 'res'],
+      [6590, 86, 22, 18, 36, 'res'],
+      [6640, 84, 22, 18, 34, 'res'],
+      [6690, 78, 22, 18, 30, 'res'],
+      [6740, 66, 22, 18, 28, 'res'],
+      [6440, 92, 22, 18, 36, 'res'],        // west arc
+      [6420, 60, 20, 16, 28, 'res'],
+      [6760, -20, 60, 22, 12, 'mall'],      // Chai Wan Depot shed
+      [6810, 26, 40, 26, 9, 'mall'],        // depot workshops
+      [6700, -66, 24, 18, 26, 'res'],       // shore-side blocks
+      [6640, -70, 22, 16, 24, 'res'],
+    ],
+    parks: [[6490, -52, 6700, -88, 8]],     // harbourfront promenade green
+    lamps: [[6500, 48, 6700], [6500, -52, 6700]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -668,6 +692,9 @@ const NAMES = [
   ['TAK', 4730, 76, -76, '港島東中心 One Island East'],
   ['TAK', 4770, 14, -62, '太古城中心 Cityplaza'],
   ['SKW', 6080, 10, -93, '海防博物館 Coastal Defence Museum'],
+  ['HFC', 6520, 12, 62, '杏花新城 Paradise Mall'],
+  ['HFC', 6760, 16, -20, '港鐵柴灣車廠 Chai Wan Depot'],
+  ['HFC', 6590, 40, 86, '杏花邨 Heng Fa Chuen'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];

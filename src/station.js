@@ -54,8 +54,27 @@ export function computeOpenings() {
     const dir = ex.side, cz = ex.side * ex.exitZ, half = ESC.runLen / 2;
     const run = { x1: wx, z1: cz - dir * half, x2: wx, z2: cz + dir * half, w: 2.4 };
     const wr = { ...runWorldRect(run, 0.9), sides: ['x0', 'x1'] };
-    add(uidOf(ex.stn, gLvl), wr);
-    add(uidOf(ex.stn, cLvl) + ':ceil', wr);
+    if (cLvl.y > gLvl.y) {
+      // elevated concourse (HFC): the stair rises from the street onto the
+      // deck — the opening is a slot in the deck floor, street slab stays whole
+      add(uidOf(ex.stn, cLvl), wr);
+    } else {
+      add(uidOf(ex.stn, gLvl), wr);
+      add(uidOf(ex.stn, cLvl) + ':ceil', wr);
+    }
+  }
+  // arbitrary slab cuts (e.g. HFC's at-grade platform box cut from the apron)
+  for (const stn of Object.values(STATIONS)) {
+    for (const [lvlId, rects] of Object.entries(stn.slabCuts || {})) {
+      const bx = BOXES[stn.levels.find(l => l.id === lvlId).box];
+      for (const r of rects) {
+        const a = boxToWorld(bx, r.x0, r.z0), b = boxToWorld(bx, r.x1, r.z1);
+        add(`${stn.id}:${lvlId}`, {
+          x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x),
+          z0: Math.min(a.z, b.z), z1: Math.max(a.z, b.z), sides: [],
+        });
+      }
+    }
   }
   for (const l of LIFTS) {
     const p = liftWorldRect(l);
@@ -519,13 +538,16 @@ export function buildStation() {
     const s = exitShaft({ ...ex, x: wx, z: cz }, gLvl.y, cLvl.y, gUid, uidOf(ex.stn, cLvl));
     root.add(s.group);
     togglables[gUid].push(s.group);
+    // `up` exits (elevated concourse, e.g. HFC) put the street mouth at the
+    // far end of the shaft; underground exits put it at the near end
+    const mz = cz + ex.side * (ESC.runLen / 2 + 0.5) * (cLvl.y > gLvl.y ? 1 : -1);
     const totem = exitTotem({ ...ex, x: wx });
-    totem.position.set(wx + 5.5, gLvl.y, cz - ex.side * (ESC.runLen / 2 + 0.5));
+    totem.position.set(wx + 5.5, gLvl.y, mz);
     root.add(totem);
     togglables[gUid].push(totem);
     // stagger adjacent exits so the floating tags don't overlap each other
     const ly = gLvl.y + 5.4 + (i % 2) * 1.6;
-    labels.push({ level: gUid, pos: new THREE.Vector3(wx, ly, cz - ex.side * (ESC.runLen / 2 + 0.5)), cls: 'exit', html: `出 ${ex.id} ${ex.en}` });
+    labels.push({ level: gUid, pos: new THREE.Vector3(wx, ly, mz), cls: 'exit', html: `出 ${ex.id} ${ex.en}` });
   }
   for (const l of LIFTS) {
     const p = liftWorldRect(l);
@@ -548,7 +570,7 @@ export function buildStation() {
   for (const lvl of LEVELS.filter(l => l.type === 'ground' || l.type === 'checkin')) {
     const bx = BOXES[lvl.box];
     const road = box(bx.len + 60, 0.1, 16, M.ground);
-    const rc = boxToWorld(bx, 0, bx.wid / 2 - 6);
+    const rc = boxToWorld(bx, 0, (bx.wid / 2 - 6) * (STATIONS[lvl.station].roadSide ?? 1));
     road.position.set(rc.x, lvl.y + 0.03, rc.z);
     road.rotation.y = bx.rot;
     root.add(road);

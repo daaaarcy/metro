@@ -681,12 +681,13 @@ export const ROUTES = [
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
   // Island Line through service: Kennedy Town is the west terminus —
   // consists reverse off-map in the Mount Davis overrun tunnel and head
-  // east to Causeway Bay, Tin Hau, Fortress Hill and North Point; the
-  // consist reverses off-map at North Point's east portal (Chai Wan
-  // direction) and runs back west to KET. At NOP the eastbound face
-  // (P1) sits on the lower island and the westbound face (P2) on the
-  // upper island — the cross-platform pair is split by direction.
-  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
+  // east through Causeway Bay, Tin Hau, Fortress Hill, North Point and the
+  // eastern arm to Heng Fa Chuen, where the line is at grade beside Chai
+  // Wan Depot; the consist reverses off-map toward Chai Wan and runs back
+  // west to KET. At NOP the eastbound face (P1) sits on the lower island
+  // and the westbound face (P2) on the upper island — the cross-platform
+  // pair is split by direction. HFC is an at-grade side-platform stop.
+  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
     stops: [{ uid: 'KET:L2', num: 1 }, { uid: 'HKU:L2', num: 1 },
             { uid: 'SYP:L2', num: 1 },
             { uid: 'SHW:L2', num: 1 }, { uid: 'CEN:L2', num: 3 },
@@ -695,7 +696,8 @@ export const ROUTES = [
             { uid: 'FOH:L2', num: 1 }, { uid: 'NOP:L3', num: 1 },
             { uid: 'QUB:L2', num: 1 }, { uid: 'TAK:L2', num: 1 },
             { uid: 'SWH:L2', num: 1 }, { uid: 'SKW:L2', num: 1 },
-            { uid: 'SKW:L2', num: 2 }, { uid: 'SWH:L2', num: 2 },
+            { uid: 'HFC:P', num: 1 },
+            { uid: 'HFC:P', num: 2 }, { uid: 'SKW:L2', num: 2 }, { uid: 'SWH:L2', num: 2 },
             { uid: 'TAK:L2', num: 2 }, { uid: 'QUB:L2', num: 2 },
             { uid: 'NOP:L2', num: 2 }, { uid: 'FOH:L3', num: 2 },
             { uid: 'TIH:L3', num: 2 }, { uid: 'CAB:L3', num: 2 },

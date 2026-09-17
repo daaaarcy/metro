@@ -167,28 +167,33 @@ export function exitShaft(exit, yG, yL1, fromUid = 'G', toUid = 'L1') {
   const dir = exit.side;
   const cz = exit.z;
   const half = ESC.runLen / 2;
+  // up = concourse ABOVE street (Heng Fa Chuen): the stair top lands on the
+  // deck at the inner end and descends outward, so the street mouth is the
+  // far end and the pavilion/guard flip to it
+  const up = yL1 > yG;
+  const sgn = up ? 1 : -1;
   const run = {
-    x1: exit.x, z1: cz - dir * half, y1: yG,
-    x2: exit.x, z2: cz + dir * half, y2: yL1,
+    x1: exit.x, z1: cz - dir * half, y1: up ? yL1 : yG,
+    x2: exit.x, z2: cz + dir * half, y2: up ? yG : yL1,
     w: 2.4,
   };
   g.add(stairRun(run));
-  registerStair(run, fromUid, toUid);
+  registerStair(run, up ? toUid : fromUid, up ? fromUid : toUid);
 
   // pavilion: glazed canopy over the stair mouth — the entry end
   // (facing the station core, at the stair top) is left open
   const pavW = 8, pavD = ESC.runLen * 0.55, pavH = 3.6;
-  const px = exit.x, pz = cz - dir * 2.8;
+  const px = exit.x, pz = cz + sgn * dir * 2.8;
   for (const s of [-1, 1]) {
     const side = box(0.08, pavH, pavD, M.glass);
     side.position.set(px + s * pavW / 2, yG + pavH / 2, pz);
     g.add(solid(side));
   }
   const endGlass = box(pavW, pavH, 0.08, M.glass);
-  endGlass.position.set(px, yG + pavH / 2, pz + dir * pavD / 2);
+  endGlass.position.set(px, yG + pavH / 2, pz - sgn * dir * pavD / 2);
   g.add(solid(endGlass));
   // open entry face: corner posts + lintel over the doorway
-  const entryZ = pz - dir * pavD / 2;
+  const entryZ = pz + sgn * dir * pavD / 2;
   for (const s of [-1, 1]) {
     const post = box(0.16, pavH, 0.16, M.steel);
     post.position.set(px + s * pavW / 2, yG + pavH / 2, entryZ);
@@ -210,12 +215,16 @@ export function exitShaft(exit, yG, yL1, fromUid = 'G', toUid = 'L1') {
   roof.position.set(px, yG + 3.75, pz);
   // named fascia band over the open entry face
   const fascia = exitFascia(exit);
-  fascia.position.set(px, yG + 2.55, entryZ - dir * 0.07);
-  fascia.rotation.y = dir === -1 ? 0 : Math.PI;
+  fascia.position.set(px, yG + 2.55, entryZ - sgn * dir * 0.07);
+  fascia.rotation.y = (dir === -1) !== up ? 0 : Math.PI;
   // guard rail across the stairwell's far edge so G-level walkers can't fall in
-  const guard = box(3.2, 0.95, 0.1, M.steel);
-  guard.position.set(px, yG + 0.5, run.z2 + dir * 0.9);
-  g.add(frame, roof, fascia, solid(guard));
+  // (not needed for `up` exits — the street slab isn't pierced there)
+  if (!up) {
+    const guard = box(3.2, 0.95, 0.1, M.steel);
+    guard.position.set(px, yG + 0.5, run.z2 + dir * 0.9);
+    g.add(solid(guard));
+  }
+  g.add(frame, roof, fascia);
   return { group: g, run };
 }
 
