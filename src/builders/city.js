@@ -479,6 +479,31 @@ const SITES = [
     parks: [[-4250, -84, -4170, -100, 8]], // Kennedy Town shore promenade
     lamps: [[-4340, 46, -4160], [-4340, -58, -4160]],
   },
+  { // ---- Tin Hau — King's Rd / Electric Rd corridor, Central Library,
+    //     Victoria Park's east lawn, mid-rise hotels
+    id: 'TIH', hole: [2290, 2510, -38, 38],
+    roads: [[2295, 40, 2505, 52], [2295, -64, 2505, -52], [2394, -36, 2406, 36]],
+    towers: [
+      [1980, -60, 26, 20, 30, 'res'],      // Causeway Bay East corridor fill
+      [2060, -68, 24, 18, 36, 'res'],      // AIA Tower-ish
+      [2140, -62, 22, 18, 28, 'res'],
+      [2220, -70, 26, 20, 38, 'office'],   // Citicorp Centre-ish
+      [2000, 62, 24, 18, 26, 'res'],
+      [2100, 66, 24, 20, 32, 'res'],
+      [2200, 60, 22, 18, 30, 'res'],
+      [2330, -64, 24, 18, 34, 'res'],      // Victoria Centre
+      [2370, -70, 22, 18, 40, 'office'],   // Metropark hotel
+      [2430, -66, 24, 18, 36, 'res'],
+      [2470, -72, 22, 16, 30, 'office'],   // Empire hotel-ish
+      [2320, 62, 24, 20, 30, 'res'],
+      [2360, 68, 26, 20, 36, 'res'],
+      [2440, 64, 24, 18, 28, 'res'],
+      [2480, 70, 20, 16, 24, 'res'],
+      [2400, 92, 30, 18, 22, 'office'],    // Central Library block
+    ],
+    parks: [[2295, -78, 2345, -100, 8]],   // Victoria Park east lawn
+    lamps: [[2310, 46, 2490], [2310, -58, 2490]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -531,6 +556,7 @@ const NAMES = [
   ['WAC', 795, 68, 66, '合和中心 Hopewell Centre'],
   ['CAB', 1612, 58, 60, '時代廣場 Times Square'],
   ['CAB', 1755, 28, -60, '崇光百貨 SOGO'],
+  ['TIH', 2400, 26, 92, '中央圖書館 Central Library'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];

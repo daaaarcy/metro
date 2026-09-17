@@ -10,8 +10,9 @@ import { SHW } from './stations/sheungwan.js';
 import { SYP } from './stations/saiyingpun.js';
 import { HKU } from './stations/hku.js';
 import { KET } from './stations/kennedytown.js';
+import { TIH } from './stations/tinhau.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

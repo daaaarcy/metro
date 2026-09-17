@@ -681,15 +681,15 @@ export const ROUTES = [
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
   // Island Line through service: Kennedy Town is the west terminus —
   // consists reverse off-map in the Mount Davis overrun tunnel and head
-  // east through HKU, Sai Ying Pun, Sheung Wan, Central, Admiralty, Wan
-  // Chai and Causeway Bay; the consist reverses off-map at Causeway
-  // Bay's east portal (Chai Wan direction) and runs back west to KET.
-  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
+  // east to Causeway Bay and Tin Hau; the consist reverses off-map at
+  // Tin Hau's east portal (Chai Wan direction) and runs back west to KET.
+  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
     stops: [{ uid: 'KET:L2', num: 1 }, { uid: 'HKU:L2', num: 1 },
             { uid: 'SYP:L2', num: 1 },
             { uid: 'SHW:L2', num: 1 }, { uid: 'CEN:L2', num: 3 },
             { uid: 'ADM:L2', num: 3 }, { uid: 'WAC:L2', num: 1 },
-            { uid: 'CAB:L2', num: 1 }, { uid: 'CAB:L3', num: 2 },
+            { uid: 'CAB:L2', num: 1 }, { uid: 'TIH:L2', num: 1 },
+            { uid: 'TIH:L3', num: 2 }, { uid: 'CAB:L3', num: 2 },
             { uid: 'WAC:L3', num: 2 }, { uid: 'ADM:L3', num: 2 },
             { uid: 'CEN:L4', num: 4 }, { uid: 'SHW:L2', num: 2 },
             { uid: 'SYP:L2', num: 2 }, { uid: 'HKU:L2', num: 2 },
