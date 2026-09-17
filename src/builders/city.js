@@ -573,6 +573,23 @@ const SITES = [
     parks: [[4700, 70, 4760, 96, 6]],      // Quarry Bay Park strip
     lamps: [[4700, 46, 4900], [4700, -58, 4900]],
   },
+  { // ---- Sai Wan Ho — Shau Kei Wan Rd corridor, Aldrich Bay blocks,
+    //     Le King / Grand Promenade towers toward the water
+    id: 'SWH', hole: [5290, 5510, -38, 38],
+    roads: [[5295, 40, 5505, 52], [5295, -64, 5505, -52], [5394, -36, 5406, 36]],
+    towers: [
+      [5330, -66, 24, 18, 40, 'res'],      // Le King-ish
+      [5370, -72, 26, 20, 48, 'res'],      // Grand Promenade-ish
+      [5430, -64, 24, 18, 36, 'res'],
+      [5470, -70, 22, 16, 30, 'res'],
+      [5320, 62, 24, 18, 32, 'res'],       // Tai On St blocks
+      [5360, 68, 22, 16, 28, 'res'],
+      [5440, 64, 24, 18, 34, 'res'],
+      [5480, 70, 20, 16, 26, 'res'],
+    ],
+    parks: [],
+    lamps: [[5310, 46, 5490], [5310, -58, 5490]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],

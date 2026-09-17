@@ -686,7 +686,7 @@ export const ROUTES = [
   // direction) and runs back west to KET. At NOP the eastbound face
   // (P1) sits on the lower island and the westbound face (P2) on the
   // upper island — the cross-platform pair is split by direction.
-  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
+  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
     stops: [{ uid: 'KET:L2', num: 1 }, { uid: 'HKU:L2', num: 1 },
             { uid: 'SYP:L2', num: 1 },
             { uid: 'SHW:L2', num: 1 }, { uid: 'CEN:L2', num: 3 },
@@ -694,6 +694,7 @@ export const ROUTES = [
             { uid: 'CAB:L2', num: 1 }, { uid: 'TIH:L2', num: 1 },
             { uid: 'FOH:L2', num: 1 }, { uid: 'NOP:L3', num: 1 },
             { uid: 'QUB:L2', num: 1 }, { uid: 'TAK:L2', num: 1 },
+            { uid: 'SWH:L2', num: 1 }, { uid: 'SWH:L2', num: 2 },
             { uid: 'TAK:L2', num: 2 }, { uid: 'QUB:L2', num: 2 },
             { uid: 'NOP:L2', num: 2 }, { uid: 'FOH:L3', num: 2 },
             { uid: 'TIH:L3', num: 2 }, { uid: 'CAB:L3', num: 2 },
