@@ -716,16 +716,47 @@ const SITES = [
       [560, -838, 30, 22, 40, 'hotel'],    // The Peninsula
       [640, -846, 26, 20, 34, 'res'],
       [311, -808, 30, 14, 8,  'mall'],     // Star Ferry terminal
-      [300, -962, 34, 30, 52, 'res'],      // iSQUARE-ish tower over the mall
-      [360, -972, 30, 26, 46, 'res'],      // Chungking Mansions slab
-      [430, -958, 32, 28, 48, 'office'],   // K11 / Hart Ave side
-      [240, -966, 30, 26, 44, 'res'],      // The ONE-ish
-      [120, -952, 34, 28, 40, 'office'],
+      // Nathan Rd canyon towers flank the corridor — the x 194..446 strip
+      // stays clear for the chain of station digs marching north
+      [150, -960, 34, 30, 52, 'res'],      // iSQUARE-ish tower over the mall
+      [480, -966, 30, 26, 46, 'res'],      // Chungking Mansions slab
+      [500, -950, 32, 28, 48, 'office'],   // K11 / Hart Ave side
+      [130, -970, 30, 26, 44, 'res'],      // The ONE-ish
+      [120, -940, 34, 28, 40, 'office'],
     ],
     cyls: [[452, -842, 2.4, 17, 'office']],    // Clock Tower on the point
     parks: [[60, -950, 180, -1080, 30]],       // Kowloon Park
     piers: [[292, -796, 330, -758]],           // Star Ferry finger pier
     lamps: [[150, -806, 560]],                 // Avenue of Stars lamp row
+  },
+  { // ---- Jordan — the Nathan Rd canyon continues north: Yue Hwa's big
+    //     emporium box and Novotel on the west flank; Eaton Hotel,
+    //     Prudential Centre, Diocesan Girls' School and Queen Elizabeth
+    //     Hospital on the east; Jordan Rd crosses east-west at the dig.
+    id: 'JOR', hole: [194, 446, -1048, -952],
+    roads: [[194, -950, 446, -930],            // Nathan Rd between the digs
+            [194, -1074, 446, -1050],          // Nathan Rd north toward YMT
+            [60, -1012, 190, -996],            // Jordan Rd west
+            [450, -1012, 590, -996]],          // Jordan Rd east to Gascoigne
+    towers: [
+      [150, -985, 34, 28, 26, 'mall'],     // Yue Hwa Emporium big box
+      [140, -1020, 30, 24, 38, 'hotel'],   // Novotel Nathan Rd
+      [120, -962, 28, 22, 42, 'res'],
+      [165, -1060, 26, 20, 36, 'res'],
+      [480, -990, 34, 26, 40, 'hotel'],    // Eaton Hotel
+      [505, -1020, 30, 24, 36, 'hotel'],   // Prudential Centre tower
+      [470, -962, 28, 22, 30, 'office'],
+      [560, -1000, 44, 26, 14, 'mall'],    // Diocesan Girls' School low block
+      [640, -1030, 52, 36, 26, 'office'],  // Queen Elizabeth Hospital slab
+      [610, -965, 30, 20, 38, 'res'],
+      // corridor flanks continue north — the x 194..446 strip stays clear
+      [150, -1100, 32, 26, 44, 'res'],
+      [490, -1090, 30, 24, 40, 'res'],
+      [130, -1130, 28, 22, 36, 'res'],
+      [480, -1120, 32, 26, 42, 'office'],
+    ],
+    parks: [[520, -1090, 600, -1040, 14]],     // Diocesan sports field
+    lamps: [[60, -1004, 190], [450, -1004, 590]],
   },
 ];
 
@@ -774,9 +805,14 @@ const NAMES = [
   ['TST', 452, 20, -842, '尖沙咀鐘樓 Clock Tower'],
   ['TST', 560, 44, -838, '半島酒店 The Peninsula'],
   ['TST', 30, 46, -846, '海港城 Harbour City'],
-  ['TST', 300, 56, -962, 'iSQUARE'],
+  ['TST', 150, 56, -960, 'iSQUARE'],
   ['TST', 120, 10, -1000, '九龍公園 Kowloon Park'],
   ['TST', 0, 80, -1480, '獅子山 Lion Rock'],
+  ['JOR', 150, 30, -985, '裕華國貨 Yue Hwa Emporium'],
+  ['JOR', 480, 44, -990, '伊敦酒店 Eaton Hotel'],
+  ['JOR', 505, 40, -1020, '恒豐中心 Prudential Centre'],
+  ['JOR', 560, 18, -1000, '拔萃女書院 Diocesan Girls\''],
+  ['JOR', 640, 30, -1030, '伊利沙伯醫院 Queen Elizabeth Hosp.'],
 ];
 
 export function buildCity() {

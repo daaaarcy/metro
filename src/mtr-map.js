@@ -106,7 +106,7 @@ const DASH = { RAC: 1 };
 const LINKS = [['CEN', 'HOK'], ['TST', 'ETS'], ['KOW', 'AUS']];
 
 // stations constructed in the viewer -> goto target level
-const BUILT = { ADM: 'ADM:L1', CEN: 'CEN:L1', HOK: 'HOK:L1', WAC: 'WAC:L1', CAB: 'CAB:L1', SHW: 'SHW:L1', SYP: 'SYP:L1', HKU: 'HKU:L1', KET: 'KET:L1', TIH: 'TIH:L1', FOH: 'FOH:L1', NOP: 'NOP:L1', QUB: 'QUB:L1', TAK: 'TAK:L1', SWH: 'SWH:L1', SKW: 'SKW:L1', HFC: 'HFC:U1', CHW: 'CHW:U1', TST: 'TST:L1' };
+const BUILT = { ADM: 'ADM:L1', CEN: 'CEN:L1', HOK: 'HOK:L1', WAC: 'WAC:L1', CAB: 'CAB:L1', SHW: 'SHW:L1', SYP: 'SYP:L1', HKU: 'HKU:L1', KET: 'KET:L1', TIH: 'TIH:L1', FOH: 'FOH:L1', NOP: 'NOP:L1', QUB: 'QUB:L1', TAK: 'TAK:L1', SWH: 'SWH:L1', SKW: 'SKW:L1', HFC: 'HFC:U1', CHW: 'CHW:U1', TST: 'TST:L1', JOR: 'JOR:L1' };
 
 // label placement — [dx, dy, anchor] for the zh line; en stacks +8px
 // below it. Dense corridors alternate above/below like the official map;

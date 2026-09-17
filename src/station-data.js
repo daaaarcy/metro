@@ -20,8 +20,9 @@ import { SKW } from './stations/shaukeiwan.js';
 import { HFC } from './stations/hengfachuen.js';
 import { CHW } from './stations/chaiwan.js';
 import { TST } from './stations/tsimshatsui.js';
+import { JOR } from './stations/jordan.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

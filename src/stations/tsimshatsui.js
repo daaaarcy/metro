@@ -26,16 +26,15 @@ export const TST = {
     { id: 'L2', y: -14, box: 'tstPlat', zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platform', type: 'platform' },
   ],
 
-  // Island platform. For now TST is the TWL's north end — both faces
-  // dispatch toward Central and reverse at the harbour-side (west)
-  // portal, same-portal scissors like KET/CHW. When the Nathan Road
-  // chain lands, face 1 becomes 'to Tsuen Wan' (dir +1) and terminus
-  // clears — arrival/departure portals stay as built.
+  // Island platform — through station on the Nathan Rd corridor.
+  // P1 dispatches north (dir +1) toward Jordan/Tsuen Wan; P2 south
+  // (dir -1) toward Central. TWL northbound faces depart the east
+  // portal everywhere along the line.
   platforms: {
     L2: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
-        { num: 1, line: 'TWL', side: -1, dir: -1, to: { zh: '往中環', en: 'to Central' } },
+        { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
         { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },
       ],
     },
