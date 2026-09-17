@@ -268,6 +268,7 @@ rig.onLiftTap = () => liftSim.interact(rig);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
 window.__lifts = liftSim;
 window.__escRuns = ESC_RUNS; window.__weather = weather; window.__renderer = renderer;
+window.__scene = scene;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
 // orbit "home" frames all three stations — Admiralty near field, Central and

@@ -75,13 +75,13 @@ const WATER_M = new THREE.MeshStandardMaterial({
   color: 0x12202e, roughness: 0.25, metalness: 0.5,
 });
 
-// scale a box's per-face UVs so the facade texture tiles at ~CELL metres
-function scaleBoxUV(geo, w, h, d) {
+// scale a box's per-face UVs so the facade texture tiles at `tile` metres
+function scaleBoxUV(geo, w, h, d, tile = TILE_M) {
   const uv = geo.attributes.uv;
   const dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
   for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) {
     const i = f * 4 + v;
-    uv.setXY(i, uv.getX(i) * dims[f][0] / TILE_M, uv.getY(i) * dims[f][1] / TILE_M);
+    uv.setXY(i, uv.getX(i) * dims[f][0] / tile, uv.getY(i) * dims[f][1] / tile);
   }
   return geo;
 }
@@ -143,6 +143,172 @@ function lampRow(x0, z, x1, step = 22) {
   }
 }
 
+// ---- landmark icons -----------------------------------------------------
+// hand-modelled silhouettes for the towers everyone recognises.
+const MAST_M = new THREE.MeshStandardMaterial({ color: 0x8a9099, roughness: 0.5, metalness: 0.6 });
+
+// Bank of China: dark glass wrapped in the famous white X-lattice
+const BOC_M = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const e = document.createElement('canvas'); e.width = e.height = 128;
+  const ctx = c.getContext('2d'), ectx = e.getContext('2d');
+  ctx.fillStyle = '#1b2431'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = '#2a3646';
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++)
+    ctx.fillRect(x * 16 + 3, y * 16 + 3, 10, 10);
+  ctx.strokeStyle = '#dde6ee'; ctx.lineWidth = 7;
+  for (const [x0, y0, x1, y1] of [[0, 0, 128, 128], [128, 0, 0, 128]]) {
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ectx.strokeStyle = '#9fb4c8'; ectx.lineWidth = 5;
+    ectx.beginPath(); ectx.moveTo(x0, y0); ectx.lineTo(x1, y1); ectx.stroke();
+  }
+  const mk = cv => { const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
+  return new THREE.MeshStandardMaterial({ map: mk(c), emissiveMap: mk(e), emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.5, metalness: 0.3 });
+})();
+// Jardine House: light concrete skin of dark portholes
+const JARDINE_M = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#8b8f94'; ctx.fillRect(0, 0, 128, 128);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+    ctx.beginPath(); ctx.fillStyle = '#22262c';
+    ctx.arc(x * 16 + 8, y * 16 + 8, 5.5, 0, Math.PI * 2); ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.7 });
+})();
+const HILL_M = new THREE.MeshStandardMaterial({
+  color: 0x2c4234, roughness: 1, emissive: 0x1a2c22, emissiveIntensity: 1,
+});
+
+function iconSolid(x, z, w, d, h) {   // collider proxy for a hand-built icon
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), QUAY_M);
+  m.position.set(x, h / 2, z);
+  solid(m);
+}
+
+// Bank of China Tower — stepped shafts, lattice skin, twin antennas
+function bocTower(x, z) {
+  const w = 32, d = 28;
+  put(scaleBoxUV(new THREE.BoxGeometry(w, 58, d), w, 58, d, 14), BOC_M, x, 29, z);
+  put(scaleBoxUV(new THREE.BoxGeometry(24, 20, 20), 24, 20, 20, 14), BOC_M, x + 2, 68, z + 2);
+  put(scaleBoxUV(new THREE.BoxGeometry(16, 12, 14), 16, 12, 14, 14), BOC_M, x + 4, 84, z + 4);
+  put(new THREE.BoxGeometry(0.7, 24, 0.7), MAST_M, x - 6, 90 + 12, z - 4);
+  put(new THREE.BoxGeometry(0.7, 19, 0.7), MAST_M, x + 8, 90 + 9.5, z + 6);
+  iconSolid(x, z, w, d, 90);
+}
+
+// HSBC HQ — the exoskeleton icon: main slab lifted on stilts over an open
+// plaza, twin roof masts
+function hsbc(x, z) {
+  const w = 30, d = 24;
+  for (const cx of [-10, 0, 10]) for (const cz of [-8, 8])
+    put(new THREE.BoxGeometry(2.4, 9, 2.4), MAST_M, x + cx, 4.5, z + cz);
+  put(new THREE.BoxGeometry(w - 4, 0.5, d - 4), QUAY_M, x, 8.8, z);   // atrium deck
+  put(scaleBoxUV(new THREE.BoxGeometry(w, 43, d), w, 43, d, 9), FACADE.office, x, 9 + 21.5, z);
+  put(new THREE.BoxGeometry(w + 0.4, 0.5, d + 0.4), ROOF, x, 52.5, z);
+  for (const mx of [-8, 8])
+    put(new THREE.BoxGeometry(1, 14, 1), MAST_M, x + mx, 59.5, z);     // roof cranes
+  iconSolid(x, z, w, d, 53);
+}
+
+// Jardine House — porthole skin
+function jardine(x, z) {
+  const w = 28, d = 24, h = 52;
+  put(scaleBoxUV(new THREE.BoxGeometry(w, h, d), w, h, d, 26), JARDINE_M, x, h / 2, z);
+  put(new THREE.BoxGeometry(w + 0.4, 0.5, d + 0.4), ROOF, x, h + 0.25, z);
+  iconSolid(x, z, w, d, h);
+}
+
+// Central Government Offices — the 門常開 "door always open": two slabs
+// joined by a top bridge, portal void between them
+function tamarDoor(x, z) {
+  const d = 14;
+  for (const sx of [-9.5, 29.5])
+    put(scaleBoxUV(new THREE.BoxGeometry(16, 30, d), 16, 30, d), FACADE.office, x + sx, 15, z);
+  put(new THREE.BoxGeometry(55, 4.5, d), FACADE.office, x + 10, 28, z); // the lintel
+  put(new THREE.BoxGeometry(55.4, 0.5, d + 0.4), ROOF, x + 10, 30.4, z);
+  iconSolid(x + 10, z, 55, d, 30);
+}
+
+// Court of Final Appeal (old Supreme Court / LegCo) — heritage block + dome
+function legcoDome(x, z) {
+  const w = 20, d = 16;
+  put(scaleBoxUV(new THREE.BoxGeometry(w, 9, d), w, 9, d), FACADE.heritage, x, 4.5, z);
+  put(new THREE.CylinderGeometry(3.6, 3.9, 1.4, 10), FACADE.heritage, x, 9.7, z);
+  const dome = new THREE.SphereGeometry(3.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+  put(dome, ROOF, x, 10.4, z);
+  put(new THREE.CylinderGeometry(0.3, 0.3, 2.4, 6), ROOF, x, 14.4, z);   // lantern
+  iconSolid(x, z, w, d, 11);
+}
+
+// Two IFC — shaft plus the sculpted crown: tapering caps + parapet fins
+function twoIfc(x, z) {
+  const w = 34, d = 30;
+  put(scaleBoxUV(new THREE.BoxGeometry(w, 96, d), w, 96, d), FACADE.glass, x, 48, z);
+  put(scaleBoxUV(new THREE.BoxGeometry(28, 12, 24), 28, 12, 24), FACADE.glass, x, 102, z);
+  put(scaleBoxUV(new THREE.BoxGeometry(20, 9, 16), 20, 9, 16), FACADE.glass, x, 112.5, z);
+  for (const fx of [-10, 0, 10])
+    put(new THREE.BoxGeometry(0.8, 8, 14), MAST_M, x + fx, 121, z);      // crown fins
+  put(new THREE.BoxGeometry(0.6, 14, 0.6), MAST_M, x, 124, z);           // mast
+  iconSolid(x, z, w, d, 118);
+}
+
+// Victoria Peak — extruded ridged silhouette south of Central/Admiralty,
+// plus the Tai Hang / Jardine's Lookout hills behind Wan Chai
+function peakRidges() {
+  const PEAK = [[-1560, 40], [-1380, 100], [-1260, 145], [-1140, 168], [-1020, 118],
+                [-930, 138], [-800, 105], [-620, 126], [-460, 86], [-300, 62], [-140, 44]];
+  const EAST = [[420, 34], [620, 58], [880, 76], [1180, 62], [1480, 88], [1700, 66], [1845, 48]];
+  const ridge = (pts, z, depth) => {
+    const s = new THREE.Shape();
+    s.moveTo(pts[0][0], 0);
+    for (const [px, py] of pts) s.lineTo(px, py);
+    s.lineTo(pts[pts.length - 1][0], 0); s.closePath();
+    const geo = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false });
+    put(geo, HILL_M, 0, 0, z);
+  };
+  ridge(PEAK, 165, 140);
+  ridge(EAST, 235, 130);
+  // scattered Peak-side house lights on the slope face, capped by the
+  // local ridge height so none float above the skyline
+  const ridgeAt = (pts, x) => {
+    for (let i = 1; i < pts.length; i++) {
+      if (x <= pts[i][0]) {
+        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+        return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+      }
+    }
+    return pts[pts.length - 1][1];
+  };
+  const scatter = (pts, z, n) => {
+    const dot = new THREE.BoxGeometry(1.6, 1.4, 0.4);
+    const xa = pts[0][0] + 30, xb = pts[pts.length - 1][0] - 30;
+    for (let i = 0; i < n; i++) {
+      const x = xa + ((i * 97.31) % (xb - xa));
+      const y = 10 + ((i * 53.7) % Math.max(ridgeAt(pts, x) - 22, 12));
+      put(dot.clone(), LAMP_M, x, y, z);
+    }
+  };
+  scatter(PEAK, 164.6, 26);
+  scatter(EAST, 234.6, 20);
+}
+
+// Kowloon skyline across the harbour — silhouetted towers + the ICC wedge
+function kowloonSkyline() {
+  block(150, -445, 3500, 260, 0.4, HILL_M, false);                     // far shore
+  const kl = [[-1560, -390, 34, 30, 48], [-1500, -430, 46, 40, 72],
+              [-1380, -410, 44, 36, 66], [-1260, -400, 38, 32, 54], [-1080, -420, 42, 34, 62],
+              [-920, -395, 34, 30, 44], [-700, -410, 40, 32, 56], [-480, -390, 36, 28, 42],
+              [-200, -415, 40, 30, 50], [60, -400, 34, 26, 38], [320, -410, 38, 28, 46]];
+  for (const [x, z, w, d, h] of kl)
+    put(scaleBoxUV(new THREE.BoxGeometry(w, h, d), w, h, d), FACADE.office, x, h / 2, z);
+  // ICC — tallest slab with a tapered crown
+  put(scaleBoxUV(new THREE.BoxGeometry(46, 140, 40), 46, 140, 40), FACADE.glass, -1470, 70, -430);
+  put(scaleBoxUV(new THREE.BoxGeometry(34, 18, 28), 34, 18, 28), FACADE.glass, -1470, 149, -430);
+}
+
 // per-station surroundings — all coords are world space; `hole` is the
 // excavation rect, towers intersecting it are skipped with a warning.
 const SITES = [
@@ -153,7 +319,7 @@ const SITES = [
       [-70, -76, 24, 20, 50, 'glass'], [-38, -76, 24, 20, 52, 'glass'],   // Lippo Centre twin
       [-95, -74, 20, 18, 46, 'gold'],                                    // Far East Finance
       [92, -76, 26, 20, 36, 'office'], [124, -74, 22, 18, 34, 'office'],
-      [-55, -88, 20, 12, 18, 'office'], [10, -88, 55, 14, 20, 'office'],  // CGO, Tamar
+      [-55, -88, 20, 12, 18, 'office'],
       [68, -88, 22, 14, 12, 'heritage'],                                 // LegCo block
       [100, 68, 24, 20, 46, 'hotel'],                                    // JW Marriott
       [126, 68, 22, 20, 56, 'hotel'],                                    // Conrad
@@ -164,26 +330,22 @@ const SITES = [
       [-148, 66, 20, 16, 36, 'office'],                                  // Bank of America
       [-155, -76, 22, 18, 40, 'office'], [-180, -58, 24, 18, 32, 'office'],
     ],
-    parks: [[-15, 72, 60, 104, 14], [-58, -78, 60, -93, 10]],              // HK Park, Tamar
+    parks: [[-15, 72, 60, 104, 14], [-85, -74, -30, -92, 10]],              // HK Park, Tamar
     lamps: [[-95, 50, 95], [-150, -58, 160]],
   },
   { // ---- Central — HSBC row, Landmark cluster, Chater Garden, BOC Tower
     id: 'CEN', hole: [-1150, -950, -57, 57],
     roads: [[-1145, 60, -955, 72], [-1145, -69, -962, -57], [-1180, -55, -1168, 55], [-932, -55, -920, 55]],
     towers: [
-      [-1070, -82, 30, 24, 50, 'office'],   // HSBC HQ
       [-1102, -80, 26, 20, 46, 'office'],   // Standard Chartered
       [-1132, -84, 28, 24, 66, 'glass'],    // Cheung Kong Center
-      [-1160, -84, 28, 24, 52, 'office'],   // Jardine House
       [-985, -82, 28, 20, 46, 'office'],    // AIA Central
       [-928, -72, 24, 18, 40, 'office'],    // CCB side
       [-962, -76, 30, 12, 12, 'heritage'],  // City Hall
       [-1050, 82, 30, 20, 42, 'office'],    // Landmark-ish
       [-1015, 84, 26, 20, 38, 'hotel'],     // Prince's/Mandarin
       [-985, 82, 24, 18, 34, 'hotel'],
-      [-1045, 92, 32, 28, 82, 'glass'],     // Bank of China Tower
       [-1035, 82, 20, 14, 30, 'office'],    // St George's Bldg
-      [-1158, 84, 20, 14, 9, 'heritage'],   // Court of Final Appeal
     ],
     parks: [[-1145, 74, -1062, 88, 14]],                                   // Chater Garden
     lamps: [[-1140, 66, -960], [-1140, -63, -970]],
@@ -192,7 +354,6 @@ const SITES = [
     id: 'HOK', hole: [-1615, -1345, -67, 67],
     roads: [[-1610, 70, -1350, 82], [-1610, -79, -1345, -67], [-1330, -65, -1318, 65]],
     towers: [
-      [-1445, -100, 34, 30, 112, 'glass'],  // Two IFC — supertall, on the quay
       [-1530, -94, 30, 26, 44, 'glass'],    // One IFC
       [-1485, -84, 80, 8, 9, 'mall'],       // IFC Mall podium
       [-1570, -98, 24, 20, 58, 'hotel'],    // Four Seasons
@@ -265,10 +426,15 @@ const SITES = [
 const NAMES = [
   ['ADM', -54, 56, -75, '力寶中心 Lippo Centre'],
   ['ADM', 100, 50, 72, '太古廣場 Pacific Place'],
-  ['CEN', -1070, 54, -82, '滙豐總行 HSBC'],
-  ['CEN', -1045, 88, 92, '中銀大廈 Bank of China'],
-  ['HOK', -1445, 118, -100, '國際金融中心 IFC'],
+  ['ADM', 10, 34, -88, '政府總部 Central Govt Offices'],
+  ['ADM', -1140, 178, 235, '太平山 Victoria Peak'],
+  ['CEN', -1070, 68, -82, '滙豐總行 HSBC'],
+  ['CEN', -1040, 112, 92, '中銀大廈 Bank of China'],
+  ['CEN', -1275, 56, -84, '怡和大廈 Jardine House'],
+  ['CEN', -932, 17, 86, '終審法院 Court of Final Appeal'],
+  ['HOK', -1445, 134, -100, '國際金融中心 IFC'],
   ['HOK', -1400, 28, -104, '摩天輪 Observation Wheel'],
+  ['HOK', -1470, 162, -430, '環球貿易廣場 ICC'],
   ['WAC', 905, 104, -64, '中環廣場 Central Plaza'],
   ['WAC', 795, 68, 66, '合和中心 Hopewell Centre'],
   ['CAB', 1612, 58, 60, '時代廣場 Times Square'],
@@ -301,6 +467,16 @@ export function buildCity() {
       put(new THREE.ConeGeometry(9, 14, 4), FACADE.glass, x, h + 7, z, Math.PI / 4);
     }
   }
+
+  // ---- the recognisable skyline icons
+  hsbc(-1070, -82);            // HSBC HQ — stilts + roof masts
+  bocTower(-1040, 92);         // Bank of China — lattice + antennas
+  jardine(-1275, -84);         // Jardine House — portholes
+  tamarDoor(0, -88);           // Central Govt Offices — the open door
+  legcoDome(-932, 86);         // Court of Final Appeal dome
+  twoIfc(-1445, -100);         // Two IFC crown
+  peakRidges();                // Victoria Peak + Tai Hang hills
+  kowloonSkyline();            // far shore + ICC
   for (const [stn, x, y, z, txt] of NAMES) {
     const uid = groundUid(stn);
     if (uid) labels.push({ level: uid, cls: 'city', html: txt, pos: new THREE.Vector3(x, y, z) });
@@ -335,9 +511,11 @@ export function buildCity() {
     put(new THREE.BoxGeometry(0.5, 12, 0.5), QUAY_M, wx + 3, 5.5, wz);
   }
 
-  // merge everything into one mesh per material (~10 draw calls total)
+  // merge everything into one mesh per material (~10 draw calls total) —
+  // de-indexed first since ExtrudeGeometry comes non-indexed and
+  // mergeGeometries rejects mixed index-ness
   for (const [mat, geos] of bag) {
-    const merged = mergeGeometries(geos, false);
+    const merged = mergeGeometries(geos.map(g => (g.index ? g.toNonIndexed() : g)), false);
     if (!merged) continue;
     const mesh = new THREE.Mesh(merged, mat);
     mesh.castShadow = true; mesh.receiveShadow = true;

@@ -111,7 +111,8 @@ headways in `TRAIN_SPEC`.
    globals for
    checks: `window.__rig` (mode, feetY, floorAt, teleport), `window.__cam`,
    `window.__trains` (services, `tt.byPlat`), `window.__people.list`,
-   `window.__renderer` (`renderer.info.render.calls` for draw-call counts).
+   `window.__renderer` (`renderer.info.render.calls` for draw-call counts),
+   `window.__scene` (object graph).
 3. Standard regression: all 8 level `go` buttons land on the right floor;
    walk collision holds at walls/gates/PSDs/escalator-well kerbs; a train
    dwells with open doors and passengers board; the ticker shows live
