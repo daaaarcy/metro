@@ -556,6 +556,23 @@ const SITES = [
     parks: [],
     lamps: [[4110, 46, 4290], [4110, -58, 4290]],
   },
+  { // ---- Tai Koo — Cityplaza podium + One Island East on the harbour
+    //     side; Taikoo Shing slab blocks north-east; Kornhill uphill
+    id: 'TAK', hole: [4685, 4915, -38, 38],
+    roads: [[4690, 40, 4910, 52], [4690, -64, 4910, -52], [4794, -36, 4806, 36]],
+    towers: [
+      [4730, -76, 30, 22, 70, 'office'],   // One Island East
+      [4770, -62, 40, 24, 12, 'mall'],     // Cityplaza podium
+      [4710, 60, 22, 16, 34, 'res'],       // Kornhill
+      [4750, 72, 22, 16, 38, 'res'],
+      [4860, 64, 24, 18, 30, 'res'],
+      [4900, 70, 22, 16, 34, 'res'],
+      [4860, -60, 24, 18, 36, 'res'],      // Taikoo Shing slabs
+      [4900, -66, 24, 18, 32, 'res'],
+    ],
+    parks: [[4700, 70, 4760, 96, 6]],      // Quarry Bay Park strip
+    lamps: [[4700, 46, 4900], [4700, -58, 4900]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -613,6 +630,8 @@ const NAMES = [
   ['NOP', 3620, 68, -88, '港匯東 Harbourfront Landmark'],
   ['NOP', 3540, 8, -128, '北角碼頭 North Point Ferry'],
   ['QUB', 4150, 64, 62, '太古坊 Taikoo Place'],
+  ['TAK', 4730, 76, -76, '港島東中心 One Island East'],
+  ['TAK', 4770, 14, -62, '太古城中心 Cityplaza'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];

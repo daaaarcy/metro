@@ -22,6 +22,7 @@ procedural Hong Kong skyline around each station.
 | FOH  | Fortress Hill 炮台山 | Island Line |
 | NOP  | North Point 北角 | Island + Tseung Kwan O Lines |
 | QUB  | Quarry Bay 鰂魚涌 | Island + Tseung Kwan O Lines |
+| TAK  | Tai Koo 太古 | Island Line |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

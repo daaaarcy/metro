@@ -13,7 +13,7 @@ const FEEDS = [
   ['TCL', 'HOK'], ['AEX', 'HOK'],
   ['ISL', 'WAC'], ['ISL', 'CAB'], ['ISL', 'SHW'], ['ISL', 'SYP'], ['ISL', 'HKU'], ['ISL', 'KET'],
   ['ISL', 'TIH'], ['ISL', 'FOH'], ['ISL', 'NOP'], ['TKO', 'NOP'],
-  ['ISL', 'QUB'], ['TKO', 'QUB'],
+  ['ISL', 'QUB'], ['TKO', 'QUB'], ['ISL', 'TAK'],
 ];
 const POLL_S = 45;
 
