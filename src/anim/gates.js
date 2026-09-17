@@ -1,5 +1,7 @@
+import * as THREE from 'three';
 import { GATES } from '../registry.js';
 import { levelById } from '../station-data.js';
+import { flapMat, FLAP_LEN } from '../builders/props.js';
 
 const OPEN_TIME = 3.2;   // seconds the flaps stay open after a tap
 const SWING = 1.35;      // radians the paddles fold back
@@ -11,14 +13,51 @@ export function openGate(gate, audio) {
   audio?.octopusBeep(gate);
 }
 
+const _m = new THREE.Matrix4(), _t = new THREE.Matrix4();
+
+// paddle matrix in level-local space: hinge translate × swing × panel offset
+function writeFlap(f, open) {
+  _m.makeRotationY(f.dir * open * SWING);
+  _m.setPosition(f.x, f.y, f.z);
+  _m.multiply(_t.makeTranslation(f.s * -FLAP_LEN / 2, 0, 0));
+  f.inst.setMatrixAt(f.idx, _m);
+}
+
+// one InstancedMesh of swing paddles per level group — hides/shows with the
+// level like the old per-flap meshes did, but costs one draw call per bank
+export function initGateFlaps(levelGroups) {
+  const geo = new THREE.BoxGeometry(FLAP_LEN, 0.8, 0.06);
+  const byLevel = new Map();
+  for (const g of GATES) {
+    if (!g.level) continue;
+    let arr = byLevel.get(g.level);
+    if (!arr) byLevel.set(g.level, arr = []);
+    arr.push(g);
+  }
+  for (const [uid, gates] of byLevel) {
+    const grp = levelGroups[uid];
+    if (!grp) continue;
+    const inst = new THREE.InstancedMesh(geo, flapMat, gates.length * 2);
+    inst.frustumCulled = false;   // geometry bounds cover one paddle, not the bank
+    inst.castShadow = false;
+    grp.add(inst);
+    gates.forEach((g, gi) => g.flaps.forEach((f, fi) => {
+      f.inst = inst; f.idx = gi * 2 + fi;
+      writeFlap(f, 0);
+    }));
+    inst.instanceMatrix.needsUpdate = true;
+  }
+}
+
 export function updateGates(dt) {
   for (const g of GATES) {
+    if (g.timer <= 0 && g.open === 0) continue;   // shut and still — most lanes
     if (g.timer > 0) g.timer -= dt;
     const target = g.timer > 0 ? 1 : 0;
     g.open += Math.sign(target - g.open) * Math.min(Math.abs(target - g.open), dt * 3.2);
     if (g.open !== g._applied) {
       g._applied = g.open;
-      for (const f of g.flaps) f.pivot.rotation.y = f.dir * g.open * SWING;
+      for (const f of g.flaps) if (f.inst) { writeFlap(f, g.open); f.inst.instanceMatrix.needsUpdate = true; }
     }
   }
 }

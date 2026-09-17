@@ -12,7 +12,9 @@ export const WALKABLES = [];
 export const ESC_RUNS = [];
 
 // Octopus gate lanes (world space, all on L1):
-// {x,z,half,open,timer,rect,flaps:[{pivot,dir}]}
+// {x,z,half,open,timer,rect,level,flaps:[{x,y,z,s,dir,inst,idx}]}
+// flaps hold level-local hinge points + the instanced-mesh slot that draws
+// the paddle (filled by initGateFlaps after build)
 export const GATES = [];
 
 // PSD door bays (world space): each bay is a dynamic barrier — solid unless

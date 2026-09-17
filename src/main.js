@@ -7,7 +7,7 @@ import { buildUI, showInfo, showPrompt, updateTicker, updateClock } from './ui.j
 import { EscalatorSteps } from './anim/escalators.js';
 import { TrainSim } from './anim/trains.js';
 import { Passengers } from './anim/passengers.js';
-import { updateGates, gateBlocks } from './anim/gates.js';
+import { updateGates, gateBlocks, initGateFlaps } from './anim/gates.js';
 import { LiftSim } from './anim/lifts.js';
 import { StationAudio } from './audio.js';
 import { buildColliders } from './colliders.js';
@@ -19,7 +19,7 @@ import { GATES, ESC_RUNS } from './registry.js';
 // ---------- renderer ----------
 const app = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));   // 3.7M-tri scene is fill-bound on Retina
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -71,6 +71,23 @@ const colliders = buildColliders();
 // collapse ~3.5k static meshes into one draw call per material per level —
 // colliders are already snapshotted; instanced/dynamic meshes are untouched
 mergeStation(scene, root, levelGroups, togglables);
+initGateFlaps(levelGroups);   // instanced Octopus paddles, one draw per level
+
+// every sign plate has a unique canvas texture, so they can't merge — that's
+// ~1.8k extra draw calls. They're unreadable past ~50 m anyway, so cull them
+// by distance each frame (radius grows with zoom in orbit mode).
+const signCulls = [];
+root.traverse(o => {
+  if (o.isMesh && !o.isInstancedMesh && o.material?.isMeshBasicMaterial
+      && o.material.map && o.geometry.parameters)
+    signCulls.push({ o, p: o.getWorldPosition(new THREE.Vector3()) });
+});
+function cullSigns() {
+  const focus = rig.mode === 'walk' ? camera.position : rig.orbit.target;
+  const r = rig.mode === 'walk' ? 140 : Math.max(150, rig.orbit.getDistance() * 0.35);
+  const r2 = r * r;
+  for (const s of signCulls) s.o.visible = s.p.distanceToSquared(focus) < r2;
+}
 
 // ground context — a big dark disc spanning every station, with a
 // rectangular excavation hole over each ground slab, so orbit views
@@ -123,7 +140,6 @@ const weather = new Weather(scene, sun, hemi, ambient, ground);
 // a throttled map would freeze their shadows mid-motion, so they don't cast.
 renderer.shadowMap.autoUpdate = false;
 scene.traverse(o => { if (o.isInstancedMesh) o.castShadow = false; });
-for (const g of GATES) for (const f of g.flaps) f.pivot.traverse(o => { o.castShadow = false; });
 const lastSun = new THREE.Vector3(Infinity, Infinity, Infinity);
 
 // ---------- CSS2D labels ----------
@@ -438,6 +454,7 @@ function tick() {
   rig.update(dt);
   updatePick(dt);
   updateLabels();
+  cullSigns();
 
   // sim
   escSteps.update(escT);
@@ -459,7 +476,8 @@ function tick() {
   for (const ev of events) {
     passengers.onTrainEvent(ev, audio);
   }
-  if (peopleOn) passengers.update(sdt, escT, trainSim, audio);
+  if (peopleOn) passengers.update(sdt, escT, trainSim, audio,
+    rig.mode === 'walk' ? camera.position : rig.orbit.target);
   updateGates(sdt);
 
   // gate / lift / boarding prompt + ticker + clock refresh
@@ -483,7 +501,10 @@ function tick() {
   if (tickerT > 0.5) {
     tickerT = 0;
     updateTitle();
-    updateTicker(trainSim.board(), trainSim.tt.live, simNow);
+    // board shows only the station you're looking at — the full network's
+    // faces grew to an unreadable wall of rows
+    updateTicker(trainSim.board().filter(r => r.ds.level.split(':')[0] === titleStn),
+      trainSim.tt.live, simNow);
     updateClock(simNow, speed);
   }
 

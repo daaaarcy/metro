@@ -44,27 +44,22 @@ export class CameraRig {
     this.floors = [];
     this.ramps = [];
 
+    // walk-mode look: hold the mouse button and drag (hover does nothing —
+    // pointer lock was tried and rolled back for being too twitchy)
     dom.addEventListener('pointerdown', e => {
-      if (this.mode === 'orbit' || document.pointerLockElement === dom) return;
-      // click optionally captures the pointer for edge-free FPS look
-      // (Esc releases); even without it, movement over the canvas turns
-      // the view — see pointermove below.
-      try {
-        dom.requestPointerLock({ unadjustedMovement: true })
-          ?.catch?.(() => dom.requestPointerLock());
-      } catch { try { dom.requestPointerLock(); } catch {} }
+      if (this.mode === 'orbit') return;
+      this._drag = { x: e.clientX, y: e.clientY };
+      dom.setPointerCapture(e.pointerId);
     });
     dom.addEventListener('pointermove', e => {
-      if (this.mode === 'orbit') { this._last = null; return; }
-      let dx = e.movementX, dy = e.movementY;
-      if (!Number.isFinite(dx) || !Number.isFinite(dy)) {   // engines without movement deltas
-        dx = this._last ? e.clientX - this._last.x : 0;
-        dy = this._last ? e.clientY - this._last.y : 0;
-      }
-      this._last = { x: e.clientX, y: e.clientY };
-      this.yaw -= dx * 0.0011;
-      this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0011, -1.45, 1.45);
+      if (!this._drag || this.mode === 'orbit') return;
+      this.yaw -= (e.clientX - this._drag.x) * 0.0032;
+      this.pitch = THREE.MathUtils.clamp(this.pitch - (e.clientY - this._drag.y) * 0.0032, -1.45, 1.45);
+      this._drag = { x: e.clientX, y: e.clientY };
     });
+    const endDrag = () => { this._drag = null; };
+    dom.addEventListener('pointerup', endDrag);
+    dom.addEventListener('pointercancel', endDrag);
     window.addEventListener('keydown', e => {
       this.keys.add(e.code);
       if (e.code === 'KeyE' && this.mode === 'walk') {
@@ -339,7 +334,7 @@ export class CameraRig {
   setMode(mode) {
     this.mode = mode;
     this.orbit.enabled = mode === 'orbit';
-    if (mode === 'orbit' && document.pointerLockElement) document.exitPointerLock();
+    this._drag = null;
     if (mode !== 'orbit') {
       const e = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
       this.yaw = e.y; this.pitch = e.x;

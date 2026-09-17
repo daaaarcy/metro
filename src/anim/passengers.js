@@ -67,6 +67,19 @@ export class Passengers {
     this._wyOf = {};                                  // level id -> floor y
     for (const id of Object.keys(N_LEVELS)) this._wyOf[id] = levelById(id).y;
 
+    // dynamic barriers bucketed by level — the per-ped collision pass only
+    // ever tests the peds' own level, not every gate/bay in the network
+    this.gatesOf = new Map();
+    for (const g of GATES) {
+      const a = this.gatesOf.get(g.level) || [];
+      a.push(g); this.gatesOf.set(g.level, a);
+    }
+    this.baysOf = new Map();
+    for (const b of PSD_BAYS) {
+      const a = this.baysOf.get(b.level) || [];
+      a.push(b); this.baysOf.set(b.level, a);
+    }
+
     // instanced capacity = the whole crowd + headroom for dwell-time
     // boarding/alighting spawns (cap() recycles 'aboard' peds past this)
     this.max = this.list.length + 80;
@@ -354,7 +367,7 @@ export class Passengers {
     if (culled) for (const p of this.list) p.dirty = true;
   }
 
-  update(dt, t, trainSim, audio) {
+  update(dt, t, trainSim, audio, focus) {
     const m4 = this._m4, lm = this._lm, pm = this._pm, q = this._q, pv = this._p;
     const count = Math.min(this.list.length, this.max);
     for (const im of Object.values(this.parts)) im.count = count;
@@ -369,6 +382,28 @@ export class Passengers {
       const lvlPre = p.level;
       const stPre = p.state;
       const wPre = boxToWorld(this.boxOf[lvlPre], p.x, p.z);
+
+      // collapse hidden/aboard peds once, before the throttle skip — the
+      // instanced parts are global, so a ped that vanishes out of range
+      // would otherwise keep rendering frozen mid-pose
+      if ((!visible || p.state === 'aboard') && !p._zeroed) {
+        p._zeroed = true;
+        for (const im of Object.values(this.parts)) im.setMatrixAt(i, this._zero);
+      }
+
+      // distant crowd runs at half rate: accumulate dt so speeds stay right
+      // and skip the frame entirely (no state, no matrix rewrites) on off
+      // frames — at >120 m the reduced cadence is invisible
+      let pdt = dt;
+      if (focus) {
+        const ddx = wPre.x - focus.x, ddz = wPre.z - focus.z;
+        if (ddx * ddx + ddz * ddz > 14400) {
+          p._acc = (p._acc || 0) + dt;
+          if (p._acc < 1 / 15) continue;
+          pdt = p._acc; p._acc = 0;
+        } else p._acc = 0;
+      }
+      const sdt = dt; dt = pdt;
 
       switch (p.state) {
         case 'aboard':
@@ -516,7 +551,9 @@ export class Passengers {
       // physical collision: pedestrians slide along walls, glass, furniture
       // like the player does — only scripted crossings skip it. The swept
       // clamp stops thin glass being tunneled through at high sim speed.
-      if (!NOCLIP.has(p.state)) {
+      // (idle peds don't move, and peds on hidden levels aren't seen — the
+      // barrier sweep is pointless for both)
+      if (!NOCLIP.has(p.state) && p.state !== 'idle' && visible) {
         const bx0 = this.boxOf[p.level];
         const w0 = boxToWorld(bx0, p.x, p.z);
         const wy0 = p.wy ?? levelById(p.level).y;
@@ -524,8 +561,8 @@ export class Passengers {
         const ox = sameSpot ? wPre.x : w0.x, oz = sameSpot ? wPre.z : w0.z;
         let [rx, rz] = resolvePed(this.col, w0.x, w0.z, wy0, 1.7, PED_RADIUS, ox, oz);
         // closed Octopus flaps block the lane (dynamic — not in SOLIDS)
-        for (const g of GATES) {
-          if (g.level !== p.level || !gateBlocks(g)) continue;
+        for (const g of this.gatesOf.get(p.level) || []) {
+          if (!gateBlocks(g)) continue;
             [rx, rz] = clampRect(g.rect, ox, oz, rx, rz, 0.3);
             const s = g.rect;
             const nx = Math.max(s.x0, Math.min(rx, s.x1));
@@ -537,8 +574,8 @@ export class Passengers {
           }
         // closed PSD bays are solid too — the edge seals whenever no consist
         // is berthed with its doors open (boarding uses NOCLIP states)
-        for (const b of PSD_BAYS) {
-          if (b.level !== p.level || !psdBlocked(b)) continue;
+        for (const b of this.baysOf.get(p.level) || []) {
+          if (!psdBlocked(b)) continue;
             [rx, rz] = clampOBB(b, ox, oz, rx, rz, 0.3);
           }
         if (rx !== w0.x || rz !== w0.z) {
@@ -547,10 +584,8 @@ export class Passengers {
         }
       }
 
-      if (!visible) {
-        for (const im of Object.values(this.parts)) im.setMatrixAt(i, this._zero);
-        continue;
-      }
+      if (!visible) { dt = sdt; continue; }
+      p._zeroed = false;
 
       // walk-cycle amount eases toward 1 while moving, 0 when standing —
       // and while grinding against a wall (stuck), so limbs stop swinging
@@ -608,6 +643,7 @@ export class Passengers {
       this.writePart(i, 'hair', 0, hs[0], hs[1], hs[2]);
       this.writePart(i, 'bun', 0, p.bun ? 1 : 0, p.bun ? 1 : 0, p.bun ? 1 : 0);
       this.writePart(i, 'skirt', 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0);
+      dt = sdt;
     }
     this.flushParts();
   }

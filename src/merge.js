@@ -46,9 +46,9 @@ function mergeList(meshes, parent, consumed) {
 
 export function mergeStation(scene, root, levelGroups, togglables) {
   root.updateMatrixWorld(true);
-  // subtrees that keep their own transform — gate flap pivots swing on tap
+  // subtrees that keep their own transform (gate paddles are now instanced —
+  // see initGateFlaps — so they never reach this pass)
   const skip = new Set();
-  for (const g of GATES) for (const f of g.flaps) skip.add(f.pivot);
 
   const gather = node => {
     const out = [];

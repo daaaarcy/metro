@@ -7,7 +7,8 @@ import { GATE_PITCH, SHOP_NAMES, FLOOR_H, SLAB_T } from '../station-data.js';
 import { personFigure } from './people.js';
 
 const padMat  = new THREE.MeshStandardMaterial({ color: 0x18d8e0, emissive: 0x0aa8b0, emissiveIntensity: 1.4, roughness: 0.4 });
-const flapMat = new THREE.MeshStandardMaterial({ color: 0xd8b400, roughness: 0.55 });
+export const flapMat = new THREE.MeshStandardMaterial({ color: 0xd8b400, roughness: 0.55 });
+export const FLAP_LEN = GATE_PITCH - 0.45 - 0.06;   // paddle width = lane clear span
 const ductMat = new THREE.MeshStandardMaterial({ color: 0xaeb4ba, roughness: 0.55, metalness: 0.45 });
 const casMat  = new THREE.MeshStandardMaterial({ color: 0xe4e7ea, roughness: 0.6 });
 const ventMat = new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.8 });
@@ -57,21 +58,15 @@ export function gateBank(x0, x1, zRow, y, bx = { cx: 0, cz: 0, rot: 0 }, level =
     g.add(pad);
   }
 
-  // lanes between consecutive cabinets
-  const flapGeo = new THREE.BoxGeometry(GATE_PITCH - cabW - 0.06, 0.8, 0.06);
+  // lanes between consecutive cabinets — flap records only; the visible
+  // paddles are drawn by a per-level InstancedMesh (see initGateFlaps)
   for (let i = 0; i < cabXs.length - 1; i++) {
     const xLane = (cabXs[i] + cabXs[i + 1]) / 2;
     const clear = GATE_PITCH - cabW;             // clear opening width
     const flaps = [];
     for (const s of [-1, 1]) {
-      const geo = flapGeo.clone();
-      geo.translate(s * -((GATE_PITCH - cabW - 0.06) / 2), 0, 0); // origin at hinge
-      const flap = new THREE.Mesh(geo, flapMat);
-      const pivot = new THREE.Group();
-      pivot.position.set(xLane + s * clear / 2, y + 0.52, zRow);
-      pivot.add(flap);
-      g.add(pivot);
-      flaps.push({ pivot, dir: -s });
+      // hinge point in level-local space; dir signs the swing rotation
+      flaps.push({ x: xLane + s * clear / 2, y: y + 0.52, z: zRow, s, dir: -s });
     }
     const w = boxToWorld(bx, xLane, zRow);
     GATES.push({
