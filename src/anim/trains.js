@@ -686,13 +686,14 @@ export const ROUTES = [
   // direction) and runs back west to KET. At NOP the eastbound face
   // (P1) sits on the lower island and the westbound face (P2) on the
   // upper island — the cross-platform pair is split by direction.
-  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
+  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
     stops: [{ uid: 'KET:L2', num: 1 }, { uid: 'HKU:L2', num: 1 },
             { uid: 'SYP:L2', num: 1 },
             { uid: 'SHW:L2', num: 1 }, { uid: 'CEN:L2', num: 3 },
             { uid: 'ADM:L2', num: 3 }, { uid: 'WAC:L2', num: 1 },
             { uid: 'CAB:L2', num: 1 }, { uid: 'TIH:L2', num: 1 },
             { uid: 'FOH:L2', num: 1 }, { uid: 'NOP:L3', num: 1 },
+            { uid: 'QUB:L2', num: 1 }, { uid: 'QUB:L2', num: 2 },
             { uid: 'NOP:L2', num: 2 }, { uid: 'FOH:L3', num: 2 },
             { uid: 'TIH:L3', num: 2 }, { uid: 'CAB:L3', num: 2 },
             { uid: 'WAC:L3', num: 2 }, { uid: 'ADM:L3', num: 2 },
@@ -703,8 +704,9 @@ export const ROUTES = [
   // on the upper island (cross-platform with westbound ISL), reverse
   // off-map in the tail tunnel, then re-enter at P3 on the lower island
   // for the eastbound departure to Po Lam/LOHAS Park.
-  { line: 'TKO', travel: 75, legs: ['off', 'off'], consists: 2,
-    stops: [{ uid: 'NOP:L2', num: 4 }, { uid: 'NOP:L3', num: 3 }] },
+  { line: 'TKO', travel: 75, legs: ['off', 'tunnel', 'off', 'tunnel'], consists: 2,
+    stops: [{ uid: 'NOP:L2', num: 4 }, { uid: 'NOP:L3', num: 3 },
+            { uid: 'QUB:L3', num: 3 }, { uid: 'QUB:L3', num: 4 }] },
   // terminus reversals: each line's island has two faces — a consist
   // departs one face through its portal and re-enters berthing at the
   // other (a rider gets carried across to the opposite platform edge)

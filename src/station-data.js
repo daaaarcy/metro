@@ -13,8 +13,9 @@ import { KET } from './stations/kennedytown.js';
 import { TIH } from './stations/tinhau.js';
 import { FOH } from './stations/fortresshill.js';
 import { NOP } from './stations/northpoint.js';
+import { QUB } from './stations/quarrybay.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

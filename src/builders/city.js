@@ -539,6 +539,23 @@ const SITES = [
     parks: [],
     lamps: [[3510, 46, 3690], [3510, -58, 3690]],
   },
+  { // ---- Quarry Bay — Taikoo Place office cluster south of King's Rd,
+    //     Harbour Plaza + waterside blocks north, Mount Parker behind
+    id: 'QUB', hole: [4090, 4310, -38, 38],
+    roads: [[4095, 40, 4305, 52], [4095, -64, 4305, -52], [4194, -36, 4206, 36]],
+    towers: [
+      [4150, 62, 26, 20, 58, 'office'],   // One Taikoo Place
+      [4188, 70, 24, 18, 44, 'office'],   // Devon House-ish
+      [4230, 66, 26, 20, 52, 'office'],   // Two Taikoo Place
+      [4270, 72, 22, 16, 34, 'res'],
+      [4110, -64, 24, 18, 40, 'res'],     // Taikoo Shing west edge
+      [4150, -70, 22, 16, 34, 'res'],
+      [4250, -62, 24, 18, 30, 'res'],
+      [4290, -68, 22, 16, 36, 'res'],     // Harbour Plaza NP-ish
+    ],
+    parks: [],
+    lamps: [[4110, 46, 4290], [4110, -58, 4290]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -595,6 +612,7 @@ const NAMES = [
   ['FOH', 2810, 52, -66, '友邦廣場 AIA Tower'],
   ['NOP', 3620, 68, -88, '港匯東 Harbourfront Landmark'],
   ['NOP', 3540, 8, -128, '北角碼頭 North Point Ferry'],
+  ['QUB', 4150, 64, 62, '太古坊 Taikoo Place'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];
