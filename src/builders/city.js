@@ -504,6 +504,23 @@ const SITES = [
     parks: [[2295, -78, 2345, -100, 8]],   // Victoria Park east lawn
     lamps: [[2310, 46, 2490], [2310, -58, 2490]],
   },
+  { // ---- Fortress Hill — King's Rd corridor, AIA Tower, City Garden
+    //     blocks and the Electric Rd strip
+    id: 'FOH', hole: [2790, 3010, -38, 38],
+    roads: [[2795, 40, 3005, 52], [2795, -64, 3005, -52], [2894, -36, 2906, 36]],
+    towers: [
+      [2810, -66, 26, 20, 46, 'office'],   // AIA Tower
+      [2850, -62, 22, 16, 26, 'res'],
+      [2960, -64, 24, 18, 34, 'res'],      // City Garden blocks
+      [2995, -70, 22, 16, 30, 'res'],
+      [2800, 62, 24, 18, 28, 'res'],
+      [2845, 68, 24, 18, 34, 'res'],
+      [2940, 64, 22, 16, 26, 'res'],       // Olympia Plaza-ish
+      [2980, 70, 22, 16, 30, 'res'],
+    ],
+    parks: [],
+    lamps: [[2810, 46, 2990], [2810, -58, 2990]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -557,6 +574,7 @@ const NAMES = [
   ['CAB', 1612, 58, 60, '時代廣場 Times Square'],
   ['CAB', 1755, 28, -60, '崇光百貨 SOGO'],
   ['TIH', 2400, 26, 92, '中央圖書館 Central Library'],
+  ['FOH', 2810, 52, -66, '友邦廣場 AIA Tower'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];
