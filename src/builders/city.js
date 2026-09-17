@@ -846,6 +846,30 @@ const SITES = [
     parks: [],
     lamps: [[60, -1480, 190], [450, -1480, 600]],
   },
+  { // ---- Cheung Sha Wan — Cheung Sha Wan Rd x Tonkin/Fat Tseung, the
+    //     garment wholesale district turned loft/industrial: Un Chau
+    //     Estate slab blocks south, the wholesale food market + So Uk
+    //     west, IVE (Haking Wong) and the playground east.
+    id: 'CSW', hole: [194, 446, -1648, -1552],
+    roads: [[60, -1608, 190, -1592],           // Cheung Sha Wan Rd west
+            [450, -1608, 600, -1592],          // Cheung Sha Wan Rd east
+            [194, -1680, 446, -1650]],         // toward Lai Chi Kok Rd
+    towers: [
+      [110, -1620, 30, 24, 24, 'res'],     // Un Chau Estate slabs
+      [150, -1650, 28, 22, 22, 'res'],
+      [100, -1680, 32, 26, 26, 'res'],
+      [140, -1700, 28, 22, 24, 'res'],
+      [530, -1620, 32, 26, 30, 'office'],  // loft conversions
+      [520, -1660, 36, 30, 38, 'office'],  // Billion Plaza-ish
+      [560, -1700, 30, 24, 32, 'office'],
+      [490, -1690, 28, 22, 26, 'res'],
+      // corridor flanks continue north — x 194..446 stays clear for LCK
+      [150, -1740, 28, 22, 28, 'res'],
+      [490, -1750, 30, 24, 30, 'res'],
+    ],
+    parks: [[470, -1590, 600, -1560, 16]],     // Cheung Sha Wan Playground
+    lamps: [[60, -1600, 190], [450, -1600, 600]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -917,6 +941,9 @@ const NAMES = [
   ['SSP', 510, 34, -1455, '黃金電腦商場 Golden Computer Arcade'],
   ['SSP', 520, 44, -1510, '西九龍中心 Dragon Centre'],
   ['SSP', 300, 8, -1480, '鴨寮街 Apliu Street'],
+  ['CSW', 110, 28, -1620, '元州邨 Un Chau Estate'],
+  ['CSW', 520, 42, -1660, '億京廣場 Billion Plaza'],
+  ['CSW', 300, 8, -1600, '長沙灣道 Cheung Sha Wan Road'],
 ];
 
 export function buildCity() {
