@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GATES, PSD_BAYS, FITTINGS } from './registry.js';
+import { GATES, PSD_BAYS, FITTINGS, LIFT_DOORS } from './registry.js';
 import { psdBlocked } from './anim/trains.js';
 import { buildColliders, sweepMove } from './colliders.js';
 import { gateBlocks, nearestGate, openGate } from './anim/gates.js';
@@ -20,6 +20,9 @@ export class CameraRig {
     this.audio = null;           // injected by main for gate beeps
     this.onGateTap = null;
     this.nearGate = null;
+    this.nearLift = null;        // set by LiftSim — landing the player could call
+    this._inLift = null;         // lift car the player is riding
+    this.onLiftTap = null;
     this.trains = null;            // TrainSim — injected by main for boarding
     this._aboard = null;           // service whose car the player is inside
 
@@ -69,9 +72,11 @@ export class CameraRig {
     dom.addEventListener('pointerup', () => { this._drag = null; });
     window.addEventListener('keydown', e => {
       this.keys.add(e.code);
-      if (e.code === 'KeyE' && this.mode === 'walk' && this.nearGate) {
-        openGate(this.nearGate, this.audio);
-        this.onGateTap?.(this.nearGate);
+      if (e.code === 'KeyE' && this.mode === 'walk') {
+        if (this.nearGate) {
+          openGate(this.nearGate, this.audio);
+          this.onGateTap?.(this.nearGate);
+        } else if (this.nearLift || this._inLift) this.onLiftTap?.();
       }
     });
     window.addEventListener('keyup', e => this.keys.delete(e.code));
@@ -135,6 +140,13 @@ export class CameraRig {
       (bayList ??= []).push(b);
     }
     if (bayList) obbList = this.solidOBBs.concat(bayList);
+    // closed lift landing doors are barriers too — a doorway opens only
+    // where the car is berthed with its doors parted
+    for (const d of LIFT_DOORS) {
+      if (d.open > 0.55) continue;
+      if (d.y1 < feet + 0.25 || d.y0 > feet + h) continue;
+      gateRects.push(d);
+    }
     [px, pz] = sweepMove(this.solidAABBs, obbList, gateRects, ox, oz, px, pz, feet, h, RADIUS);
     for (let iter = 0; iter < 3; iter++) {
       for (const s of this.solidAABBs) {

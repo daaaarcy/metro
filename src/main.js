@@ -8,6 +8,7 @@ import { EscalatorSteps } from './anim/escalators.js';
 import { TrainSim } from './anim/trains.js';
 import { Passengers } from './anim/passengers.js';
 import { updateGates, gateBlocks } from './anim/gates.js';
+import { LiftSim } from './anim/lifts.js';
 import { StationAudio } from './audio.js';
 import { buildColliders } from './colliders.js';
 import { Weather } from './weather.js';
@@ -56,7 +57,7 @@ const interiorFill = new THREE.HemisphereLight(0xd7e3ee, 0x3f3a35, 0.55);
 scene.add(interiorFill);
 
 // ---------- station ----------
-const { root, levelGroups, togglables, labels } = buildStation();
+const { root, levelGroups, togglables, labels, liftDefs } = buildStation();
 scene.add(root);
 root.updateMatrixWorld(true);
 // one collision world shared by the player rig and the pedestrians
@@ -65,16 +66,17 @@ const colliders = buildColliders();
 // colliders are already snapshotted; instanced/dynamic meshes are untouched
 mergeStation(scene, root, levelGroups, togglables);
 
-// ground context — a big dark disc spanning all three stations with a
+// ground context — a big dark disc spanning all five stations with a
 // rectangular excavation hole over each station footprint, so orbit views
 // show the underground stacks instead of an opaque lid. Shape XY maps to
 // world X,-Z after the -90° X rotation.
 const groundShape = new THREE.Shape();
-groundShape.absarc(-500, 0, 1650, 0, Math.PI * 2);
+groundShape.absarc(-200, 0, 2100, 0, Math.PI * 2);
 for (const [x0, x1, z0, z1] of [[-105, 105, -49, 41],       // Admiralty
                                 [-1150, -950, -57, 57],     // Central
                                 [-1615, -1345, -67, 67],    // Hong Kong
-                                [785, 975, -33, 33]]) {     // Wan Chai
+                                [785, 975, -33, 33],        // Wan Chai
+                                [1578, 1822, -33, 33]]) {   // Causeway Bay
   const dig = new THREE.Path();
   dig.moveTo(x0, -z1); dig.lineTo(x1, -z1);
   dig.lineTo(x1, -z0); dig.lineTo(x0, -z0); dig.closePath();
@@ -93,6 +95,7 @@ scene.add(ground);
 const escSteps = new EscalatorSteps();
 scene.add(escSteps.mesh, escSteps.stripMesh);
 const trainSim = new TrainSim(scene);
+const liftSim = new LiftSim(scene, liftDefs, colliders.floors);
 const passengers = new Passengers(scene, computeOpenings(), colliders);
 const audio = new StationAudio();
 // live Hong Kong weather drives the above-ground sky, light and rain
@@ -255,7 +258,9 @@ const rig = new CameraRig(camera, renderer.domElement);
 rig.trains = trainSim;              // lets the player board dwelling trains
 rig.audio = audio;
 rig.initColliders(colliders);
+rig.onLiftTap = () => liftSim.interact(rig);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
+window.__lifts = liftSim;
 window.__escRuns = ESC_RUNS; window.__weather = weather; window.__renderer = renderer;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
@@ -412,6 +417,7 @@ function tick() {
   simNow += sdt * 1000;
   escT += sdt;
 
+  liftSim.update(sdt, rig);   // before rig.update — door barriers + carry feed collision
   rig.update(dt);
   updatePick(dt);
   updateLabels();
@@ -439,10 +445,17 @@ function tick() {
   if (peopleOn) passengers.update(sdt, escT, trainSim, audio);
   updateGates(sdt);
 
-  // gate / boarding prompt + ticker + clock refresh
+  // gate / lift / boarding prompt + ticker + clock refresh
   if (rig.mode === 'walk') {
     if (rig._aboard) {
       showPrompt('<span class="zh">乘搭中 — 下一站開門落車</span><span class="en">On board — doors open at the next stop</span>');
+    } else if (liftSim.inCar) {
+      showPrompt('<span class="zh">按 <b>E</b> 往下一層 · 或行出升降機</span><span class="en">Press <b>E</b> for the next floor — or step out</span>');
+    } else if (rig.nearLift) {
+      const here = rig.nearLift.car.state === 'dwell' && rig.nearLift.car.idx === rig.nearLift.idx;
+      showPrompt(here
+        ? '<span class="zh">升降機門開 — 入內按 <b>E</b> 揀層</span><span class="en">Lift doors open — step in, <b>E</b> for the next floor</span>'
+        : '<span class="zh">召喚升降機 · 按 <b>E</b></span><span class="en">Call lift — press <b>E</b></span>');
     } else {
       showPrompt(rig.nearGate && gateBlocks(rig.nearGate)
         ? '<span class="zh">拍卡進站 · 按 <b>E</b></span><span class="en">Tap Octopus card — press <b>E</b></span>' : null);

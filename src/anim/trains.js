@@ -680,12 +680,13 @@ export const ROUTES = [
   { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'off'], consists: 1, startIdx: 1,
     stops: [{ uid: 'ADM:L2', num: 4 }, { uid: 'CEN:L3', num: 2, dwell: 55 }, { uid: 'ADM:L3', num: 1 }] },
   // Island Line through service: Kennedy Town direction loops CEN L4->L2
-  // off-map, then runs east through Admiralty and Wan Chai; the consist
-  // reverses off-map at Wan Chai's east portal (Chai Wan direction) and
-  // comes back west through ADM L3 to Central L4.
-  { line: 'ISL', travel: 80, legs: ['off', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel'], consists: 3,
+  // off-map, then runs east through Admiralty, Wan Chai and Causeway Bay;
+  // the consist reverses off-map at Causeway Bay's east portal (Chai Wan
+  // direction) and comes back west through WAC/ADM L3 to Central L4.
+  { line: 'ISL', travel: 80, legs: ['off', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel'], consists: 4,
     stops: [{ uid: 'CEN:L4', num: 4 }, { uid: 'CEN:L2', num: 3 },
             { uid: 'ADM:L2', num: 3 }, { uid: 'WAC:L2', num: 1 },
+            { uid: 'CAB:L2', num: 1 }, { uid: 'CAB:L3', num: 2 },
             { uid: 'WAC:L3', num: 2 }, { uid: 'ADM:L3', num: 2 }] },
   // terminus reversals: each line's island has two faces — a consist
   // departs one face through its portal and re-enters berthing at the

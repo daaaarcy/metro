@@ -5,8 +5,9 @@ import { ADM } from './stations/admiralty.js';
 import { CEN } from './stations/central.js';
 import { HOK } from './stations/hongkong.js';
 import { WAC } from './stations/wanchai.js';
+import { CAB } from './stations/causewaybay.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

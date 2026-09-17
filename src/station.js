@@ -59,9 +59,12 @@ export function computeOpenings() {
   }
   for (const l of LIFTS) {
     const p = liftWorldRect(l);
+    // kerb-free edge on the door face — the landing doors seal it instead
+    const doorSide = (l.door ?? -(Math.sign(l.z) || 1)) > 0 ? 'z1' : 'z0';
     const wr = {
       x0: p.x - LIFT_SIZE.w / 2 - 0.2, x1: p.x + LIFT_SIZE.w / 2 + 0.2,
       z0: p.z - LIFT_SIZE.d / 2 - 0.2, z1: p.z + LIFT_SIZE.d / 2 + 0.2,
+      sides: ['x0', 'x1', 'z0', 'z1'].filter(s => s !== doorSide),
     };
     l.levels.slice(0, -1).forEach(id => add(id, wr));       // pierced floor slabs
     l.levels.slice(1).forEach(id => add(id + ':ceil', wr)); // pierced ceilings
@@ -222,9 +225,9 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
   if (stn.seven) g.add(sevenEleven(stn.seven.x, stn.seven.side * (Math.abs(rect.z1) - 3.4), 0, -stn.seven.side));
   // kiosk / booth / toilet positions dodge the exit stair shafts that
   // descend into the concourse (shaft x = exit.x ±1.7, z = ±exitZ∓6.3)
-  const kioskXs = stn.id === 'ADM' ? [-52, -14, 33, 48] : [-40, -5, 35];
+  const kioskXs = stn.kioskXs ?? (stn.id === 'ADM' ? [-52, -14, 33, 48] : [-40, -5, 35]);
   for (const [i, x] of kioskXs.entries()) g.add(kiosk(x, -(gateZ + 3.8), 0, i + 2));
-  for (const [i, x] of (stn.id === 'ADM' ? [-60, -20, 25, 62] : [-50, 15, 58]).entries()) g.add(kiosk(x, gateZ + 3.8, 0, i + 5));
+  for (const [i, x] of (stn.kioskXsS ?? (stn.id === 'ADM' ? [-60, -20, 25, 62] : [-50, 15, 58])).entries()) g.add(kiosk(x, gateZ + 3.8, 0, i + 5));
   g.add(serviceBooth(0, gateZ + 3.6, 0));
   g.add(serviceBooth(-36, -(gateZ + 3.6), 0));
   g.add(hangingSign({ zh: '客務中心', en: 'Customer Service', w: 5.5, h: 1.2 }, 0, 3.0, gateZ + 3.6));
@@ -238,13 +241,25 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
   g.add(mapBoard(rect.x0 + 0.7, 8, 0, Math.PI / 2));
   for (const s of [-1, 1]) {
     g.add(fireCabinets(rect.x0, rect.x1, s * (Math.abs(rect.z1) - 0.68), 0, 60));
-    for (const bx2 of [-56, -4, 56]) g.add(binPair(bx2, s * (gateZ + 2.4), 0));
+    // bins dodge that side's exit stair shafts too (they descend into the band)
+    const shaftXs = exitsHere.filter(e => e.side === s).map(e => e.x);
+    for (const bx2 of [-56, -4, 56]) {
+      if (shaftXs.some(x => Math.abs(x - bx2) < 3.4)) continue;
+      g.add(binPair(bx2, s * (gateZ + 2.4), 0));
+    }
   }
   // keep columns out of the exit stair shafts (they land inside the concourse)
+  // and out of lift shafts that stand on this floor without piercing it
   const exitHoles = exitsHere.map(ex => {
     const cz = ex.side * ex.exitZ, half = ESC.runLen / 2;
     return { x0: ex.x - 2.2, x1: ex.x + 2.2, z0: cz - half - 0.6, z1: cz + half + 0.6 };
-  });
+  }).concat(liftsHere.map(l => {
+    const p = liftWorldRect(l);
+    return worldRectToLocal(bx, {
+      x0: p.x - LIFT_SIZE.w / 2 - 0.4, x1: p.x + LIFT_SIZE.w / 2 + 0.4,
+      z0: p.z - LIFT_SIZE.d / 2 - 0.4, z1: p.z + LIFT_SIZE.d / 2 + 0.4,
+    });
+  }));
   // station-colour columns + a mosaic fascia band along both long walls —
   // the way real MTR concourses carry the station livery without tiling
   // every surface
@@ -379,6 +394,7 @@ export function buildStation() {
   const levelGroups = {};   // level uid -> group (visibility toggling)
   const togglables = {};    // level uid -> extra world-space objects
   const labels = [];
+  const liftDefs = [];      // world-space lift shafts -> anim/lifts.js cars
 
   for (const lvl of LEVELS) {
     togglables[lvl.uid] = [];
@@ -494,10 +510,14 @@ export function buildStation() {
   }
   for (const l of LIFTS) {
     const p = liftWorldRect(l);
-    const ys = l.levels.map(id => levelById(id).y);
-    const shaft = liftShaft(p.x, p.z, Math.max(...ys), Math.min(...ys));
+    const levels = l.levels.map(id => ({ uid: id, y: levelById(id).y }));
+    // doorway faces the box centre unless the entry says otherwise
+    const door = l.door ?? -(Math.sign(l.z) || 1);
+    const ys = levels.map(l2 => l2.y);
+    const shaft = liftShaft(p.x, p.z, Math.max(...ys), Math.min(...ys), door, ys);
     root.add(shaft);
     togglables[l.levels[0]].push(shaft);
+    liftDefs.push({ x: p.x, z: p.z, door, levels });
   }
 
   // ---- Central <-> HK Station travellator subway (tagged to CEN:L1)
@@ -534,5 +554,5 @@ export function buildStation() {
     }
   }
 
-  return { root, levelGroups, togglables, labels };
+  return { root, levelGroups, togglables, labels, liftDefs };
 }

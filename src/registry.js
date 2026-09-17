@@ -20,6 +20,10 @@ export const GATES = [];
 // {level, ds, rect:{x0,z0,x1,z1,y0,y1}}
 export const PSD_BAYS = [];
 
+// lift landing doors (world space): dynamic barriers — solid while the car
+// isn't berthed open at that level. {x0,z0,x1,z1,y0,y1,open}
+export const LIFT_DOORS = [];
+
 // per-level animated fittings populated by builders:
 // { [levelId]: { doorSets:[{doors,xs,y,z,face,track,level,terminus}] } }
 export const FITTINGS = {};

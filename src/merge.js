@@ -53,7 +53,7 @@ export function mergeStation(scene, root, levelGroups, togglables) {
   const gather = node => {
     const out = [];
     (function walk(o) {
-      if (skip.has(o)) return;
+      if (skip.has(o) || o.userData?.mergeSkip) return;
       // leaf meshes only — merging a mesh that has children could strand
       // them when the parent is removed
       if (o.isMesh && !o.isInstancedMesh && !Array.isArray(o.material) && o.children.length === 0) out.push(o);

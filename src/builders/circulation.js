@@ -50,6 +50,7 @@ export function escalatorRun(run) {
     const barrier = box(L + 0.9, D + 1.5, 0.06, M.balGlass);
     barrier.position.set(L / 2, (0.6 - D) / 2, s * (w / 2 + 0.05));
     barrier.visible = false;
+    barrier.userData.mergeSkip = true;   // collider-only — merging would render it
     g.add(bal, rail, solid(barrier));
 
     // skirt light along the balustrade base — real escalators glow here;
@@ -120,6 +121,7 @@ export function stairRun(run) {
     const barrier = box(L + 0.9, D + 1.5, 0.06, M.balGlass);
     barrier.position.set(L / 2, (0.6 - D) / 2, s * (w / 2 + 0.05));
     barrier.visible = false;
+    barrier.userData.mergeSkip = true;   // collider-only — merging would render it
     g.add(bal, rail, solid(barrier));
   }
 
@@ -244,22 +246,61 @@ export function exitDoor(exit, yG, fromUid) {
   return { group: g, run, doorW };
 }
 
-// Glazed lift shaft through several levels.
-export function liftShaft(wx, wz, yTop, yBot) {
+// Glazed lift shaft through several levels. `door` (±1) picks the z face the
+// landings open onto — that face gets a doorway gap at each served level's
+// floor height; the moving car + landing doors are built by anim/lifts.js.
+export function liftShaft(wx, wz, yTop, yBot, door = -1, levelYs = []) {
   const g = new THREE.Group();
   const h = yTop - yBot + FLOOR_H - 1;
-  const cy = (yTop + FLOOR_H - 1 + yBot) / 2;
-  const glass = box(LIFT_SIZE.w, h, LIFT_SIZE.d, M.glass);
-  glass.position.set(wx, cy, wz);
-  g.add(solid(glass));
+  const cy = (yTop + FLOOR_H - 1 + yBot) / 2, yCap = yTop + FLOOR_H - 1;
+  const W = LIFT_SIZE.w, D = LIFT_SIZE.d;
+  // three glazed sides — the door face is built separately
+  for (const [ox, oz, w, d] of [
+    [0, -door * D / 2, W, 0.1],
+    [-W / 2, 0, 0.1, D],
+    [W / 2, 0, 0.1, D],
+  ]) {
+    const p = box(w, h, d, M.glass);
+    p.position.set(wx + ox, cy, wz + oz);
+    g.add(solid(p));
+  }
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
     const post = box(0.18, h, 0.18, M.steel);
-    post.position.set(wx + sx * LIFT_SIZE.w / 2, cy, wz + sz * LIFT_SIZE.d / 2);
+    post.position.set(wx + sx * W / 2, cy, wz + sz * D / 2);
     g.add(solid(post));
   }
-  const car = box(LIFT_SIZE.w - 0.5, 2.4, LIFT_SIZE.d - 0.5, M.glassDark);
-  car.position.set(wx, yBot + 1.4, wz);
-  g.add(car);
+  // door face: full-height jambs flanking the 1.9 m doorway, glass bands
+  // filling the wall between the landings' door gaps
+  const fz = wz + door * D / 2, DW = 1.9;
+  for (const s of [-1, 1]) {
+    const jw = (W - DW) / 2;
+    const jamb = box(jw, h, 0.1, M.glass);
+    jamb.position.set(wx + s * (DW / 2 + jw / 2), cy, fz);
+    g.add(solid(jamb));
+  }
+  let cur = yBot;
+  for (const ly of [...levelYs].sort((a, b) => a - b)) {
+    if (ly - cur > 0.05) {
+      const p = box(DW, ly - cur, 0.1, M.glass);
+      p.position.set(wx, (cur + ly) / 2, fz);
+      g.add(solid(p));
+    }
+    cur = Math.max(cur, ly + 2.3);
+  }
+  if (yCap - cur > 0.05) {
+    const p = box(DW, yCap - cur, 0.1, M.glass);
+    p.position.set(wx, (cur + yCap) / 2, fz);
+    g.add(solid(p));
+  }
+  // canopy slab on top + a lit doorway header at each landing
+  const cap = box(W + 0.3, 0.3, D + 0.3, M.signPost);
+  cap.position.set(wx, yCap + 0.15, wz);
+  g.add(cap);
+  for (const ly of levelYs) {
+    const head = box(DW + 0.4, 0.35, 0.14, M.signPost);
+    head.position.set(wx, ly + 2.45, fz);
+    g.add(head);
+  }
   return g;
 }
 
