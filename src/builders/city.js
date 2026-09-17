@@ -936,14 +936,14 @@ const SITES = [
       [110, -2010, 26, 20, 24, 'res'],
       [100, -1960, 26, 20, 22, 'res'],
     ],
-    parks: [[140, -2160, 470, -2140, 18]],    // Lai King Hill slope (crest continues behind Kwai Fong)
+    parks: [[40, -2280, 92, -2140, 18]],     // Lai King Hill slope — west strip behind the estates
     lamps: [[140, -2025, 500, 30], [200, -1900, 470, 30]],
   },
   { // ---- Kwai Fong — elevated station over the grade concourse; Metroplaza
     //     tower east, Kwai Fong Estate + Gardens west, theatre/plaza south.
     id: 'KWF', hole: [192, 448, -2136, -2024],
     roads: [[200, -2022, 470, -2012],         // Kwai Fong Rd between the digs
-            [470, -2160, 492, -2020]],        // Kwai Chung Rd east flank
+            [470, -2300, 492, -2020]],        // Kwai Chung Rd east flank (runs under the viaduct)
     towers: [
       [490, -2090, 34, 30, 64, 'com'],        // Metroplaza office tower
       [462, -2090, 20, 28, 14, 'com'],        // Metroplaza mall podium
@@ -958,6 +958,27 @@ const SITES = [
     ],
     parks: [[460, -2000, 540, -1960, 10]],    // Hibiscus Park
     lamps: [[200, -2017, 470, 30]],
+  },
+  { // ---- Kwai Hing — Kwai Fong's twin: elevated side platforms over the
+    //     grade concourse; KCC tower + industrial blocks east across Kwai
+    //     Chung Rd, Kwai Hing Estate west at the hill foot.
+    id: 'KWH', hole: [200, 440, -2248, -2152],
+    roads: [[200, -2150, 470, -2140]],        // Kwai Hing Rd between the digs
+    towers: [
+      [510, -2230, 36, 30, 52, 'com'],        // Kowloon Commerce Centre (exit E footbridge)
+      [480, -2180, 26, 20, 18, 'com'],        // Kwai Hing Government Offices
+      [560, -2200, 30, 22, 30, 'com'],        // Kwai Chung industrial blocks
+      [560, -2260, 30, 22, 26, 'com'],
+      // Kwai Hing Estate / Sun Kwai Hing Gardens — west of the dig
+      [120, -2220, 30, 20, 26, 'res'], [160, -2220, 30, 20, 24, 'res'],
+      [120, -2260, 30, 20, 28, 'res'], [160, -2260, 30, 20, 22, 'res'],
+      [130, -2190, 28, 20, 22, 'res'], [170, -2190, 28, 20, 24, 'res'],
+      // Kwai Hong Court — south-west of the dig (exit C side)
+      [180, -2170, 26, 20, 24, 'res'],
+      // estate infill continuing north toward Tai Wo Hau
+      [150, -2310, 28, 20, 26, 'res'], [110, -2310, 26, 20, 22, 'res'],
+    ],
+    lamps: [[200, -2145, 470, 30]],
   },
 ];
 
@@ -1044,11 +1065,15 @@ const NAMES = [
   ['LAK', 520, 40, -1995, '荔景邨 Lai King Estate'],
   ['LAK', 140, 34, -2030, '賢麗苑 Yin Lai Court'],
   ['LAK', 60, 12, -1920, '葵青貨櫃碼頭 Kwai Chung Container Terminals'],
-  ['LAK', 300, 26, -2150, '荔景山 Lai King Hill'],
+  ['LAK', 66, 26, -2200, '荔景山 Lai King Hill'],
   ['KWF', 492, 70, -2090, '新都會廣場 Metroplaza'],
   ['KWF', 130, 36, -2140, '葵芳邨 Kwai Fong Estate'],
   ['KWF', 500, 30, -2030, '葵涌廣場 Kwai Chung Plaza'],
   ['KWF', 290, 8, -2017, '葵芳道 Kwai Fong Road'],
+  ['KWH', 512, 58, -2230, '九龍貿易中心 Kowloon Commerce Centre'],
+  ['KWH', 140, 34, -2250, '葵興邨 Kwai Hing Estate'],
+  ['KWH', 140, 28, -2190, '新葵興花園 Sun Kwai Hing Gardens'],
+  ['KWH', 330, 8, -2145, '葵興路 Kwai Hing Road'],
 ];
 
 export function buildCity() {

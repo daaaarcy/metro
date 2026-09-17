@@ -6,8 +6,8 @@
 // come back down through the concourse to change direction. Exits A–D are
 // street doors in the ground concourse; E is the footbridge off P1's north
 // edge to Metroplaza (deck + stair stub built in builders/link.js).
-// Temporary TWL north end: P1 berths arrivals, wraps off-map and re-enters
-// P2 to head back south. Livery: dark emerald green.
+// Through station on the TWL corridor now Kwai Hing is live.
+// Livery: dark emerald green.
 // Exits (5): A Kwai Fong Estate, B New Kwai Fong Gardens, C Kwai Tsing
 // Theatre, D Kwai Chung Plaza, E Metroplaza footbridge.
 
@@ -29,10 +29,10 @@ export const KWF = {
 
   // Opposed side platforms flanking the track pair — P1 northbound to
   // Tsuen Wan (via Kwai Hing), P2 southbound to Central (via Lai King).
-  // Temporary terminus: P1 berths arrivals, wraps off-map to P2.
+  // Through station now KWH is live.
   platforms: {
     U1: {
-      kind: 'side', terminus: true,
+      kind: 'side',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
         { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },

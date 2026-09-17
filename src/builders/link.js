@@ -195,16 +195,18 @@ export function mefSubway() {
   return g;
 }
 
-// ---------------------------------------------------------------- Kwai Fong
-// Exit E: the covered footbridge off P1's north edge to Metroplaza. A deck
-// at platform height (y 8) mouths through the U1 box's north wall door,
-// runs 18 m north over the apron, then a stair drops to street level. The
-// real bridge lands inside the mall; here it ends on the apron north band.
+// ------------------------------------------------- Kwai Fong / Kwai Hing
+// Exit E at each elevated station: the covered footbridge off P1's north
+// edge (KWF -> Metroplaza, KWH -> Kowloon Commerce Centre). A deck at
+// platform height (y 8) mouths through the U1 box's north wall door, runs
+// north over the apron, then a stair drops to street level. The real
+// bridges land inside the malls; here they end on the apron north band.
 export const KWF_LINK = { x: 414, zWall: -2092, zEnd: -2110, zLand: -2124 };
+export const KWH_LINK = { x: 414, zWall: -2212, zEnd: -2230, zLand: -2244 };
 
-export function kwfFootbridge() {
+function deckFootbridge(link, signZh, signEn, stnId) {
   const g = new THREE.Group();
-  const { x, zWall, zEnd, zLand } = KWF_LINK;
+  const { x, zWall, zEnd, zLand } = link;
   const Y = 8, W = 4;
 
   // deck — walkable slab at platform height
@@ -228,10 +230,15 @@ export function kwfFootbridge() {
   // stair down to the apron — north end of the deck to street
   const run = { x1: x, z1: zEnd, y1: Y, x2: x, z2: zLand, y2: 0, w: W - 0.8 };
   g.add(stairRun(run));
-  registerStair(run, 'KWF:U1', 'KWF:G');
+  registerStair(run, `${stnId}:U1`, `${stnId}:G`);
 
-  const s = hangingSign({ zh: '新都會廣場 Metroplaza', en: 'Footbridge to Metroplaza', w: 7, h: 1.3 },
+  const s = hangingSign({ zh: signZh, en: `Footbridge to ${signEn}`, w: 7, h: 1.3 },
     x, Y - 0.6, zWall - 2, 0);
   g.add(s);
   return g;
 }
+
+export const kwfFootbridge = () =>
+  deckFootbridge(KWF_LINK, '新都會廣場 Metroplaza', 'Metroplaza', 'KWF');
+export const kwhFootbridge = () =>
+  deckFootbridge(KWH_LINK, '九龍貿易中心 Kowloon Commerce Centre', 'Kowloon Commerce Centre', 'KWH');

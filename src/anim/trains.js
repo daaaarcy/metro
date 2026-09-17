@@ -701,16 +701,17 @@ export const ROUTES = [
   // harbour-side crossover box). The crossing legs dive under the sea:
   // the path machinery routes them through each destination's arrival
   // portal so the consist glides in aligned with the platform axis.
-  // Kwai Fong is the temporary north end — the TWL climbs out of the
-  // Lai King hillside box onto the viaduct, berths P1, wraps off-map
-  // and re-enters P2 (the opposite side platform) to head back south.
-  // MOK/PRE
+  // Kwai Hing is the temporary north end — the TWL climbs out of the
+  // Lai King hillside box onto the viaduct and stays elevated through
+  // Kwai Fong, berths KWH P1, wraps off-map and re-enters P2 (the
+  // opposite side platform) to head back south. MOK/PRE
   // interleave TWL/KTL crosswise: MOK pairs by direction (north
   // upstairs), PRE mirrors it (the KTL dives between the levels in the
   // tunnel between them). MEF/LAK split crosswise too — TWL pairs with
   // the (unbuilt) TCL faces on the stacked islands.
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
-    stops: [{ uid: 'KWF:U1', num: 2 },
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
+    stops: [{ uid: 'KWH:U1', num: 2 },
+            { uid: 'KWF:U1', num: 2 },
             { uid: 'LAK:L5', num: 2 },
             { uid: 'MEF:L3', num: 4 },
             { uid: 'LCK:L2', num: 2 },
@@ -735,7 +736,8 @@ export const ROUTES = [
             { uid: 'LCK:L2', num: 1 },
             { uid: 'MEF:L3', num: 3 },
             { uid: 'LAK:L3', num: 1 },
-            { uid: 'KWF:U1', num: 1, dwell: 55 }] },
+            { uid: 'KWF:U1', num: 1 },
+            { uid: 'KWH:U1', num: 1, dwell: 55 }] },
   // Kwun Tong Line — Yau Ma Tei ↔ Mong Kok ↔ Prince Edward. Both ends
   // are termini for now: PRE reverses between its L3 northbound face
   // (P3) and L2 southbound face (P2); YMT reverses between its L3

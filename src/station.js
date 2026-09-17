@@ -15,7 +15,7 @@ import { makeSign, hangingSign, platformSign, exitTotem } from './builders/signa
 import { gateBank, serviceBooth, shops, toilets, kiosk, hvac, restaurant, mallEntrance, sevenEleven } from './builders/props.js';
 import { calligraphy, posters, postersEnd, binPair, fireCabinets, mapBoard } from './builders/decor.js';
 import { tunnelTube, trackExtension } from './builders/tracks.js';
-import { linkCorridor, LINK, mefSubway, kwfFootbridge } from './builders/link.js';
+import { linkCorridor, LINK, mefSubway, kwfFootbridge, kwhFootbridge } from './builders/link.js';
 import { FITTINGS, solid, STAIR_RUNS } from './registry.js';
 
 const INTERIOR_H = FLOOR_H - SLAB_T - 0.5;
@@ -635,10 +635,12 @@ export function buildStation() {
   root.add(mefLink);
   togglables['MEF:L1'].push(mefLink);
 
-  // ---- Kwai Fong exit E footbridge (tagged to KWF:U1 — rides with the deck)
-  const kwfLink = kwfFootbridge();
-  root.add(kwfLink);
-  togglables['KWF:U1'].push(kwfLink);
+  // ---- Kwai Fong / Kwai Hing exit E footbridges (tagged to U1 — ride with the deck)
+  for (const [stn, fn] of [['KWF', kwfFootbridge], ['KWH', kwhFootbridge]]) {
+    const fb = fn();
+    root.add(fb);
+    togglables[`${stn}:U1`].push(fb);
+  }
 
   // ---- ground context: a road strip along each station's ground slab
   for (const lvl of LEVELS.filter(l => l.type === 'ground' || l.type === 'checkin')) {
