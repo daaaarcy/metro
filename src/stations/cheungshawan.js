@@ -28,12 +28,11 @@ export const CSW = {
     { id: 'L2', y: -14, box: 'cswPlat', zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platform', type: 'platform' },
   ],
 
-  // Island platform. Temporary TWL north end — P1 berths the arrival
-  // (dir +1, east portal) and the consist wraps off-map to P2 for the
-  // run back south (dir -1, west portal).
+  // Island platform — through station now that Lai Chi Kok is built:
+  // P1 northbound to Tsuen Wan, P2 southbound to Central.
   platforms: {
     L2: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
         { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },

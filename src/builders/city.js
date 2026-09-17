@@ -870,6 +870,30 @@ const SITES = [
     parks: [[470, -1590, 600, -1560, 16]],     // Cheung Sha Wan Playground
     lamps: [[60, -1600, 190], [450, -1600, 600]],
   },
+  { // ---- Lai Chi Kok — Cheung Sha Wan Rd x Tai Nam West/Tung Chau
+    //     West, the showroom quarter: Cheung Sha Wan Plaza east, D2
+    //     Place loft malls south, Liberte/Hoi Lai slabs west, the
+    //     sports ground across the road.
+    id: 'LCK', hole: [194, 446, -1768, -1672],
+    roads: [[60, -1728, 190, -1712],           // Cheung Sha Wan Rd west
+            [450, -1728, 600, -1712],          // Cheung Sha Wan Rd east
+            [194, -1800, 446, -1770]],         // toward Lai Chi Kok Rd
+    towers: [
+      [110, -1795, 30, 24, 24, 'res'],     // Liberte slabs
+      [150, -1790, 28, 22, 22, 'res'],
+      [100, -1830, 32, 26, 26, 'res'],     // Hoi Lai Estate side
+      [140, -1850, 28, 22, 24, 'res'],
+      [530, -1740, 36, 26, 30, 'mall'],    // D2 Place ONE/TWO
+      [520, -1780, 32, 26, 26, 'office'],
+      [560, -1810, 30, 24, 34, 'res'],
+      [490, -1800, 28, 22, 26, 'res'],
+      // corridor flanks continue north — x 194..446 stays clear for MEF
+      [150, -1860, 28, 22, 28, 'res'],
+      [490, -1870, 30, 24, 30, 'res'],
+    ],
+    parks: [[60, -1760, 180, -1720, 20]],      // Sham Shui Po Sports Ground
+    lamps: [[60, -1720, 190], [450, -1720, 600]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -944,6 +968,9 @@ const NAMES = [
   ['CSW', 110, 28, -1620, '元州邨 Un Chau Estate'],
   ['CSW', 520, 42, -1660, '億京廣場 Billion Plaza'],
   ['CSW', 300, 8, -1600, '長沙灣道 Cheung Sha Wan Road'],
+  ['LCK', 110, 26, -1795, '昇悅居 Liberte'],
+  ['LCK', 530, 34, -1740, 'D2 Place'],
+  ['LCK', 120, 10, -1740, '深水埗運動場 SSP Sports Ground'],
 ];
 
 export function buildCity() {
