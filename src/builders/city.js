@@ -879,20 +879,43 @@ const SITES = [
             [450, -1728, 600, -1712],          // Cheung Sha Wan Rd east
             [194, -1800, 446, -1770]],         // toward Lai Chi Kok Rd
     towers: [
-      [110, -1795, 30, 24, 24, 'res'],     // Liberte slabs
-      [150, -1790, 28, 22, 22, 'res'],
-      [100, -1830, 32, 26, 26, 'res'],     // Hoi Lai Estate side
-      [140, -1850, 28, 22, 24, 'res'],
+      [150, -1790, 28, 22, 22, 'res'],     // Liberte slab (north edge)
+      [120, -1782, 28, 22, 24, 'res'],     // Liberte slab (park frontage)
       [530, -1740, 36, 26, 30, 'mall'],    // D2 Place ONE/TWO
       [520, -1780, 32, 26, 26, 'office'],
       [560, -1810, 30, 24, 34, 'res'],
       [490, -1800, 28, 22, 26, 'res'],
-      // corridor flanks continue north — x 194..446 stays clear for MEF
-      [150, -1860, 28, 22, 28, 'res'],
+      // corridor flank continues north — x 194..446 stays clear for MEF
       [490, -1870, 30, 24, 30, 'res'],
     ],
     parks: [[60, -1760, 180, -1720, 20]],      // Sham Shui Po Sports Ground
     lamps: [[60, -1720, 190], [450, -1720, 600]],
+  },
+  { // ---- Mei Foo — the two-part interchange: TWL dig under the estate
+    //     plaza east, covered Tuen Ma shed by the park west, linked by
+    //     the L1 subway. Mei Foo Sun Chuen slabs grid the south-west;
+    //     Lai Chi Kok Park rolls across the whole north side.
+    id: 'MEF', hole: [-70, 460, -1890, -1792],
+    roads: [[-120, -1896, 460, -1880],        // Lai King Hill Rd along the park
+            [-60, -1790, 440, -1776],         // estate road, south edge
+            [460, -1848, 600, -1832]],        // Cheung Sha Wan Rd east
+    towers: [
+      // Mei Foo Sun Chuen — the estate slab grid west of the dig
+      [-60, -1760, 34, 20, 30, 'res'], [-10, -1760, 34, 20, 30, 'res'],
+      [40, -1760, 34, 20, 30, 'res'],
+      [-60, -1715, 34, 20, 30, 'res'], [-10, -1715, 34, 20, 30, 'res'],
+      [40, -1715, 34, 20, 30, 'res'],
+      [-60, -1670, 34, 20, 30, 'res'], [-10, -1670, 34, 20, 30, 'res'],
+      [40, -1670, 34, 20, 30, 'res'],
+      [230, -1764, 36, 20, 16, 'mall'],   // Mount Sterling Mall podium
+      [300, -1764, 36, 20, 16, 'mall'],   // Broadway shops podium
+      [480, -1760, 30, 24, 28, 'res'],    // estate blocks east
+      [520, -1810, 32, 26, 30, 'res'],
+      [-120, -1810, 26, 20, 24, 'res'],   // Ching Lai Court by the shed
+      [-160, -1845, 26, 20, 24, 'res'],
+    ],
+    parks: [[-120, -2060, 460, -1895, 24]],   // Lai Chi Kok Park
+    lamps: [[-60, -1783, 440], [-120, -1888, 460]],
   },
 ];
 
@@ -968,9 +991,14 @@ const NAMES = [
   ['CSW', 110, 28, -1620, '元州邨 Un Chau Estate'],
   ['CSW', 520, 42, -1660, '億京廣場 Billion Plaza'],
   ['CSW', 300, 8, -1600, '長沙灣道 Cheung Sha Wan Road'],
-  ['LCK', 110, 26, -1795, '昇悅居 Liberte'],
+  ['LCK', 140, 26, -1784, '昇悅居 Liberte'],
   ['LCK', 530, 34, -1740, 'D2 Place'],
   ['LCK', 120, 10, -1740, '深水埗運動場 SSP Sports Ground'],
+  ['MEF', 170, 10, -1975, '荔枝角公園 Lai Chi Kok Park'],
+  ['MEF', -10, 36, -1740, '美孚新邨 Mei Foo Sun Chuen'],
+  ['MEF', 265, 20, -1762, '美孚廣場 Mount Sterling Mall'],
+  ['MEF', -140, 30, -1828, '清麗苑 Ching Lai Court'],
+  ['MEF', 270, 8, -1890, '荔景山路 Lai King Hill Road'],
 ];
 
 export function buildCity() {

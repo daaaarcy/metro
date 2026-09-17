@@ -15,7 +15,7 @@ import { makeSign, hangingSign, platformSign, exitTotem } from './builders/signa
 import { gateBank, serviceBooth, shops, toilets, kiosk, hvac, restaurant, mallEntrance, sevenEleven } from './builders/props.js';
 import { calligraphy, posters, postersEnd, binPair, fireCabinets, mapBoard } from './builders/decor.js';
 import { tunnelTube, trackExtension } from './builders/tracks.js';
-import { linkCorridor, LINK } from './builders/link.js';
+import { linkCorridor, LINK, mefSubway } from './builders/link.js';
 import { FITTINGS, solid, STAIR_RUNS } from './registry.js';
 
 const INTERIOR_H = FLOOR_H - SLAB_T - 0.5;
@@ -57,10 +57,10 @@ export function computeOpenings() {
     const gLvl = lvlOf(ex.stn, 'ground') || lvlOf(ex.stn, 'checkin');
     const cLvl = lvlOf(ex.stn, 'concourse');
     if (!gLvl || !cLvl) continue;
-    if (gLvl.type === 'checkin') continue;              // door exits pierce no slab
+    if (gLvl.type === 'checkin' || ex.door) continue;   // door exits pierce no slab
     const bx = BOXES[gLvl.box];
     const wx = bx.cx + ex.x;
-    const dir = ex.side, cz = ex.side * ex.exitZ, half = ESC.runLen / 2;
+    const dir = ex.side, cz = bx.cz + ex.side * ex.exitZ, half = ESC.runLen / 2;
     const run = { x1: wx, z1: cz - dir * half, x2: wx, z2: cz + dir * half, w: 2.4 };
     const wr = { ...runWorldRect(run, 0.9), sides: ['x0', 'x1'] };
     if (cLvl.y > gLvl.y) {
@@ -205,7 +205,7 @@ function dressConcourse(g, stn, lvl, rect, floorHoles, bx) {
   }
   // shop rows skip exit stairs + reserved units on each side, plus any lift
   // shaft standing in that side's unpaid band (Wan Chai's street lift)
-  const exitsHere = EXITS.filter(e => e.stn === stn.id);
+  const exitsHere = EXITS.filter(e => e.stn === stn.id && !e.door);
   const liftsHere = LIFTS.filter(l => l.stn === stn.id && l.levels.includes(lvl.uid) && Math.abs(l.z) > gateZ);
   const reserved = (stn.restaurants || []).concat(stn.mall ? [stn.mall] : [], stn.seven ? [stn.seven] : []);
   for (const s of [-1, 1]) {
@@ -496,6 +496,8 @@ export function buildStation() {
       // pedestrian-link portals on the levels the subway mouths into
       if (lvl.uid === 'CEN:L1') portalsX.push({ z0: LINK.z0 + 0.15, z1: LINK.z1 - 0.15, h: 3.4, end: 'x0' });
       if (lvl.uid === 'HOK:L1') portalsX.push({ z0: LINK.z0 + 0.15, z1: LINK.z1 - 0.15, h: 3.4, end: 'x1' });
+      // MEF's L1 subway mouths through the TWL concourse west wall
+      if (lvl.uid === 'MEF:L1') portalsX.push({ z0: -11.5, z1: -4.5, h: 3.4, end: 'x0' });
       if (lvl.type === 'checkin') {
         // glazed hall — street doorway openings in the glazed frontage
         const doorsZ = stn.exits.map(ex => ({
@@ -507,7 +509,11 @@ export function buildStation() {
         // (that's the surface the calligraphy plates sit on); other levels
         // keep neutral panels — concourses carry colour via columns/bands
         const liv = lvl.type === 'platform' ? (lvl.livery ?? stn.livery) : null;
-        g.add(walls(rect, 0, INTERIOR_H, M.wall, portalsX, [], liv));
+        // street-door mouths for at-grade boxes (MEF's TML shed) — the
+        // `door` exits list them; the frames/totems build in the exit loop
+        const doorsZ = EXITS.filter(e => e.door && e.stn === stn.id && e.box === lvl.box)
+          .map(ex => ({ x0: ex.x - 2.3, x1: ex.x + 2.3, h: 3.2, side: ex.side < 0 ? 'z0' : 'z1' }));
+        g.add(walls(rect, 0, INTERIOR_H, M.wall, portalsX, doorsZ, liv));
       }
       g.add(ceilingWithHoles(rect, ceilHoles, 0));
       for (const tr of trackRects) {
@@ -573,21 +579,23 @@ export function buildStation() {
     const stn = STATIONS[ex.stn];
     const gLvl = lvlOf(ex.stn, 'ground') || lvlOf(ex.stn, 'checkin');
     const cLvl = lvlOf(ex.stn, 'concourse');
-    const bx = BOXES[gLvl.box];
+    // `door` exits (MEF's TML shed) hang on the level owning their box
+    const dLvl = ex.door ? LEVELS.find(l => l.station === ex.stn && l.box === ex.box) : gLvl;
+    const bx = BOXES[ex.door ? ex.box : gLvl.box];
     const wx = bx.cx + ex.x;                       // boxes are all unrotated
-    const cz = ex.side * ex.exitZ;
+    const cz = bx.cz + ex.side * ex.exitZ;
     const gUid = uidOf(ex.stn, gLvl);
-    if (gLvl.type === 'checkin') {
-      // street doorway in the check-in hall's glazed frontage (at the wall)
-      const dz = ex.side * (bx.wid / 2);
-      const d = exitDoor({ ...ex, x: wx, z: dz }, gLvl.y, gUid);
+    if (gLvl.type === 'checkin' || ex.door) {
+      // street doorway in the hall/shed's glazed frontage (at the wall)
+      const dz = bx.cz + ex.side * (bx.wid / 2);
+      const d = exitDoor({ ...ex, x: wx, z: dz }, dLvl.y, dLvl.uid ?? uidOf(ex.stn, dLvl));
       root.add(d.group);
-      togglables[gUid].push(d.group);
+      togglables[dLvl.uid ?? uidOf(ex.stn, dLvl)].push(d.group);
       const totem = exitTotem({ ...ex, x: wx });
-      totem.position.set(wx + 5.5, gLvl.y, dz + ex.side * 1.6);
+      totem.position.set(wx + 5.5, dLvl.y, dz + ex.side * 1.6);
       root.add(totem);
-      togglables[gUid].push(totem);
-      labels.push({ level: gUid, pos: new THREE.Vector3(wx, gLvl.y + 4.6, dz + ex.side * 1.6), cls: 'exit', html: `出 ${ex.id} ${ex.en}` });
+      togglables[dLvl.uid ?? uidOf(ex.stn, dLvl)].push(totem);
+      labels.push({ level: dLvl.uid ?? uidOf(ex.stn, dLvl), pos: new THREE.Vector3(wx, dLvl.y + 4.6, dz + ex.side * 1.6), cls: 'exit', html: `出 ${ex.id} ${ex.en}` });
       continue;
     }
     const s = exitShaft({ ...ex, x: wx, z: cz }, gLvl.y, cLvl.y, gUid, uidOf(ex.stn, cLvl));
@@ -621,6 +629,11 @@ export function buildStation() {
   const link = linkCorridor();
   root.add(link);
   togglables['CEN:L1'].push(link);
+
+  // ---- Mei Foo TWL <-> Tuen Ma subway (tagged to MEF:L1)
+  const mefLink = mefSubway();
+  root.add(mefLink);
+  togglables['MEF:L1'].push(mefLink);
 
   // ---- ground context: a road strip along each station's ground slab
   for (const lvl of LEVELS.filter(l => l.type === 'ground' || l.type === 'checkin')) {

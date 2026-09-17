@@ -27,8 +27,9 @@ import { PRE } from './stations/princeedward.js';
 import { SSP } from './stations/shamshuipo.js';
 import { CSW } from './stations/cheungshawan.js';
 import { LCK } from './stations/laichikok.js';
+import { MEF } from './stations/meifoo.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
@@ -48,6 +49,7 @@ export const LINES = {
   AEX: { zh: '機場快綫', en: 'Airport Express',     color: '#00888A' },
   TKO: { zh: '將軍澳綫', en: 'Tseung Kwan O Line',  color: '#7D499D' },
   KTL: { zh: '觀塘綫',   en: 'Kwun Tong Line',      color: '#00AB4E' },
+  TML: { zh: '屯馬綫',   en: 'Tuen Ma Line',        color: '#9A3B26' },
 };
 
 // Island platform half-width / track centre offsets (local Z).
@@ -68,6 +70,7 @@ export const TRAIN_SPEC = {
   AEX: { headway: 95, dwell: 30, cars: 7, carLen: 23.0 },
   TKO: { headway: 55, dwell: 14, cars: 8, carLen: 22.4 },
   KTL: { headway: 46, dwell: 13, cars: 8, carLen: 22.4 },
+  TML: { headway: 55, dwell: 14, cars: 8, carLen: 23.0 },   // ex-KCR SP1900/IKK stock
 };
 
 export const ESC = { runLen: 12.6, width: 1.15, gap: 0.55 }; // per-escalator width + gap
@@ -165,7 +168,9 @@ export function escalatorRuns(e) {
   const yTop = levelById(e.from).y, yBot = levelById(e.to).y;
   const dirLen = Math.hypot(e.dir[0], e.dir[1]);
   const d = [e.dir[0] / dirLen, e.dir[1] / dirLen];
-  const half = ESC.runLen / 2;
+  // e.runLen overrides the standard 12.6 m run — deep drops (MEF's 14 m
+  // L1->L3) need the longer flight to keep the standard slope
+  const half = (e.runLen ?? ESC.runLen) / 2;
   const runs = [];
   const total = e.n * ESC.width + (e.n - 1) * ESC.gap;
   for (let i = 0; i < e.n; i++) {

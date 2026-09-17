@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { M } from './materials.js';
 import { solid, walkable, ESC_RUNS } from '../registry.js';
 import { box } from './structure.js';
+import { stairRun, registerStair } from './circulation.js';
 import { hangingSign, makeSign } from './signage.js';
 import { posters } from './decor.js';
 
@@ -127,6 +128,69 @@ export function linkCorridor() {
     g.add(posters(s.x1 + 8, s.x0 - 8, z0 + 0.42, s.y0, 0, 26));
     g.add(posters(s.x1 + 8, s.x0 - 8, z1 - 0.42, s.y0, Math.PI, 26));
   }
+
+  return g;
+}
+
+// ---------------------------------------------------------------- Mei Foo
+// MEF's L1 subway: the long paid link between the TWL concourse (east
+// mouth through MEF:L1's west wall at x 225) and the Tuen Ma line box —
+// the corridor runs west under the estate plaza, ducks under the shed's
+// east wall and ends at a stair that rises through the at-grade slab
+// onto P1 (north platform, east end). Offset to local z -8 so the mouth
+// lands inside the widened paid strip (gateZ ±12) and the stair lands
+// on the platform band clear of the track troughs (±1.9..6.9).
+export const MEF_LINK = { x0: 140, x1: 225, z0: -1851.5, z1: -1844.5 };
+
+export function mefSubway() {
+  const g = new THREE.Group();
+  const { x0, x1, z0, z1 } = MEF_LINK;
+  const zc = (z0 + z1) / 2, W = z1 - z0, L = x1 - x0, cx = (x0 + x1) / 2;
+  const FL = -7;
+
+  const fl = box(L + 0.4, 0.35, W, M.concFloor);
+  fl.position.set(cx, FL - 0.2, zc);
+  g.add(walkable(fl));
+
+  // side walls run the full length, capped just under the apron slab
+  for (const zz of [z0 + 0.15, z1 - 0.15]) {
+    const wall = box(L + 0.3, 5.95, 0.3, M.wall);
+    wall.position.set(cx, FL + 5.95 / 2 - 1.0, zz);
+    g.add(solid(wall));
+  }
+  // west cap wall under the stair's top landing — seals the dead end
+  const cap = box(0.3, 5.95, W, M.wall);
+  cap.position.set(x0 + 0.15, FL + 5.95 / 2 - 1.0, zc);
+  g.add(solid(cap));
+
+  // ceiling stops east of the stair shaft (x 154) — the shaft is open
+  // to the slab cut above
+  const ceilL = x1 - 154;
+  const ceil = box(ceilL + 0.4, 0.3, W, M.ceiling);
+  ceil.position.set(154 + ceilL / 2, FL + 5.2, zc);
+  g.add(ceil);
+  for (const lz of [zc - 1.6, zc + 1.6]) {
+    const light = box(ceilL * 0.8, 0.1, 0.45, M.lightStrip);
+    light.position.set(154 + ceilL / 2, FL + 4.9, lz);
+    g.add(light);
+  }
+
+  // stair up through the TML slab — top lands on P1 (north platform)
+  const run = { x1: 140, z1: -1849, y1: 0, x2: 154, z2: -1849, y2: FL, w: 2.4 };
+  g.add(stairRun(run));
+  registerStair(run, 'MEF:P', 'MEF:L1');
+
+  const sA = hangingSign({ zh: '往屯馬綫月台', en: 'To Tuen Ma Line Platforms', w: 8, h: 1.4 },
+    x1 - 6, -4.4, zc, Math.PI / 2);
+  const sB = hangingSign({ zh: '往荃灣綫大堂・月台', en: 'To Tsuen Wan Line Concourse', w: 8, h: 1.4 },
+    x0 + 18, -4.4, zc, Math.PI / 2);
+  g.add(sA, sB);
+  const end = makeSign({ zh: '轉綫通道 Interchange Subway', en: 'Tsuen Wan Line ↔ Tuen Ma Line', w: 7, h: 1.5 });
+  end.position.set((x0 + x1) / 2, -5.6, z0 + 0.5);
+  g.add(end);
+
+  g.add(posters(x0 + 20, x1 - 8, z0 + 0.42, FL, 0, 26));
+  g.add(posters(x0 + 20, x1 - 8, z1 - 0.42, FL, Math.PI, 26));
 
   return g;
 }

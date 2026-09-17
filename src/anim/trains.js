@@ -701,13 +701,14 @@ export const ROUTES = [
   // harbour-side crossover box). The crossing legs dive under the sea:
   // the path machinery routes them through each destination's arrival
   // portal so the consist glides in aligned with the platform axis.
-  // Lai Chi Kok is the temporary north end — TWL berths the L2
-  // northbound face (P1), wraps off-map and re-enters the southbound
-  // face (P2) to head back south. MOK/PRE interleave TWL/KTL
+  // Mei Foo is the temporary north end — TWL berths the L3
+  // northbound face (P3), wraps off-map and re-enters the southbound
+  // face (P4) to head back south. MOK/PRE interleave TWL/KTL
   // crosswise: MOK pairs by direction (north upstairs), PRE mirrors it
   // (the KTL dives between the levels in the tunnel between them).
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
-    stops: [{ uid: 'LCK:L2', num: 2 },
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
+    stops: [{ uid: 'MEF:L3', num: 4 },
+            { uid: 'LCK:L2', num: 2 },
             { uid: 'CSW:L2', num: 2 },
             { uid: 'SSP:L2', num: 2 },
             { uid: 'PRE:L3', num: 4 },
@@ -726,7 +727,8 @@ export const ROUTES = [
             { uid: 'PRE:L2', num: 1 },
             { uid: 'SSP:L2', num: 1 },
             { uid: 'CSW:L2', num: 1 },
-            { uid: 'LCK:L2', num: 1, dwell: 55 }] },
+            { uid: 'LCK:L2', num: 1 },
+            { uid: 'MEF:L3', num: 3, dwell: 55 }] },
   // Kwun Tong Line — Yau Ma Tei ↔ Mong Kok ↔ Prince Edward. Both ends
   // are termini for now: PRE reverses between its L3 northbound face
   // (P3) and L2 southbound face (P2); YMT reverses between its L3

@@ -3,10 +3,8 @@
 // Wikipedia. Under Cheung Sha Wan Rd by Cheung Sha Wan Plaza — the
 // garment-district showrooms turned D2 Place creative quarter, with
 // the sports ground east and Hoi Lai Estate / the wholesale market
-// west. Standard island platform; the temporary TWL north end for
-// now — P1 berths arrivals from the east portal, wraps off-map and
-// re-enters P2 to head back south. When Mei Foo lands, P1 goes
-// through (dir +1) and terminus clears. Livery: orange-red (the
+// west. Standard island platform — a through station now that Mei
+// Foo terminates the line further north. Livery: orange-red (the
 // lychee's skin).
 // Exits (8): A Cheung Sha Wan Plaza / sports ground, B1/B2 Tai Nam
 // West St, C Tung Chau West St, D1/D2 D2 Place / police station,
@@ -28,12 +26,11 @@ export const LCK = {
     { id: 'L2', y: -14, box: 'lckPlat', zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platform', type: 'platform' },
   ],
 
-  // Island platform. Temporary TWL north end — P1 berths the arrival
-  // (dir +1, east portal) and the consist wraps off-map to P2 for the
-  // run back south (dir -1, west portal).
+  // Island platform — through station on the TWL corridor (P1 north-
+  // bound to Tsuen Wan via Mei Foo, P2 southbound to Central).
   platforms: {
     L2: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
         { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },
