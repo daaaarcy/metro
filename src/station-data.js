@@ -16,8 +16,9 @@ import { NOP } from './stations/northpoint.js';
 import { QUB } from './stations/quarrybay.js';
 import { TAK } from './stations/taikoo.js';
 import { SWH } from './stations/saiwanho.js';
+import { SKW } from './stations/shaukeiwan.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

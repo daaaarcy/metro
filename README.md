@@ -24,6 +24,7 @@ procedural Hong Kong skyline around each station.
 | QUB  | Quarry Bay 鰂魚涌 | Island + Tseung Kwan O Lines |
 | TAK  | Tai Koo 太古 | Island Line |
 | SWH  | Sai Wan Ho 西灣河 | Island Line |
+| SKW  | Shau Kei Wan 筲箕灣 | Island Line |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

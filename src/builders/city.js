@@ -590,6 +590,24 @@ const SITES = [
     parks: [],
     lamps: [[5310, 46, 5490], [5310, -58, 5490]],
   },
+  { // ---- Shau Kei Wan — Main St East corridor, Aldrich Bay / L'Hiver
+    //     towers on the shore, Perfect Mount + the museum hill south
+    id: 'SKW', hole: [5885, 6115, -38, 38],
+    roads: [[5890, 40, 6110, 52], [5890, -64, 6110, -52], [5994, -36, 6006, 36]],
+    towers: [
+      [5930, -66, 26, 20, 44, 'res'],      // L'Hiver / Aldrich Bay
+      [5970, -72, 24, 18, 46, 'res'],
+      [6040, -64, 24, 18, 38, 'res'],
+      [6080, -70, 22, 16, 34, 'res'],
+      [5920, 62, 24, 18, 30, 'res'],       // Main St East old blocks
+      [5960, 68, 22, 16, 26, 'res'],
+      [6050, 64, 24, 18, 32, 'res'],
+      [6090, 72, 20, 16, 28, 'res'],
+      [5930, 96, 26, 20, 40, 'res'],       // Perfect Mount uphill
+    ],
+    parks: [[6040, -78, 6120, -108, 6]],   // museum grounds / promenade
+    lamps: [[5910, 46, 6090], [5910, -58, 6090]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -649,6 +667,7 @@ const NAMES = [
   ['QUB', 4150, 64, 62, '太古坊 Taikoo Place'],
   ['TAK', 4730, 76, -76, '港島東中心 One Island East'],
   ['TAK', 4770, 14, -62, '太古城中心 Cityplaza'],
+  ['SKW', 6080, 10, -93, '海防博物館 Coastal Defence Museum'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];
