@@ -20,6 +20,7 @@ procedural Hong Kong skyline around each station.
 | CAB  | Causeway Bay 銅鑼灣 | Island Line |
 | TIH  | Tin Hau 天后 | Island Line |
 | FOH  | Fortress Hill 炮台山 | Island Line |
+| NOP  | North Point 北角 | Island + Tseung Kwan O Lines |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

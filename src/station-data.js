@@ -12,8 +12,9 @@ import { HKU } from './stations/hku.js';
 import { KET } from './stations/kennedytown.js';
 import { TIH } from './stations/tinhau.js';
 import { FOH } from './stations/fortresshill.js';
+import { NOP } from './stations/northpoint.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
@@ -31,6 +32,7 @@ export const LINES = {
   EAL: { zh: '東鐵綫',   en: 'East Rail Line',      color: '#53B7E8' },
   TCL: { zh: '東涌綫',   en: 'Tung Chung Line',     color: '#F7943E' },
   AEX: { zh: '機場快綫', en: 'Airport Express',     color: '#00888A' },
+  TKO: { zh: '將軍澳綫', en: 'Tseung Kwan O Line',  color: '#7D499D' },
 };
 
 // Island platform half-width / track centre offsets (local Z).
@@ -49,6 +51,7 @@ export const TRAIN_SPEC = {
   SIL: { headway: 62, dwell: 15, cars: 3, carLen: 19.5 },
   TCL: { headway: 60, dwell: 16, cars: 8, carLen: 22.4 },
   AEX: { headway: 95, dwell: 30, cars: 7, carLen: 23.0 },
+  TKO: { headway: 55, dwell: 14, cars: 8, carLen: 22.4 },
 };
 
 export const ESC = { runLen: 12.6, width: 1.15, gap: 0.55 }; // per-escalator width + gap

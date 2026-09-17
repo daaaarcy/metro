@@ -521,6 +521,24 @@ const SITES = [
     parks: [],
     lamps: [[2810, 46, 2990], [2810, -58, 2990]],
   },
+  { // ---- North Point — King's Rd canyon, Harbourfront Landmark,
+    //     Harbour North towers and the North Point ferry piers
+    id: 'NOP', hole: [3490, 3710, -38, 38],
+    roads: [[3495, 40, 3705, 52], [3495, -64, 3705, -52], [3594, -36, 3606, 36]],
+    towers: [
+      [3510, -66, 24, 18, 42, 'res'],      // Harbour North
+      [3550, -68, 24, 18, 46, 'res'],
+      [3650, -64, 24, 18, 40, 'res'],
+      [3690, -70, 22, 16, 36, 'res'],
+      [3620, -88, 26, 20, 62, 'office'],   // Harbourfront Landmark
+      [3500, 62, 24, 18, 32, 'res'],       // dense NP blocks
+      [3540, 68, 22, 16, 30, 'res'],
+      [3640, 64, 24, 18, 38, 'res'],
+      [3680, 70, 22, 16, 34, 'res'],
+    ],
+    parks: [],
+    lamps: [[3510, 46, 3690], [3510, -58, 3690]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -575,6 +593,8 @@ const NAMES = [
   ['CAB', 1755, 28, -60, '崇光百貨 SOGO'],
   ['TIH', 2400, 26, 92, '中央圖書館 Central Library'],
   ['FOH', 2810, 52, -66, '友邦廣場 AIA Tower'],
+  ['NOP', 3620, 68, -88, '港匯東 Harbourfront Landmark'],
+  ['NOP', 3540, 8, -128, '北角碼頭 North Point Ferry'],
   ['CAB', 1665, 66, 60, '希慎廣場 Hysan Place'],
   ['CAB', 1880, 12, -65, '維多利亞公園 Victoria Park'],
 ];
