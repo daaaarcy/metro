@@ -16,7 +16,7 @@ import { gateBank, serviceBooth, shops, toilets, kiosk, hvac, restaurant, mallEn
 import { calligraphy, posters, postersEnd, binPair, fireCabinets, mapBoard } from './builders/decor.js';
 import { tunnelTube } from './builders/tracks.js';
 import { linkCorridor, LINK } from './builders/link.js';
-import { FITTINGS, solid } from './registry.js';
+import { FITTINGS, solid, STAIR_RUNS } from './registry.js';
 
 const INTERIOR_H = FLOOR_H - SLAB_T - 0.5;
 const lvlOf = (stn, type) => STATIONS[stn].levels.find(l => l.type === type);
@@ -415,6 +415,25 @@ export function buildStation() {
     const floorHoles = localHoles(openings, lvl.uid, bx);
     const ceilHoles = localHoles(openings, lvl.uid + ':ceil', bx);
 
+    // circulation that STANDS on this slab without piercing it — escalator
+    // arrivals and lift-shaft bottoms. Columns must dodge these too or
+    // they sprout mid-well on island platforms. (Exit stairs are dodged
+    // separately via exitHoles — STAIR_RUNS fills lazily during this loop.)
+    const standHoles = [...floorHoles];
+    for (const e of ESCALATORS) {
+      if (e.to !== lvl.uid) continue;
+      for (const r of escalatorRuns(e))
+        standHoles.push(worldRectToLocal(bx, runWorldRect(r, 1.1)));
+    }
+    for (const l of LIFTS) {
+      if (l.levels[l.levels.length - 1] !== lvl.uid) continue;
+      const p = liftWorldRect(l);
+      standHoles.push(worldRectToLocal(bx, {
+        x0: p.x - LIFT_SIZE.w / 2 - 0.4, x1: p.x + LIFT_SIZE.w / 2 + 0.4,
+        z0: p.z - LIFT_SIZE.d / 2 - 0.4, z1: p.z + LIFT_SIZE.d / 2 + 0.4,
+      }));
+    }
+
     // ---- platform levels: troughs + PSD + markings
     let trackRects = [];
     if (lvl.type === 'platform') {
@@ -454,11 +473,11 @@ export function buildStation() {
       }
     }
 
-    // ---- per-level dressing
-    if (lvl.type === 'platform') dressPlatform(g, stn, lvl, PLATFORMS[lvl.uid], rect, floorHoles);
-    else if (lvl.type === 'concourse') dressConcourse(g, stn, lvl, rect, floorHoles, bx);
-    else if (lvl.type === 'lobby') dressLobby(g, stn, lvl, rect, floorHoles);
-    else if (lvl.type === 'checkin') dressCheckin(g, stn, lvl, rect, floorHoles, bx);
+    // ---- per-level dressing (columns dodge slabs' holes AND arrivals)
+    if (lvl.type === 'platform') dressPlatform(g, stn, lvl, PLATFORMS[lvl.uid], rect, standHoles);
+    else if (lvl.type === 'concourse') dressConcourse(g, stn, lvl, rect, standHoles, bx);
+    else if (lvl.type === 'lobby') dressLobby(g, stn, lvl, rect, standHoles);
+    else if (lvl.type === 'checkin') dressCheckin(g, stn, lvl, rect, standHoles, bx);
 
     levelGroups[lvl.uid] = g;
     root.add(g);

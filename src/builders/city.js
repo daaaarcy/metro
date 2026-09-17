@@ -394,6 +394,29 @@ const SITES = [
     lamps: [[795, 41.5, 965], [795, -41.5, 965]],
     spire: [905, -64, 86],                  // Central Plaza's pyramid crown
   },
+  { // ---- Sheung Wan — Shun Tak twin + Macau Ferry on the water,
+    //     Western Market, Infinitus Plaza, Wing On Centre, old low-rises
+    id: 'SHW', hole: [-2171, -1929, -38, 38],
+    roads: [[-2160, 40, -1940, 52], [-2160, -64, -1940, -52], [-2124, -36, -2112, 36], [-1972, -36, -1960, 36]],
+    towers: [
+      [-2130, -74, 34, 22, 42, 'office'], [-2088, -74, 34, 22, 42, 'office'], // Shun Tak Centre twin
+      [-2168, -68, 26, 20, 44, 'office'],   // China Merchants Tower
+      [-2052, -66, 24, 18, 36, 'office'],   // Chu Kong Shipping Tower
+      [-2010, -68, 24, 18, 38, 'office'],   // Guangdong Investment Tower
+      [-1955, -60, 30, 22, 38, 'office'],   // Infinitus Plaza
+      [-1978, 58, 26, 20, 34, 'office'],    // Wing On Centre
+      [-2128, 62, 26, 20, 40, 'office'],    // FWD Financial Centre
+      [-2104, 56, 24, 14, 10, 'heritage'],  // Western Market
+      [-2045, 78, 30, 20, 46, 'office'],    // Grand Millennium Plaza
+      [-2068, 56, 20, 16, 24, 'res'], [-2148, 80, 18, 14, 18, 'res'],
+      [-1998, 74, 20, 16, 22, 'res'], [-1920, 60, 18, 14, 20, 'res'],
+      [-2180, 58, 18, 16, 22, 'res'], [-2020, 60, 16, 14, 18, 'res'],
+    ],
+    quays: [[-2160, -78, -1990, -112]],                        // Macau Ferry apron
+    piers: [[-2110, -116, -2070, -122], [-2030, -116, -1996, -122]],
+    parks: [[-2160, 76, -2112, 96, 8]],                        // Blake Garden side
+    lamps: [[-2150, 46, -1950], [-2150, -58, -1950]],
+  },
   { // ---- Causeway Bay — Times Square, SOGO, Hysan, Victoria Park, shelter
     id: 'CAB', hole: [1578, 1822, -33, 33],
     roads: [[1582, 36, 1818, 47], [1582, -47, 1818, -36], [1562, -34, 1574, 34], [1826, -34, 1838, 34]],
@@ -435,6 +458,9 @@ const NAMES = [
   ['HOK', -1445, 134, -100, '國際金融中心 IFC'],
   ['HOK', -1400, 28, -104, '摩天輪 Observation Wheel'],
   ['HOK', -1470, 162, -430, '環球貿易廣場 ICC'],
+  ['SHW', -2108, 50, -74, '信德中心 Shun Tak Centre'],
+  ['SHW', -2104, 16, 56, '西港城 Western Market'],
+  ['SHW', -2090, 14, -118, '港澳碼頭 Macau Ferry'],
   ['WAC', 905, 104, -64, '中環廣場 Central Plaza'],
   ['WAC', 795, 68, 66, '合和中心 Hopewell Centre'],
   ['CAB', 1612, 58, 60, '時代廣場 Times Square'],
@@ -482,13 +508,18 @@ export function buildCity() {
     if (uid) labels.push({ level: uid, cls: 'city', html: txt, pos: new THREE.Vector3(x, y, z) });
   }
 
-  // ---- the harbour: water plane along -z, quay wall + promenade, boats
+  // ---- the harbour: water plane along -z, quay wall + promenade, boats.
+  // The shore strip spans every site hole so the waterline keeps running
+  // as stations extend west/east.
   const SHORE = -95;
-  const sea = new THREE.PlaneGeometry(3500, 1500);
+  const seaX0 = Math.min(...SITES.map(s => s.hole[0])) - 450;
+  const seaX1 = Math.max(...SITES.map(s => s.hole[1])) + 350;
+  const seaW = seaX1 - seaX0, seaCx = (seaX0 + seaX1) / 2;
+  const sea = new THREE.PlaneGeometry(seaW, 1500);
   sea.rotateX(-Math.PI / 2);
-  put(sea, WATER_M, 150, 0.03, SHORE - 750);
-  block(150, SHORE + 0.6, 3500, 1.2, 1.4, QUAY_M, false);          // seawall lip
-  block(150, SHORE + 4, 3500, 7, 0.1, QUAY_M, false);              // promenade strip
+  put(sea, WATER_M, seaCx, 0.03, SHORE - 750);
+  block(seaCx, SHORE + 0.6, seaW, 1.2, 1.4, QUAY_M, false);          // seawall lip
+  block(seaCx, SHORE + 4, seaW, 7, 0.1, QUAY_M, false);              // promenade strip
   // typhoon-shelter breakwater arm off Causeway Bay
   block(1855, -102, 90, 4, 1.6, QUAY_M, false);
   block(1732, -115, 4, 30, 1.6, QUAY_M, false);

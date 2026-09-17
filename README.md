@@ -1,8 +1,21 @@
 # metro
 
-Interactive 3D layout viewer of Admiralty MTR station (金鐘站), built with Three.js.
+Interactive 3D layout viewer of Hong Kong MTR stations, built with Three.js.
 
-Schematic multi-level model: U1 footbridge, ground-level exits, L1 concourse with shops/restaurants, L2–L6 platforms with scheduled trains, platform screen doors, escalators, passengers, and Octopus gates.
+Schematic multi-level models with concourses, exits, gates, escalators,
+rideable lifts, animated passengers, trains on live timetables, and a
+procedural Hong Kong skyline around each station.
+
+## Stations
+
+| Code | Station | Lines |
+|------|---------|-------|
+| SHW  | Sheung Wan 上環 | Island Line |
+| CEN  | Central 中環 | Island + Tsuen Wan Lines |
+| ADM  | Admiralty 金鐘 | Island + Tsuen Wan + East Rail + South Island Lines |
+| WAC  | Wan Chai 灣仔 | Island Line |
+| CAB  | Causeway Bay 銅鑼灣 | Island Line |
+| HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run
 
@@ -14,5 +27,6 @@ npm run dev
 ## Controls
 
 - **Orbit**: drag to rotate, scroll to zoom
-- **Walk**: WASD + drag to look, E to tap Octopus at gates
+- **Walk**: WASD + move mouse to look (click captures the cursor, Esc releases)
+- **E**: tap Octopus at gates, call/ride lifts
 - Section cuts, labels, sound, and passenger toggles in the left panel

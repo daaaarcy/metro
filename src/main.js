@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { buildStation, computeOpenings } from './station.js';
-import { LEVELS, BOXES, STATIONS, worldToBox } from './station-data.js';
+import { LEVELS, BOXES, STATIONS, worldToBox, boxToWorld, groundBoxes } from './station-data.js';
 import { CameraRig } from './controls.js';
 import { buildUI, showInfo, showPrompt, updateTicker, updateClock } from './ui.js';
 import { EscalatorSteps } from './anim/escalators.js';
@@ -72,17 +72,27 @@ const colliders = buildColliders();
 // colliders are already snapshotted; instanced/dynamic meshes are untouched
 mergeStation(scene, root, levelGroups, togglables);
 
-// ground context — a big dark disc spanning all five stations with a
-// rectangular excavation hole over each station footprint, so orbit views
-// show the underground stacks instead of an opaque lid. Shape XY maps to
-// world X,-Z after the -90° X rotation.
+// ground context — a big dark disc spanning every station, with a
+// rectangular excavation hole over each ground slab, so orbit views
+// show the underground stacks instead of an opaque lid. Holes and the
+// disc radius are derived from the station boxes (ground-level frames
+// + padding). Shape XY maps to world X,-Z after the -90° X rotation.
+const holes = groundBoxes().map(b => {
+  const pts = [[-b.len / 2, -b.wid / 2], [b.len / 2, -b.wid / 2],
+               [b.len / 2, b.wid / 2], [-b.len / 2, b.wid / 2]]
+    .map(([x, z]) => boxToWorld(b, x, z));
+  const xs = pts.map(p => p.x), zs = pts.map(p => p.z);
+  const pad = 6;
+  return [Math.min(...xs) - pad, Math.max(...xs) + pad,
+          Math.min(...zs) - pad, Math.max(...zs) + pad];
+});
+const gx0 = Math.min(...holes.map(h => h[0])), gx1 = Math.max(...holes.map(h => h[1]));
+const gz0 = Math.min(...holes.map(h => h[2])), gz1 = Math.max(...holes.map(h => h[3]));
+const gcx = (gx0 + gx1) / 2, gcz = (gz0 + gz1) / 2;
+const gr = Math.hypot(Math.max(gx1 - gcx, gcx - gx0), Math.max(gz1 - gcz, gcz - gz0)) + 500;
 const groundShape = new THREE.Shape();
-groundShape.absarc(-200, 0, 2100, 0, Math.PI * 2);
-for (const [x0, x1, z0, z1] of [[-105, 105, -49, 41],       // Admiralty
-                                [-1150, -950, -57, 57],     // Central
-                                [-1615, -1345, -67, 67],    // Hong Kong
-                                [785, 975, -33, 33],        // Wan Chai
-                                [1578, 1822, -33, 33]]) {   // Causeway Bay
+groundShape.absarc(gcx, -gcz, gr, 0, Math.PI * 2);
+for (const [x0, x1, z0, z1] of holes) {
   const dig = new THREE.Path();
   dig.moveTo(x0, -z1); dig.lineTo(x1, -z1);
   dig.lineTo(x1, -z0); dig.lineTo(x0, -z0); dig.closePath();
@@ -268,7 +278,7 @@ rig.onLiftTap = () => liftSim.interact(rig);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
 window.__lifts = liftSim;
 window.__escRuns = ESC_RUNS; window.__weather = weather; window.__renderer = renderer;
-window.__scene = scene;
+window.__scene = scene; window.__gates = GATES;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
 // orbit "home" frames all three stations — Admiralty near field, Central and
