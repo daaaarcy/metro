@@ -19,6 +19,7 @@ procedural Hong Kong skyline around each station.
 | WAC  | Wan Chai 灣仔 | Island Line |
 | CAB  | Causeway Bay 銅鑼灣 | Island Line |
 | TIH  | Tin Hau 天后 | Island Line |
+| FOH  | Fortress Hill 炮台山 | Island Line |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run
