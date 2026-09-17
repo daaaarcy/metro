@@ -13,6 +13,7 @@ import { StationAudio } from './audio.js';
 import { buildColliders } from './colliders.js';
 import { Weather } from './weather.js';
 import { mergeStation } from './merge.js';
+import { buildCity } from './builders/city.js';
 import { GATES, ESC_RUNS } from './registry.js';
 
 // ---------- renderer ----------
@@ -59,6 +60,11 @@ scene.add(interiorFill);
 // ---------- station ----------
 const { root, levelGroups, togglables, labels, liftDefs } = buildStation();
 scene.add(root);
+// schematic city around the station digs — towers register solids, so this
+// must run before buildColliders()
+const city = buildCity();
+scene.add(city.group);
+labels.push(...city.labels);
 root.updateMatrixWorld(true);
 // one collision world shared by the player rig and the pedestrians
 const colliders = buildColliders();
