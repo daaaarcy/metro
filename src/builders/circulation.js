@@ -44,7 +44,13 @@ export function escalatorRun(run) {
     const rail = box(slopeLen, 0.09, 0.1, M.signPost);
     rail.rotation.z = -slope;
     rail.position.set(L / 2, -D / 2 + 1.52, s * (w / 2 + 0.05));
-    g.add(solid(bal), rail);
+    // the tilted pane's world AABB inflates into a full-height wall across
+    // the whole diagonal — collide with a vertical wall on the balustrade
+    // line instead (the group carries the plan yaw, so it becomes an OBB)
+    const barrier = box(L + 0.9, D + 1.5, 0.06, M.balGlass);
+    barrier.position.set(L / 2, (0.6 - D) / 2, s * (w / 2 + 0.05));
+    barrier.visible = false;
+    g.add(bal, rail, solid(barrier));
 
     // skirt light along the balustrade base — real escalators glow here;
     // also the cue that keeps the open well readable at night
@@ -111,7 +117,10 @@ export function stairRun(run) {
     const rail = box(slopeLen, 0.09, 0.1, M.signPost);
     rail.rotation.z = -slope;
     rail.position.set(L / 2, -D / 2 + 1.52, s * (w / 2 + 0.05));
-    g.add(solid(bal), rail);
+    const barrier = box(L + 0.9, D + 1.5, 0.06, M.balGlass);
+    barrier.position.set(L / 2, (0.6 - D) / 2, s * (w / 2 + 0.05));
+    barrier.visible = false;
+    g.add(bal, rail, solid(barrier));
   }
 
   // landing plates bridging the floor-opening margins at both ends
