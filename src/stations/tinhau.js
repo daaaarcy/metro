@@ -62,7 +62,7 @@ export const TIH = {
   lifts: [
     { frame: 'tihConc', x: 45,  z: 2,    levels: ['L1', 'L2', 'L3'] },  // paid lift, east half
     { frame: 'tihConc', x: 88,  z: 14.5, levels: ['G', 'L1'] },          // street lift — B/library side
-    { frame: 'tihConc', x: -88, z: -14.5, levels: ['G', 'L1'] },         // street lift — Victoria Park side
+    { frame: 'tihConc', x: -66, z: -14.5, levels: ['G', 'L1'] },         // street lift — Victoria Park side, between the A1/A2 shafts
   ],
 
   // Gate banks on the paid/unpaid boundary; the band wraps the strip's

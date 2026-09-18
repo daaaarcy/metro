@@ -19,7 +19,8 @@ import { GATES, ESC_RUNS } from './registry.js';
 // ---------- renderer ----------
 const app = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', stencil: false });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));   // 3.7M-tri scene is fill-bound on Retina
+const PR_CAP = Math.min(devicePixelRatio, 1.5);
+renderer.setPixelRatio(PR_CAP);                            // 3.7M-tri scene is fill-bound on Retina
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -393,6 +394,10 @@ buildUI({
   },
   onSpeed: v => { speed = v; },
   floorAt: (x, z, y) => rig.floorAt(x, z, y),
+  capsuleFree: (x, z, feet) => {
+    const [nx, nz] = rig.resolve(x, z, feet + 0.02, 1.7, x, z);
+    return Math.hypot(nx - x, nz - z) < 0.05;
+  },
 });
 
 // keep the mode buttons honest after a restored pose
@@ -458,6 +463,11 @@ let simNow = Date.now();
 const simNowFn = () => simNow;
 const timer = new THREE.Timer();
 let tickerT = 0, escT = 0;
+// dynamic resolution — the scene is fill-bound on Retina, so when the frame
+// rate sags the pixel ratio steps down (and back up with headroom) to keep
+// motion smooth instead of locking at a slow full-res
+const PR_STEPS = [1, 0.85, 0.72, 0.6];
+let prStep = 0, fpsAvg = 60, prT = 0;
 function tick() {
   timer.update();
   const dt = Math.min(timer.getDelta(), 0.05);
@@ -465,6 +475,13 @@ function tick() {
   const sdt = dt * speed;          // sim-time delta this frame
   simNow += sdt * 1000;
   escT += sdt;
+
+  fpsAvg += (1 / Math.max(dt, 0.001) - fpsAvg) * 0.05;
+  if ((prT += dt) > 1.5) {
+    prT = 0;
+    if (fpsAvg < 30 && prStep < PR_STEPS.length - 1) renderer.setPixelRatio(PR_CAP * PR_STEPS[++prStep]);
+    else if (fpsAvg > 55 && prStep > 0) renderer.setPixelRatio(PR_CAP * PR_STEPS[--prStep]);
+  }
 
   liftSim.update(sdt, rig);   // before rig.update — door barriers + carry feed collision
   rig.update(dt);

@@ -2277,15 +2277,22 @@ export function buildCity() {
   const labels = [];
   const groundUid = id => LEVELS.find(l => l.station === id && (l.type === 'ground' || l.type === 'checkin'))?.uid;
 
+  // towers must clear EVERY site's dig, not just their own district's —
+  // a neighbour's footprint can reach into this hole (STW slabs over FOT)
+  const holes = SITES.map(s => s.hole);
+  const clearAll = r => holes.every(([hx0, hx1, hz0, hz1]) =>
+    r.x1 < hx0 - 2 || r.x0 > hx1 + 2 || r.z1 < hz0 - 2 || r.z0 > hz1 + 2);
   for (const s of SITES) {
-    const [hx0, hx1, hz0, hz1] = s.hole;
-    const clear = r => r.x1 < hx0 - 2 || r.x0 > hx1 + 2 || r.z1 < hz0 - 2 || r.z0 > hz1 + 2;
     for (const [x, z, w, d, h, kind] of s.towers || []) {
       const r = { x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 };
-      if (!clear(r)) { console.warn(`city: ${s.id} tower at ${x},${z} overlaps the dig — skipped`); continue; }
+      if (!clearAll(r)) { console.warn(`city: ${s.id} tower at ${x},${z} overlaps the dig — skipped`); continue; }
       tower(x, z, w, d, h, kind);
     }
-    for (const [x, z, r, h, kind] of s.cyls || []) cyl(x, z, r, h, kind);
+    for (const [x, z, r, h, kind] of s.cyls || []) {
+      const rr = { x0: x - r, x1: x + r, z0: z - r, z1: z + r };
+      if (!clearAll(rr)) { console.warn(`city: ${s.id} cyl at ${x},${z} overlaps the dig — skipped`); continue; }
+      cyl(x, z, r, h, kind);
+    }
     for (const [x0, z0, x1, z1] of s.roads || []) road(x0, z0, x1, z1);
     for (const [x0, z0, x1, z1, n] of s.parks || []) park(x0, z0, x1, z1, n);
     for (const [x0, z, x1, step] of s.lamps || []) lampRow(x0, z, x1, step);

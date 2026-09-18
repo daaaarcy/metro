@@ -95,7 +95,7 @@ export const ADM = {
 
   lifts: [
     { frame: 'main', x: 12, z: -2.5, levels: ['L1', 'L2', 'L3'] },
-    { frame: 'ext',  x: 55, z: -2.5, levels: ['L4', 'L5', 'L6'] },
+    { frame: 'ext',  x: 0,  z: 0,    levels: ['L4', 'L5'] },
   ],
 
   // Octopus gate lanes on the concourse paid/unpaid boundary (z = ±9.4)

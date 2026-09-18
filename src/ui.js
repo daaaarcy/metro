@@ -8,15 +8,18 @@ import { buildMiniMap } from './mtr-map.js';
 // Candidate spots are probed with floorAt so 'go' never drops the player
 // into a track trough or an escalator well — falls back to the nominal
 // spot when nothing probes clean.
-function viewpoints(floorAt) {
+function viewpoints(floorAt, free) {
   const eye = 1.7;
   const v = {};
   // first candidate whose floor is at (not far under) the level's slab
+  // and whose body capsule doesn't intersect a solid
   const pick = (bx, cands, y) => {
     for (const [lx, lz] of cands) {
       const w = boxToWorld(bx, lx, lz);
       const fl = floorAt?.(w.x, w.z, y + eye);
-      if (fl && fl.y > y - 0.55 && fl.y < y + 1.6) return { w, lz };
+      if (!fl || fl.y <= y - 0.55 || fl.y >= y + 1.6) continue;
+      if (free && !free(w.x, w.z, fl.y)) continue;
+      return { w, lz };
     }
     const [lx, lz] = cands[0];
     return { w: boxToWorld(bx, lx, lz), lz };
@@ -39,8 +42,9 @@ function viewpoints(floorAt) {
       const lx = far.reduce((s, e) => s + e.x, 0) / far.length;
       const lz = far.reduce((s, e) => s + e.side, 0) / far.length * zr * 0.8;
       const e = pick(bx, [
-        [cx, cz], [cx, cz + zr * 0.45], [cx, cz - zr * 0.45],
-        [cx + 20, cz], [cx - 20, cz], [cx + 40, cz], [cx - 40, cz],
+        [cx, cz],
+        ...[0.45, 1, 1.5].flatMap(k => [[cx, cz + zr * k], [cx, cz - zr * k]]),
+        ...[20, -20, 40, -40, 60, -60].flatMap(dx => [[cx + dx, cz], [cx + dx, cz + zr], [cx + dx, cz - zr]]),
       ], lvl.y);
       const t0 = boxToWorld(bx, lx, lz);
       v[lvl.uid] = {
@@ -66,8 +70,8 @@ function viewpoints(floorAt) {
   return v;
 }
 
-export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, onSpeed, floorAt }) {
-  const vp = viewpoints(floorAt);
+export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, onSpeed, floorAt, capsuleFree }) {
+  const vp = viewpoints(floorAt, capsuleFree);
 
   // language toggle — flips the UI chrome between English-only and 繁中-only.
   // Pure CSS (data-lang on <html> hides the other side's spans); in-world
