@@ -567,12 +567,13 @@ class Consist {
         const k = p < 0.35 ? easeOut(p / 0.35) * 0.5
                  : p < 0.65 ? 0.5 + (p - 0.35) / 0.3 * 0.28
                  : 0.78 + easeIn((p - 0.65) / 0.35) * 0.22;
-        // path: departure portal -> B's arrival portal -> berth. The final
-        // segment runs along B's track axis, so non-collinear legs (the
-        // harbour crossing) still glide in through the portal aligned.
-        // For collinear legs the waypoint lies on the axis — same path.
+        // path: berth -> departure portal -> B's arrival portal -> berth.
+        // The first/last segments run along the track axes, so the consist
+        // slides out of the platform and glides into B's berth aligned —
+        // non-collinear legs (the harbour crossing) only bend at portals.
         if (!leg._path) {
           const pts = [
+            A.worldOf(A.stopX),
             A.worldOf(A.portalX(A.outEnd, this.trainLen / 2)),
             B.worldOf(B.portalX(leg.inEnd, this.trainLen / 2)),
             B.worldOf(B.stopX),
@@ -797,8 +798,23 @@ export const ROUTES = [
   // other (a rider gets carried across to the opposite platform edge)
   { line: 'EAL', legs: ['off', 'off'], consists: 2,
     stops: [{ uid: 'ADM:L5', num: 7 }, { uid: 'ADM:L5', num: 8 }] },
-  { line: 'SIL', legs: ['off', 'off'], consists: 2,
-    stops: [{ uid: 'ADM:L6', num: 5 }, { uid: 'ADM:L6', num: 6 }] },
+  // South Island Line: Admiralty's L6 terminus -> tunnel south under the
+  // hills to Ocean Park, along the viaduct to Wong Chuk Hang, under the
+  // Aberdeen Channel to Lei Tung, and out to the South Horizons terminus.
+  // 'off' wraps at SOH (scissors reversal) and back at ADM:L6.
+  { line: 'SIL', travel: 70, consists: 2,
+    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'],
+    stops: [{ uid: 'ADM:L6', num: 5 },
+            { uid: 'OCP:U1', num: 1 },
+            { uid: 'WCH:U1', num: 1 },
+            { uid: 'LET:L2', num: 1 },
+            { uid: 'SOH:U1', num: 1, dwell: 45 },
+            { uid: 'SOH:U1', num: 2 },
+            { uid: 'LET:L2', num: 2 },
+            { uid: 'WCH:U1', num: 2 },
+            { uid: 'OCP:U1', num: 2 },
+            { uid: 'ADM:L6', num: 6, dwell: 50 }] },
   // Tung Chung Line: Hong Kong terminus -> under the strait to Kowloon
   // (Elements/ICC), southeast across the reclamation to Olympic, then
   // the long West Kowloon leg up to Lai King's stacked islands where the

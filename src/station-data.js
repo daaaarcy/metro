@@ -35,8 +35,12 @@ import { TWH } from './stations/taiwohau.js';
 import { TSW } from './stations/tsuenwan.js';
 import { KOW } from './stations/kowloon.js';
 import { OLY } from './stations/olympic.js';
+import { OCP } from './stations/oceanpark.js';
+import { WCH } from './stations/wongchukhang.js';
+import { LET } from './stations/leitung.js';
+import { SOH } from './stations/southhorizons.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

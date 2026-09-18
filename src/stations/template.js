@@ -14,15 +14,15 @@ export function twlIsland(o) {
     livery: o.livery,
 
     boxes: {
-      [site]: { cx: 320, cz: o.cz, len: 240, wid: 84, rot: 0 }, // G apron
-      [conc]: { cx: 320, cz: o.cz, len: 190, wid: 44, rot: 0 }, // L1 concourse
-      [plat]: { cx: 320, cz: o.cz, len: 200, wid: 24, rot: 0 }, // L2 island
+      [site]: { cx: o.cx ?? 320, cz: o.cz, len: 240, wid: 84, rot: 0 }, // G apron
+      [conc]: { cx: o.cx ?? 320, cz: o.cz, len: 190, wid: 44, rot: 0 }, // L1 concourse
+      [plat]: { cx: o.cx ?? 320, cz: o.cz, len: 200, wid: 24, rot: 0 }, // L2 island
     },
 
     levels: [
       { id: 'G',  y: 0,   box: site, zh: '地面',         en: 'Ground',                type: 'ground'    },
       { id: 'L1', y: -7,  box: conc, zh: '大堂',         en: 'Concourse',             type: 'concourse' },
-      { id: 'L2', y: -14, box: plat, zh: '月台・荃灣綫',  en: 'Tsuen Wan Line Platform', type: 'platform'  },
+      { id: 'L2', y: -14, box: plat, zh: o.platZh ?? '月台・荃灣綫', en: o.platEn ?? 'Tsuen Wan Line Platform', type: 'platform' },
     ],
 
     // P1 northbound to Tsuen Wan, P2 southbound to Central
@@ -30,7 +30,7 @@ export function twlIsland(o) {
       L2: {
         kind: 'island',
         ...(o.terminus ? { terminus: true } : {}),
-        faces: [
+        faces: o.faces ?? [
           { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
           { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },
         ],
@@ -162,22 +162,23 @@ export function twlViaduct(o) {
     livery: o.livery,
 
     boxes: {
-      [site]: { cx: 320, cz: o.cz, len: 240, wid: 96, rot: 0 }, // G apron
-      [conc]: { cx: 320, cz: o.cz, len: 150, wid: 30, rot: 0 }, // G concourse at grade
-      [plat]: { cx: 320, cz: o.cz, len: 200, wid: 24, rot: 0 }, // U1 side platforms on the viaduct
+      [site]: { cx: o.cx ?? 320, cz: o.cz, len: 240, wid: 96, rot: 0 }, // G apron
+      [conc]: { cx: o.cx ?? 320, cz: o.cz, len: 150, wid: 30, rot: 0 }, // G concourse at grade
+      [plat]: { cx: o.cx ?? 320, cz: o.cz, len: 200, wid: 24, rot: 0 }, // U1 side platforms on the viaduct
     },
 
     levels: [
       { id: 'G',  y: 0, box: site, zh: '地面',        en: 'Ground',                type: 'ground'    },
       { id: 'GC', y: 0, box: conc, zh: '大堂',        en: 'Concourse',             type: 'concourse' },
-      { id: 'U1', y: 8, box: plat, zh: '月台・荃灣綫', en: 'Tsuen Wan Line Platform', type: 'platform'  },
+      { id: 'U1', y: 8, box: plat, zh: o.platZh ?? '月台・荃灣綫', en: o.platEn ?? 'Tsuen Wan Line Platform', type: 'platform' },
     ],
 
     // P1 northbound to Tsuen Wan, P2 southbound to Central
     platforms: {
       U1: {
         kind: 'side',
-        faces: [
+        ...(o.terminus ? { terminus: true, tail: o.tail ?? 1 } : {}),
+        faces: o.faces ?? [
           { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
           { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },
         ],
@@ -264,7 +265,7 @@ export function atGradeSide(o) {
     platforms: {
       P: {
         kind: 'side',
-        ...(o.terminus ? { terminus: true, tail: 1 } : {}),
+        ...(o.terminus ? { terminus: true, tail: o.tail ?? 1 } : {}),
         faces: o.faces,
       },
     },

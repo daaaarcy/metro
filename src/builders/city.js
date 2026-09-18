@@ -50,6 +50,7 @@ const FACADE = {
   glass:    facadeMats('#1a2530', '#33414e', '#cfe4f0', 0.42),
   gold:     facadeMats('#3d331c', '#5c4e2a', '#f0d888'),
   hotel:    facadeMats('#332e28', '#453e35', '#f0d0a0'),
+  com:      facadeMats('#2b2a26', '#413c34', '#e8c890', 0.35),
   res:      facadeMats('#2e2b27', '#3e382f', '#e0c898', 0.3),
   mall:     facadeMats('#262b31', '#323840', '#ffd9a0', 0.18),
   heritage: facadeMats('#4e473e', '#5c544a', '#e8dcc0', 0.3),
@@ -1076,6 +1077,76 @@ const SITES = [
             [-700, -1560, -580, -1530, 10]],
     lamps: [[-1030, -1384, -570, 30], [-1030, -1514, -570, 30]],
   },
+  { // ---- Ocean Park — the SIL surfaces south of the hills onto the
+    //     coastal viaduct. Park entrance gardens + bus terminus north,
+    //     Police College and the Wong Chuk Hang Rd blocks south.
+    id: 'OCP', hole: [680, 920, 432, 528],
+    roads: [[640, 536, 960, 548],        // Wong Chuk Hang Rd along the south edge
+            [640, 408, 960, 420]],       // Ocean Park Rd north
+    towers: [
+      [650, 460, 40, 30, 14, 'mall'],    // park entrance plaza block
+      [942, 460, 30, 22, 30, 'hotel'],   // Ocean Park Marriott silhouette
+      [900, 580, 30, 22, 22, 'hotel'],   // Waterfront-side hotels
+      [955, 575, 30, 22, 18, 'office'],  // Police College blocks south-east
+      [995, 605, 26, 20, 16, 'office'],
+    ],
+    parks: [[660, 372, 950, 402, 20]],   // Ocean Park entrance gardens
+    lamps: [[660, 542, 940, 30]],
+  },
+  { // ---- Wong Chuk Hang — viaduct over Wong Chuk Hang Rd; the SIL
+    //     depot sheds east, industrial blocks north, Nam Long Shan
+    //     schools south.
+    id: 'WCH', hole: [440, 680, 552, 648],
+    roads: [[400, 536, 720, 548],        // Wong Chuk Hang Rd north
+            [400, 660, 720, 672]],       // Nam Long Shan Rd south
+    towers: [
+      [722, 590, 52, 30, 12, 'mall'],    // SIL depot shed east of the dig
+      [768, 600, 40, 26, 10, 'mall'],
+      [470, 505, 30, 22, 34, 'office'],  // industrial blocks north
+      [530, 500, 30, 22, 28, 'office'], [590, 508, 26, 20, 40, 'office'],
+      [650, 505, 30, 22, 26, 'com'],
+      [470, 690, 30, 22, 24, 'res'],     // Nam Long Shan blocks south
+      [560, 690, 30, 22, 30, 'res'], [640, 695, 28, 20, 22, 'res'],
+    ],
+    parks: [[700, 690, 760, 730, 10]],
+    lamps: [[410, 542, 710, 30], [410, 666, 710, 30]],
+  },
+  { // ---- Lei Tung — Ap Lei Chau's hill cavern. Estate slab towers up
+    //     the slope, Ap Lei Chau Bridge Rd along the channel west.
+    id: 'LET', hole: [120, 360, 618, 702],
+    roads: [[40, 740, 104, 560],         // Ap Lei Chau Bridge Rd west edge
+            [104, 606, 380, 594],        // estate drive north edge
+            [104, 716, 380, 728]],       // estate drive south edge
+    water: [[375, 545, 435, 735]],       // Aberdeen Channel east of the dig
+    towers: [
+      [170, 560, 28, 20, 40, 'res'],     // Lei Tung Estate up the hill
+      [230, 555, 28, 20, 44, 'res'], [290, 560, 28, 20, 38, 'res'],
+      [170, 750, 28, 20, 42, 'res'],     // estate south slope
+      [240, 755, 28, 20, 36, 'res'], [310, 750, 28, 20, 40, 'res'],
+      [60, 500, 26, 20, 30, 'res'],      // Ap Lei Chau Main St blocks
+      [60, 440, 26, 20, 24, 'res'],
+    ],
+    parks: [[330, 560, 370, 600, 8], [330, 720, 370, 760, 8]],
+    lamps: [[120, 600, 360, 30], [120, 722, 360, 30]],
+  },
+  { // ---- South Horizons — the terminus under the estate; slab towers
+    //     ring the dig, the promenade runs the south shore.
+    id: 'SOH', hole: [-200, 40, 632, 728],
+    roads: [[-240, 616, 80, 604],        // South Horizon Dr north edge
+            [-240, 740, 80, 752]],       // promenade road south edge
+    water: [[-340, 800, 380, 1100]],     // the south shore sea band
+    towers: [
+      [-260, 660, 30, 22, 44, 'res'],    // South Horizons slabs west
+      [-260, 710, 30, 22, 40, 'res'],
+      [80, 640, 30, 22, 46, 'res'],      // estate slabs east
+      [80, 700, 30, 22, 42, 'res'], [130, 670, 28, 20, 38, 'res'],
+      [-160, 570, 30, 22, 40, 'res'],    // north ring
+      [-60, 575, 30, 22, 36, 'res'], [20, 570, 28, 20, 34, 'res'],
+      [-80, 780, 90, 18, 8, 'mall'],     // Marina Square podium south
+    ],
+    parks: [[-230, 755, -40, 785, 14]],  // waterfront promenade greens
+    lamps: [[-230, 610, 70, 30], [-230, 746, 70, 30]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -1179,6 +1250,13 @@ const NAMES = [
   ['KOW', -1730, 36, -1090, '西九文化區 WKCD'],
   ['OLY', -1000, 40, -1352, '奧海城 Olympian City'],
   ['OLY', -608, 50, -1354, '滙豐中心 HSBC Centre'],
+  ['OCP', 805, 26, 388, '海洋公園 Ocean Park'],
+  ['OCP', 942, 36, 460, '海洋公園萬豪酒店 Marriott'],
+  ['WCH', 745, 18, 588, '南港島綫車廠 SIL Depot'],
+  ['WCH', 560, 46, 500, '黃竹坑工業區 Wong Chuk Hang'],
+  ['LET', 230, 52, 552, '利東邨 Lei Tung Estate'],
+  ['LET', 62, 36, 470, '鴨脷洲大街 Ap Lei Chau Main St'],
+  ['SOH', -80, 52, 570, '海怡半島 South Horizons'],
   ['TSW', 140, 34, -2490, '綠楊新邨 Luk Yeung Sun Chuen'],
   ['TSW', 520, 50, -2420, '南豐中心 Nan Fung Centre'],
   ['TSW', 560, 46, -2450, '悅來酒店 Panda Hotel'],
@@ -1206,6 +1284,11 @@ export function buildCity() {
     for (const [x0, z, x1, step] of s.lamps || []) lampRow(x0, z, x1, step);
     for (const [x0, z0, x1, z1] of s.quays || []) block((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, 0.35, QUAY_M, false);
     for (const [x0, z0, x1, z1] of s.piers || []) block((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, 1.0, QUAY_M, false);
+    for (const [x0, z0, x1, z1] of s.water || []) {
+      const w = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
+      w.rotateX(-Math.PI / 2);
+      put(w, WATER_M, (x0 + x1) / 2, 0.03, (z0 + z1) / 2);
+    }
     if (s.spire) {
       const [x, z, h] = s.spire;
       put(new THREE.ConeGeometry(9, 14, 4), FACADE.glass, x, h + 7, z, Math.PI / 4);

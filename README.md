@@ -44,6 +44,10 @@ procedural Hong Kong skyline around each station.
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 | KOW  | Kowloon 九龍 | Tung Chung Line + Airport Express (stacked islands under Elements/Union Square) |
 | OLY  | Olympic 奧運 | Tung Chung Line (at-grade side platforms, U1 gallery concourse) |
+| OCP  | Ocean Park 海洋公園 | South Island Line (elevated side platforms, park entrance) |
+| WCH  | Wong Chuk Hang 黃竹坑 | South Island Line (elevated side platforms, depot alongside) |
+| LET  | Lei Tung 利東 | South Island Line (underground island beneath Ap Lei Chau) |
+| SOH  | South Horizons 海怡半島 | South Island Line (south terminus; elevated side platforms) |
 
 ## Run
 
