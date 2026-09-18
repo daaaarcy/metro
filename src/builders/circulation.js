@@ -44,14 +44,7 @@ export function escalatorRun(run) {
     const rail = box(slopeLen, 0.09, 0.1, M.signPost);
     rail.rotation.z = -slope;
     rail.position.set(L / 2, -D / 2 + 1.52, s * (w / 2 + 0.05));
-    // the tilted pane's world AABB inflates into a full-height wall across
-    // the whole diagonal — collide with a vertical wall on the balustrade
-    // line instead (the group carries the plan yaw, so it becomes an OBB)
-    const barrier = box(L + 0.9, Math.abs(D) + 1.5, 0.06, M.balGlass);
-    barrier.position.set(L / 2, (0.6 - D) / 2, s * (w / 2 + 0.05));
-    barrier.visible = false;
-    barrier.userData.mergeSkip = true;   // collider-only — merging would render it
-    g.add(bal, rail, solid(barrier));
+    g.add(bal, rail, sideBarriers(L, D, w, s));
 
     // skirt light along the balustrade base — real escalators glow here;
     // also the cue that keeps the open well readable at night
@@ -83,6 +76,26 @@ export function escalatorRun(run) {
   run.len = L; run.drop = D; run.slopeLen = slopeLen;
   run.dx = dx / L; run.dz = dz / L;
   ESC_RUNS.push(run);
+  return g;
+}
+
+// Invisible collision along a run's open side: short vertical panels stepped
+// down the slope instead of one flat wall. A single L×D sheet hangs metres of
+// phantom barrier under the raised end — riders and walkers passing beneath
+// (the E1 stair crosses the Admiralty L1→L2 bank) hit an invisible line.
+function sideBarriers(L, D, w, s) {
+  const g = new THREE.Group();
+  const N = Math.max(3, Math.round(L / 1.8));
+  const seg = L / N;
+  for (let i = 0; i < N; i++) {
+    const ua = i * seg - (i ? 0.06 : 0.45), ub = (i + 1) * seg + (i === N - 1 ? 0.45 : 0.06);
+    const top = Math.max(-D * ua / L, -D * ub / L), bot = Math.min(-D * ua / L, -D * ub / L);
+    const barrier = box(ub - ua, top + 1.55 - bot + 0.6, 0.06, M.balGlass);
+    barrier.position.set((ua + ub) / 2, (top + 1.55 + bot - 0.6) / 2, s * (w / 2 + 0.05));
+    barrier.visible = false;
+    barrier.userData.mergeSkip = true;   // collider-only — merging would render it
+    g.add(solid(barrier));
+  }
   return g;
 }
 
@@ -119,11 +132,7 @@ export function stairRun(run) {
     const rail = box(slopeLen, 0.09, 0.1, M.signPost);
     rail.rotation.z = -slope;
     rail.position.set(L / 2, -D / 2 + 1.52, s * (w / 2 + 0.05));
-    const barrier = box(L + 0.9, D + 1.5, 0.06, M.balGlass);
-    barrier.position.set(L / 2, (0.6 - D) / 2, s * (w / 2 + 0.05));
-    barrier.visible = false;
-    barrier.userData.mergeSkip = true;   // collider-only — merging would render it
-    g.add(bal, rail, solid(barrier));
+    g.add(bal, rail, sideBarriers(L, D, w, s));
   }
 
   // landing plates bridging the floor-opening margins at both ends

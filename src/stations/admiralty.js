@@ -62,7 +62,7 @@ export const ADM = {
   escalators: [
     { from: 'L1', to: 'L2', frame: 'main', cx: -45, cz: 0, dir: [-1, 0], n: 2 },
     { from: 'L1', to: 'L2', frame: 'main', cx:   0, cz: 0, dir: [ 1, 0], n: 3 },
-    { from: 'L1', to: 'L2', frame: 'main', cx:  45, cz: 0, dir: [-1, 0], n: 2 },
+    { from: 'L1', to: 'L2', frame: 'main', cx:  45, cz: 0, dir: [ 1, 0], n: 2 },
     { from: 'L2', to: 'L3', frame: 'main', cx: -58, cz: 0, dir: [ 1, 0], n: 2 },
     { from: 'L2', to: 'L3', frame: 'main', cx: -20, cz: 0, dir: [-1, 0], n: 2 },
     { from: 'L2', to: 'L3', frame: 'main', cx:  20, cz: 0, dir: [ 1, 0], n: 2 },
