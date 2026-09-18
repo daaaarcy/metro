@@ -796,8 +796,25 @@ export const ROUTES = [
   // terminus reversals: each line's island has two faces — a consist
   // departs one face through its portal and re-enters berthing at the
   // other (a rider gets carried across to the opposite platform edge)
-  { line: 'EAL', legs: ['off', 'off'], consists: 2,
-    stops: [{ uid: 'ADM:L5', num: 7 }, { uid: 'ADM:L5', num: 8 }] },
+  // East Rail Line: Admiralty's L5 terminus -> Exhibition Centre on the
+  // Wan Chai North reclamation, under the harbour surfacing at Hung Hom,
+  // then north past Mong Kok East and Kowloon Tong to Tai Wai where the
+  // 'off' legs continue the corridor toward Lo Wu / Lok Ma Chau off-map.
+  { line: 'EAL', consists: 2,
+    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'],
+    stops: [{ uid: 'ADM:L5', num: 7 },
+            { uid: 'EXC:L2', num: 1 },
+            { uid: 'HUH:P', num: 1 },
+            { uid: 'MKE:P', num: 1 },
+            { uid: 'KOT:P', num: 1 },
+            { uid: 'TAW:U1', num: 1 },
+            { uid: 'TAW:U1', num: 2 },
+            { uid: 'KOT:P', num: 2 },
+            { uid: 'MKE:P', num: 2 },
+            { uid: 'HUH:P', num: 2 },
+            { uid: 'EXC:L2', num: 2 },
+            { uid: 'ADM:L5', num: 8, dwell: 50 }] },
   // South Island Line: Admiralty's L6 terminus -> tunnel south under the
   // hills to Ocean Park, along the viaduct to Wong Chuk Hang, under the
   // Aberdeen Channel to Lei Tung, and out to the South Horizons terminus.

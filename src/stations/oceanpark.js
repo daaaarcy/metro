@@ -17,8 +17,8 @@ export const OCP = twlViaduct({
 
   // SIL faces — P1 southbound to South Horizons, P2 back to Admiralty
   faces: [
-    { num: 1, line: 'SIL', side: -1, dir: 1,  to: { zh: '往海怡半島', en: 'to South Horizons' } },
-    { num: 2, line: 'SIL', side: 1,  dir: -1, to: { zh: '往金鐘',     en: 'to Admiralty' } },
+    { num: 1, line: 'SIL', side: -1, dir: -1, to: { zh: '往海怡半島', en: 'to South Horizons' } },
+    { num: 2, line: 'SIL', side: 1,  dir: 1,  to: { zh: '往金鐘',     en: 'to Admiralty' } },
   ],
 
   // park entrance north side; the bus terminus + Police College south —

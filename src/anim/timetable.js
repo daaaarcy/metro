@@ -35,6 +35,11 @@ const FEEDS = [
   ['SIL', 'WCH'],
   ['SIL', 'LET'],
   ['SIL', 'SOH'],
+  ['EAL', 'EXC'],
+  ['EAL', 'HUH'],
+  ['EAL', 'MKE'],
+  ['EAL', 'KOT'],
+  ['EAL', 'TAW'],
 ];
 const POLL_S = 45;
 

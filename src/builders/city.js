@@ -1077,6 +1077,90 @@ const SITES = [
             [-700, -1560, -580, -1530, 10]],
     lamps: [[-1030, -1384, -570, 30], [-1030, -1514, -570, 30]],
   },
+  { // ---- Exhibition Centre — the Wan Chai North reclamation: Convention
+    //     Plaza towers + hotels wedged between Immigration Tower and the
+    //     HKCEC slab on the water.
+    id: 'EXC', hole: [478, 722, -94, -6],
+    roads: [[470, 2, 730, 14],          // Gloucester Rd service along the south
+            [466, -94, 478, 14], [722, -94, 734, 14]],
+    towers: [
+      [560, 34, 30, 22, 44, 'office'],  // Convention Plaza office tower
+      [614, 36, 26, 20, 52, 'hotel'],   // Grand Hyatt
+      [668, 32, 26, 20, 46, 'hotel'],   // Renaissance Harbour View
+      [450, 30, 24, 18, 36, 'office'],  // China Overseas-ish west
+      [510, 66, 26, 20, 28, 'res'], [580, 68, 24, 18, 32, 'res'],
+      [650, 70, 26, 20, 30, 'res'],     // Wan Chai res row south
+    ],
+    parks: [[735, -88, 770, -30, 8]],   // harbourfront promenade green
+    lamps: [[480, 8, 720, 40]],
+  },
+  { // ---- Hung Hom — the old KCR terminus trench where the EAL surfaces
+    //     from the harbour: HK Coliseum's arena block, PolyU campus west,
+    //     Metropolis east, Hung Hom town south.
+    id: 'HUH', hole: [678, 922, -1024, -936],
+    roads: [[670, -1036, 930, -1024], [670, -936, 930, -924],
+            [666, -1024, 678, -936], [922, -1024, 934, -936]],
+    towers: [
+      [880, -1070, 42, 30, 14, 'heritage'], // HK Coliseum arena block
+      [960, -1000, 34, 26, 32, 'hotel'],    // Metropolis / Harbour Plaza
+      [700, -1070, 30, 22, 20, 'com'], [745, -1095, 28, 22, 18, 'com'], // PolyU
+      [640, -900, 26, 20, 30, 'res'], [590, -905, 24, 18, 26, 'res'],
+      [860, -890, 26, 20, 34, 'res'], [910, -895, 24, 18, 28, 'res'],
+    ],
+    parks: [[960, -1080, 1010, -1030, 10]],
+    lamps: [[680, -1030, 920, 40], [680, -930, 920, 40]],
+  },
+  { // ---- Mong Kok East — the embankment stop: Grand Century Place +
+    //     Royal Plaza over the east edge, Mong Kok Stadium's pitch south,
+    //     res towers filling the blocks toward the Lion Rock foot.
+    id: 'MKE', hole: [626, 874, -1286, -1194],
+    roads: [[620, -1300, 880, -1286], [620, -1194, 880, -1180],
+            [614, -1286, 626, -1194], [874, -1286, 886, -1194]],
+    towers: [
+      [892, -1240, 30, 26, 40, 'com'],      // Grand Century Place office
+      [892, -1296, 26, 22, 42, 'hotel'],    // Royal Plaza Hotel
+      [700, -1340, 26, 22, 30, 'res'], [760, -1350, 24, 20, 28, 'res'],
+      [820, -1345, 24, 20, 32, 'res'],
+      [660, -1160, 24, 18, 22, 'res'], [730, -1155, 26, 20, 26, 'res'],
+      [800, -1160, 24, 18, 20, 'res'],
+    ],
+    parks: [[540, -1160, 630, -1130, 0]],   // Mong Kok Stadium pitch
+    lamps: [[630, -1293, 870, 40], [630, -1187, 870, 40]],
+  },
+  { // ---- Kowloon Tong — Festival Walk's mall + tower over the west,
+    //     Kowloon Tsai Park NW, Baptist U / City U blocks climbing the
+    //     Lion Rock foothills, school low-rises south.
+    id: 'KOT', hole: [478, 722, -1464, -1376],
+    roads: [[470, -1476, 730, -1464], [470, -1376, 730, -1364],
+            [466, -1464, 478, -1376], [722, -1464, 734, -1376]],
+    towers: [
+      [445, -1470, 44, 34, 14, 'mall'],     // Festival Walk mall
+      [500, -1480, 26, 22, 36, 'com'],      // Festival Walk tower
+      [720, -1482, 30, 22, 22, 'com'], [775, -1478, 26, 20, 28, 'com'], // BU/CityU
+      [560, -1340, 28, 20, 14, 'heritage'], [620, -1350, 26, 20, 16, 'res'],
+      [680, -1345, 24, 18, 18, 'res'],
+    ],
+    parks: [[380, -1495, 450, -1420, 12]],  // Kowloon Tsai Park
+    lamps: [[480, -1470, 720, 40], [480, -1370, 720, 40]],
+  },
+  { // ---- Tai Wai — Shing Mun valley stop north of the Lion Rock tunnel:
+    //     Festival City's slab towers over the depot land, the river
+    //     channel east, Che Kung Temple on its bank, village rows south.
+    id: 'TAW', hole: [598, 842, -2192, -2088],
+    roads: [[590, -2204, 850, -2192], [590, -2088, 850, -2076],
+            [586, -2192, 598, -2088], [842, -2192, 854, -2088]],
+    towers: [
+      [600, -2230, 22, 20, 46, 'res'], [640, -2240, 22, 20, 50, 'res'],
+      [680, -2230, 22, 20, 48, 'res'], [720, -2245, 22, 20, 52, 'res'],
+      [760, -2230, 22, 20, 44, 'res'], [800, -2240, 22, 20, 46, 'res'], // Festival City
+      [870, -2070, 20, 16, 10, 'heritage'], // Che Kung Temple on the bank
+      [620, -2060, 22, 16, 12, 'res'], [670, -2055, 20, 16, 10, 'res'],
+      [720, -2065, 22, 18, 14, 'res'], [780, -2058, 24, 18, 16, 'res'],
+    ],
+    water: [[860, -2350, 905, -2125]],    // Shing Mun river channel east
+    parks: [[790, -2075, 830, -2045, 8]],
+    lamps: [[600, -2198, 840, 40], [600, -2082, 840, 40]],
+  },
   { // ---- Ocean Park — the SIL surfaces south of the hills onto the
     //     coastal viaduct. Park entrance gardens + bus terminus north,
     //     Police College and the Wong Chuk Hang Rd blocks south.
@@ -1257,6 +1341,16 @@ const NAMES = [
   ['LET', 230, 52, 552, '利東邨 Lei Tung Estate'],
   ['LET', 62, 36, 470, '鴨脷洲大街 Ap Lei Chau Main St'],
   ['SOH', -80, 52, 570, '海怡半島 South Horizons'],
+  ['EXC', 1010, 20, -80, '香港會展中心 HKCEC'],
+  ['EXC', 614, 58, 36, '君悅酒店 Grand Hyatt'],
+  ['HUH', 880, 22, -1070, '香港體育館 HK Coliseum'],
+  ['HUH', 960, 38, -1000, '都會海逸 Metropolis'],
+  ['MKE', 892, 50, -1296, '帝京酒店 Royal Plaza'],
+  ['KOT', 445, 22, -1470, '又一城 Festival Walk'],
+  ['KOT', 775, 36, -1478, '城市大學 City U'],
+  ['TAW', 700, 58, -2235, '名城 Festival City'],
+  ['TAW', 870, 16, -2070, '車公廟 Che Kung Temple'],
+  ['TAW', 883, 6, -2260, '城門河 Shing Mun River'],
   ['TSW', 140, 34, -2490, '綠楊新邨 Luk Yeung Sun Chuen'],
   ['TSW', 520, 50, -2420, '南豐中心 Nan Fung Centre'],
   ['TSW', 560, 46, -2450, '悅來酒店 Panda Hotel'],

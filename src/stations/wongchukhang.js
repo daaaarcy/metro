@@ -16,8 +16,8 @@ export const WCH = twlViaduct({
   platZh: '月台・南港島綫', platEn: 'South Island Line Platform',
 
   faces: [
-    { num: 1, line: 'SIL', side: -1, dir: 1,  to: { zh: '往海怡半島', en: 'to South Horizons' } },
-    { num: 2, line: 'SIL', side: 1,  dir: -1, to: { zh: '往金鐘',     en: 'to Admiralty' } },
+    { num: 1, line: 'SIL', side: -1, dir: -1, to: { zh: '往海怡半島', en: 'to South Horizons' } },
+    { num: 2, line: 'SIL', side: 1,  dir: 1,  to: { zh: '往金鐘',     en: 'to Admiralty' } },
   ],
 
   exits: [

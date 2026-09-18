@@ -48,6 +48,11 @@ procedural Hong Kong skyline around each station.
 | WCH  | Wong Chuk Hang 黃竹坑 | South Island Line (elevated side platforms, depot alongside) |
 | LET  | Lei Tung 利東 | South Island Line (underground island beneath Ap Lei Chau) |
 | SOH  | South Horizons 海怡半島 | South Island Line (south terminus; elevated side platforms) |
+| EXC  | Exhibition Centre 會展 | East Rail Line (underground island, Wan Chai North reclamation) |
+| HUH  | Hung Hom 紅磡 | East Rail Line (at-grade side platforms under gallery, Coliseum/PolyU) |
+| MKE  | Mong Kok East 旺角東 | East Rail Line (at-grade side platforms, Grand Century Place) |
+| KOT  | Kowloon Tong 九龍塘 | East Rail Line (at-grade side platforms, Festival Walk) |
+| TAW  | Tai Wai 大圍 | East Rail Line (elevated side platforms north of Lion Rock) |
 
 ## Run
 
