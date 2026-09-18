@@ -49,9 +49,11 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   // signage/labels keep both languages regardless.
   const LANG_KEY = 'adm-lang';
   const langBtns = document.querySelectorAll('#lang-toggle button');
+  const search = document.getElementById('stn-search');
   const setLang = l => {
     document.documentElement.dataset.lang = l;
     langBtns.forEach(b => b.classList.toggle('active', b.dataset.lang === l));
+    search.placeholder = l === 'zh' ? search.dataset.phZh : search.dataset.phEn;
     try { localStorage.setItem(LANG_KEY, l); } catch { /* private mode */ }
   };
   let initial = 'en';
@@ -93,8 +95,10 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     if (axis && axis !== 'none') { ensureOrbit(); onClip(axis, parseFloat(slider.value)); }
   });
 
-  // level list grouped by station — each group collapses on its header,
-  // jump-to viewpoint per level. Open/closed state persists.
+  // level list grouped by station, alphabetically by English name — each
+  // group collapses on its header, jump-to viewpoint per level. Open/closed
+  // state persists. The search box filters the groups (and force-opens
+  // matches) — keystrokes there must not reach the walk keys.
   const list = document.getElementById('level-list');
   list.replaceChildren();   // rebuild cleanly if buildUI ever re-runs
   const OPEN_KEY = 'adm-lvl-open';
@@ -104,9 +108,11 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   const saveOpen = () => {
     try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openSet])); } catch { /* private mode */ }
   };
-  for (const [sid, stn] of Object.entries(STATIONS)) {
+  const sorted = Object.entries(STATIONS).sort((a, b) => a[1].en.localeCompare(b[1].en));
+  for (const [sid, stn] of sorted) {
     const grp = document.createElement('div');
     grp.className = 'lvl-group';
+    grp.dataset.sid = sid;
     const head = document.createElement('div');
     head.className = 'lvl-stn';
     head.innerHTML = `<span class="lvl-chev">▾</span><span class="zh">${stn.zh}</span> <span class="en">${stn.en}</span>`;
@@ -131,6 +137,19 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
       row.querySelector('.go').addEventListener('click', () => onGoto(lvl.uid, vp[lvl.uid]));
     }
   }
+
+  // search — match on code, English or Chinese name; matches force-open so
+  // their level rows are visible, clearing restores the saved open state
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    for (const grp of list.children) {
+      const sid = grp.dataset.sid, stn = STATIONS[sid];
+      const match = !q || sid.toLowerCase().includes(q)
+        || stn.en.toLowerCase().includes(q) || stn.zh.includes(q);
+      grp.style.display = match ? '' : 'none';
+      grp.classList.toggle('closed', q ? !match : !openSet.has(sid));
+    }
+  });
 
   // station mini-map — expandable MTR schematic; lit (built) stations
   // navigate straight to that station's concourse. Grey stops are inert.
@@ -185,6 +204,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   document.getElementById('panel-close').addEventListener('click', () => setPanel(false));
   chip.addEventListener('click', () => setPanel(true));
   window.addEventListener('keydown', e => {
+    if (e.target instanceof HTMLInputElement) return;   // typing in the search box
     if (e.code === 'KeyH' && !e.repeat) setPanel(panel.classList.contains('hidden'));
   });
 }

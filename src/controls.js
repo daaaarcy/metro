@@ -61,6 +61,7 @@ export class CameraRig {
     dom.addEventListener('pointerup', endDrag);
     dom.addEventListener('pointercancel', endDrag);
     window.addEventListener('keydown', e => {
+      if (e.target instanceof HTMLInputElement) return;   // typing in the search box
       this.keys.add(e.code);
       if (e.code === 'KeyE' && this.mode === 'walk') {
         if (this.nearGate) {
@@ -69,7 +70,10 @@ export class CameraRig {
         } else if (this.nearLift || this._inLift) this.onLiftTap?.();
       }
     });
-    window.addEventListener('keyup', e => this.keys.delete(e.code));
+    window.addEventListener('keyup', e => {
+      if (e.target instanceof HTMLInputElement) return;
+      this.keys.delete(e.code);
+    });
   }
 
   // Build/attach static collision data — call once after the station is in

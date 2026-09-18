@@ -65,7 +65,7 @@ export const CEN = {
   exits: [
     { id: 'A',  x: -85, side: -1, zh: '干諾道中・中環碼頭・國際金融中心', en: 'Connaught Rd · Piers · IFC' },
     { id: 'B',  x: -68, side: -1, zh: '環球大廈・恒生銀行總行',   en: 'World-wide House · Hang Seng Bank' },
-    { id: 'C',  x: -56, side: 1,  zh: '利源東街・利源西街',      en: 'Li Yuen Street' },
+    { id: 'C',  x: -56, side: 1,  zh: '利源東街・利源西街',      en: 'Li Yuen St East · West' },
     { id: 'D2', x: -44, side: 1,  zh: '皇后大道中・蘭桂坊',      en: "Queen's Rd Central · Lan Kwai Fong" },
     { id: 'D1', x: -30, side: 1,  zh: '畢打街',                  en: 'Pedder Street' },
     { id: 'E',  x: -10, side: -1, zh: '遮打大廈・遮打道',        en: 'Chater House · Chater Road' },
