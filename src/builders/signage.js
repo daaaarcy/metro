@@ -111,12 +111,19 @@ export function exitFascia(exit, w = 7.7, h = 1.05) {
 
   ctx.textAlign = 'left';
   const tx = pad * 2 + chip;
+  const fit = (text, px, weight, family = 'sans-serif') => {
+    ctx.font = `${weight} ${px}px ${family}`;
+    const tw = ctx.measureText(text).width;
+    if (tw > cw - tx - pad) ctx.font = `${weight} ${Math.floor(px * (cw - tx - pad) / tw)}px ${family}`;
+  };
   ctx.fillStyle = '#fff';
-  ctx.font = `600 ${ch * 0.42}px "PingFang HK","PingFang SC",sans-serif`;
-  ctx.fillText(`出 ${exit.zh}`, tx, ch * 0.33);
-  ctx.font = `400 ${ch * 0.26}px sans-serif`;
+  const zhText = `出 ${exit.zh}`;
+  fit(zhText, ch * 0.42, 600, '"PingFang HK","PingFang SC",sans-serif');
+  ctx.fillText(zhText, tx, ch * 0.33);
+  const enText = `Exit ${exit.id} · ${exit.en}`;
+  fit(enText, ch * 0.26, 400);
   ctx.fillStyle = '#cfe0d8';
-  ctx.fillText(`Exit ${exit.id} · ${exit.en}`, tx, ch * 0.74);
+  ctx.fillText(enText, tx, ch * 0.74);
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
