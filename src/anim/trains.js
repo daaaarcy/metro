@@ -929,32 +929,53 @@ export const ROUTES = [
             { uid: 'ADM:L6', num: 6, dwell: 50 }] },
   // Tung Chung Line: Hong Kong terminus -> under the strait to Kowloon
   // (Elements/ICC), southeast across the reclamation to Olympic, then
-  // the long West Kowloon leg up to Lai King's stacked islands where the
-  // TWL shares the boxes — Nam Cheong isn't built yet so the consist
-  // runs that reach as one tunnel. Past LAK the line runs off-map
-  // (Tsing Yi / Sunny Bay / Tung Chung unbuilt) and re-enters LAK's
-  // lower island inbound. legs[i] runs after stops[i]; 'off' at the HOK
-  // terminus wraps onto the other face.
+  // the long West Kowloon leg up to Lai King's stacked islands, west to
+  // Tsing Yi and Sunny Bay on the Lantau shore, ending at Tung Chung.
+  // legs[i] runs after stops[i]; 'off' wraps at TUC and at HOK.
   { line: 'TCL', travel: 80, consists: 2,
-    legs: ['tunnel', 'tunnel', 'tunnel', 'off',
-           'tunnel', 'tunnel', 'tunnel', 'off'],
+    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'off'],
     stops: [{ uid: 'HOK:L4', num: 3 },
             { uid: 'KOW:L3', num: 3 },
             { uid: 'OLY:P',  num: 3 },
             { uid: 'LAK:L3', num: 3 },
+            { uid: 'TSY:P',  num: 1 },
+            { uid: 'SUN:P',  num: 1 },
+            { uid: 'TUC:L2', num: 1 },
+            { uid: 'TUC:L2', num: 2 },
+            { uid: 'SUN:P',  num: 2 },
+            { uid: 'TSY:P',  num: 2 },
             { uid: 'LAK:L5', num: 4 },
             { uid: 'OLY:P',  num: 4 },
             { uid: 'KOW:L3', num: 4 },
             { uid: 'HOK:L4', num: 4, dwell: 55 }] },
-  // Airport Express: HOK terminus -> Kowloon, then off-map toward
-  // Tsing Yi / Airport / AsiaWorld-Expo; the consist re-enters KOW's
-  // inbound face for the run back to Hong Kong.
+  // Airport Express: HOK terminus -> Kowloon -> Tsing Yi -> Airport ->
+  // the AsiaWorld-Expo terminus, then the run back. HOK's single side
+  // platform self-wraps off-map between workings.
   { line: 'AEX', travel: 80, consists: 1,
-    legs: ['tunnel', 'off', 'tunnel', 'off'],
+    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'],
     stops: [{ uid: 'HOK:L2', num: 1 },
             { uid: 'KOW:L2', num: 1 },
+            { uid: 'TSY:L1', num: 3 },
+            { uid: 'AIR:P',  num: 1 },
+            { uid: 'AWE:P',  num: 1 },
+            { uid: 'AWE:P',  num: 2 },
+            { uid: 'AIR:P',  num: 2 },
+            { uid: 'TSY:L1', num: 4 },
             { uid: 'KOW:L2', num: 2 },
             { uid: 'HOK:L2', num: 1, dwell: 50 }] },
+  // Disneyland Resort Line: the Sunny Bay shuttle — face 3 departs east
+  // to the resort terminus, wraps, returns to face 4, and reverses
+  // off-map back onto face 3.
+  { line: 'DRL', travel: 60, consists: 1,
+    legs: ['tunnel', 'off', 'tunnel', 'off'],
+    stops: [{ uid: 'SUN:L1', num: 3 },
+            { uid: 'DIS:P',  num: 1 },
+            { uid: 'DIS:P',  num: 2 },
+            { uid: 'SUN:L1', num: 4 }] },
 ];
 
 // a PSD bay is a solid barrier unless the consist berthed there is dwelling

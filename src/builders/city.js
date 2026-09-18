@@ -1652,6 +1652,89 @@ const SITES = [
     parks: [[3660, -3600, 3760, -3700, 10]], // wetlands
     lamps: [[3400, -3466, 3640, 40], [3400, -3574, 3640, 40]],
   },
+  { // ---- Tsing Yi — Maritime Square podium over the dig, estate slabs
+    //     and Tsing Yi Park around the island town.
+    id: 'TSY', hole: [-2020, -1780, -1448, -1352],
+    roads: [[-2030, -1340, -1770, -1352], [-2030, -1460, -1770, -1448],
+            [-2032, -1460, -2020, -1340], [-1780, -1460, -1768, -1340]],
+    towers: [
+      [-1900, -1300, 60, 40, 14, 'mall'],   // Maritime Square
+      [-1970, -1260, 34, 24, 40, 'res'],    // estate slabs north
+      [-1840, -1255, 34, 24, 44, 'res'],
+      [-1980, -1500, 34, 24, 38, 'res'],    // Tsing Yi Estate south
+      [-1910, -1515, 34, 24, 42, 'res'], [-1830, -1505, 30, 22, 36, 'res'],
+    ],
+    parks: [[-1770, -1420, -1700, -1360, 10]],
+    lamps: [[-2020, -1346, -1780, 40], [-2020, -1454, -1780, 40]],
+  },
+  { // ---- Sunny Bay — the open shore interchange: promenade greens and
+    //     low blocks, the bay water east.
+    id: 'SUN', hole: [-2570, -2330, -1948, -1852],
+    roads: [[-2580, -1840, -2320, -1852], [-2580, -1960, -2320, -1948],
+            [-2582, -1960, -2570, -1840], [-2330, -1960, -2318, -1840]],
+    towers: [
+      [-2540, -1800, 34, 24, 26, 'res'],    // shore blocks north
+      [-2470, -1795, 34, 24, 30, 'res'], [-2400, -1805, 30, 22, 24, 'res'],
+    ],
+    water: [[-2300, -1960, -2100, -1700]],  // Sunny Bay shore east
+    parks: [[-2560, -1975, -2360, -2010, 8]],
+    lamps: [[-2570, -1846, -2330, 40], [-2570, -1954, -2330, 40]],
+  },
+  { // ---- Tung Chung — the new-town centre under Citygate: mall podium,
+    //     crescent towers, Fu Tung estate slabs, cable-car terminus.
+    id: 'TUC', hole: [-3120, -2880, -2348, -2252],
+    roads: [[-3130, -2240, -2870, -2252], [-3130, -2360, -2870, -2348],
+            [-3132, -2360, -3120, -2240], [-2880, -2360, -2868, -2240]],
+    towers: [
+      [-3000, -2200, 70, 44, 16, 'mall'],   // Citygate podium north
+      [-3070, -2160, 34, 24, 44, 'res'],    // Coastal Skyline slabs
+      [-2940, -2155, 34, 24, 48, 'res'], [-2870, -2165, 34, 24, 40, 'res'],
+      [-3080, -2400, 34, 24, 38, 'res'],    // Fu Tung Estate south
+      [-3010, -2415, 34, 24, 42, 'res'], [-2930, -2405, 30, 22, 36, 'res'],
+      [-3150, -2300, 24, 18, 10, 'heritage'], // Ngong Ping 360 terminus
+    ],
+    parks: [[-2860, -2230, -2800, -2250, 8]],
+    lamps: [[-3120, -2246, -2880, 40], [-3120, -2354, -2880, 40]],
+  },
+  { // ---- Airport — the long terminal hall fronting the platforms,
+    //     runway apron east, SkyPier greens.
+    id: 'AIR', hole: [-2920, -2680, -1548, -1452],
+    roads: [[-2930, -1440, -2670, -1452], [-2930, -1560, -2670, -1548],
+            [-2932, -1560, -2920, -1440], [-2680, -1560, -2668, -1440]],
+    towers: [
+      [-2800, -1400, 200, 40, 18, 'com'],   // Terminal 1 hall
+      [-2920, -1360, 40, 30, 40, 'office'], // Regal Airport Hotel
+      [-2500, -1470, 30, 22, 30, 'office'], // SkyCity blocks east
+      [-2430, -1480, 30, 22, 26, 'office'],
+    ],
+    parks: [[-2660, -1570, -2580, -1620, 8]],
+    lamps: [[-2920, -1446, -2680, 40], [-2920, -1554, -2680, 40]],
+  },
+  { // ---- AsiaWorld-Expo — the expo shed row west of the airport island,
+    //     hotel block and Skycity greens.
+    id: 'AWE', hole: [-3420, -3180, -1698, -1602],
+    roads: [[-3430, -1590, -3170, -1602], [-3430, -1710, -3170, -1698],
+            [-3432, -1710, -3420, -1590], [-3180, -1710, -3168, -1590]],
+    towers: [
+      [-3300, -1560, 160, 30, 10, 'com'],   // expo halls
+      [-3400, -1750, 34, 24, 34, 'office'], // expo hotel
+      [-3220, -1755, 30, 22, 28, 'office'],
+    ],
+    parks: [[-3380, -1730, -3300, -1780, 8]],
+    lamps: [[-3420, -1596, -3180, 40], [-3420, -1704, -3180, 40]],
+  },
+  { // ---- Disneyland Resort — parkland terminus: the castle keep, resort
+    //     hotel, Inspiration Lake greens — no slab blocks.
+    id: 'DIS', hole: [-2420, -2180, -2448, -2352],
+    roads: [[-2430, -2340, -2170, -2352], [-2430, -2460, -2170, -2448],
+            [-2432, -2460, -2420, -2340], [-2180, -2460, -2168, -2340]],
+    towers: [
+      [-2300, -2530, 24, 18, 20, 'heritage'], // the castle keep
+      [-2140, -2490, 44, 26, 20, 'res'],      // resort hotel
+    ],
+    parks: [[-2400, -2480, -2220, -2530, 10], [-2380, -2310, -2240, -2340, 8]],
+    lamps: [[-2420, -2346, -2180, 40], [-2420, -2454, -2180, 40]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -1814,6 +1897,14 @@ const NAMES = [
   ['LOW', 3920, 12, -3180, '羅湖管制站 Lo Wu Control Point'],
   ['LMC', 3520, 12, -3420, '落馬洲管制站 Lok Ma Chau'],
   ['LMC', 3710, 6, -3650, '落馬洲濕地 Wetlands'],
+  ['TSY', -1900, 16, -1300, '青衣城 Maritime Square'],
+  ['SUN', -2200, 8, -1830, '欣澳海灣 Sunny Bay'],
+  ['TUC', -3000, 18, -2200, '東薈城 Citygate Outlets'],
+  ['TUC', -3150, 12, -2300, '昂坪360 Ngong Ping 360'],
+  ['AIR', -2800, 20, -1400, '香港國際機場 HKIA Terminal 1'],
+  ['AWE', -3300, 12, -1560, '亞洲國際博覽館 AsiaWorld-Expo'],
+  ['DIS', -2300, 22, -2530, '迪士尼樂園 Disneyland'],
+  ['DIS', -2260, 8, -2490, '迪欣湖 Inspiration Lake'],
 ];
 
 export function buildCity() {

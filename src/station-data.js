@@ -70,8 +70,14 @@ import { FAN } from './stations/fanling.js';
 import { SHU } from './stations/sheungshui.js';
 import { LOW } from './stations/lowu.js';
 import { LMC } from './stations/lokmachau.js';
+import { TSY } from './stations/tsingyi.js';
+import { SUN } from './stations/sunnybay.js';
+import { TUC } from './stations/tungchung.js';
+import { AIR } from './stations/airport.js';
+import { AWE } from './stations/asiaworldexpo.js';
+import { DIS } from './stations/disneyland.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW, SKM, LOF, WTS, DIH, CHH, KOB, NTK, KWT, LAT, YAT, TKL, HOM, WHA, TKW, HAH, POL, LHP, SHS, FOT, UNI, TPM, TAO, FAN, SHU, LOW, LMC };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW, SKM, LOF, WTS, DIH, CHH, KOB, NTK, KWT, LAT, YAT, TKL, HOM, WHA, TKW, HAH, POL, LHP, SHS, FOT, UNI, TPM, TAO, FAN, SHU, LOW, LMC, TSY, SUN, TUC, AIR, AWE, DIS };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
@@ -92,6 +98,7 @@ export const LINES = {
   TKO: { zh: '將軍澳綫', en: 'Tseung Kwan O Line',  color: '#7D499D' },
   KTL: { zh: '觀塘綫',   en: 'Kwun Tong Line',      color: '#00AB4E' },
   TML: { zh: '屯馬綫',   en: 'Tuen Ma Line',        color: '#9A3B26' },
+  DRL: { zh: '迪士尼綫', en: 'Disneyland Resort Ln', color: '#F550A6' },
 };
 
 // Island platform half-width / track centre offsets (local Z).
@@ -113,6 +120,7 @@ export const TRAIN_SPEC = {
   TKO: { headway: 55, dwell: 14, cars: 8, carLen: 22.4 },
   KTL: { headway: 46, dwell: 13, cars: 8, carLen: 22.4 },
   TML: { headway: 55, dwell: 14, cars: 8, carLen: 23.0 },   // ex-KCR SP1900/IKK stock
+  DRL: { headway: 80, dwell: 15, cars: 4, carLen: 22.4 },   // converted 4-car M-Train shuttle
 };
 
 export const ESC = { runLen: 12.6, width: 1.15, gap: 0.55 }; // per-escalator width + gap

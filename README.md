@@ -79,6 +79,12 @@ procedural Hong Kong skyline around each station.
 | SHU  | Sheung Shui 上水 | East Rail Line (at-grade side platforms; LMC spur junction) |
 | LOW  | Lo Wu 羅湖 | East Rail Line (boundary terminus; frontier control point) |
 | LMC  | Lok Ma Chau 落馬洲 | East Rail Line (spur terminus; wetlands, Futian crossing) |
+| TSY  | Tsing Yi 青衣 | Tung Chung + Airport Express Lines (TCL sides at grade, AEX island below; Maritime Square) |
+| SUN  | Sunny Bay 欣澳 | Tung Chung + Disneyland Resort Lines (open shore interchange, DRL shuttle) |
+| TUC  | Tung Chung 東涌 | Tung Chung Line (west terminus; underground island under Citygate) |
+| AIR  | Airport 機場 | Airport Express (at-grade side platforms beside Terminal 1) |
+| AWE  | AsiaWorld-Expo 博覽館 | Airport Express (west terminus; expo halls) |
+| DIS  | Disneyland Resort 迪士尼 | Disneyland Resort Line (terminus; parkland, castle keep) |
 
 ## Run
 

@@ -107,7 +107,8 @@ const LINKS = [['CEN', 'HOK'], ['TST', 'ETS'], ['KOW', 'AUS']];
 
 // stations constructed in the viewer -> goto target level
 const BUILT = { ADM: 'ADM:L1', CEN: 'CEN:L1', HOK: 'HOK:L1', WAC: 'WAC:L1', CAB: 'CAB:L1', SHW: 'SHW:L1', SYP: 'SYP:L1', HKU: 'HKU:L1', KET: 'KET:L1', TIH: 'TIH:L1', FOH: 'FOH:L1', NOP: 'NOP:L1', QUB: 'QUB:L1', TAK: 'TAK:L1', SWH: 'SWH:L1', SKW: 'SKW:L1', HFC: 'HFC:U1', CHW: 'CHW:U1', TST: 'TST:L1', JOR: 'JOR:L1', YMT: 'YMT:L1', MOK: 'MOK:L1', PRE: 'PRE:L1', SSP: 'SSP:L1', CSW: 'CSW:L1', LCK: 'LCK:L1', MEF: 'MEF:L1', LAK: 'LAK:L1', KWF: 'KWF:GC', KWH: 'KWH:GC', TWH: 'TWH:L1', TSW: 'TSW:U1', KOW: 'KOW:L1', OLY: 'OLY:U1', OCP: 'OCP:GC', WCH: 'WCH:GC', LET: 'LET:L1', SOH: 'SOH:GC', EXC: 'EXC:L1', HUH: 'HUH:U1', MKE: 'MKE:U1', KOT: 'KOT:U1', TAW: 'TAW:GC', SKM: 'SKM:L1', LOF: 'LOF:L1', WTS: 'WTS:L1', DIH: 'DIH:L1', CHH: 'CHH:L1', KOB: 'KOB:GC', NTK: 'NTK:GC', KWT: 'KWT:GC', LAT: 'LAT:U1', YAT: 'YAT:U1', TKL: 'TKL:U1', HOM: 'HOM:L1', WHA: 'WHA:U1', TKW: 'TKW:L1', HAH: 'HAH:L1', POL: 'POL:L1', LHP: 'LHP:U1',
-  SHS: 'SHS:U1', FOT: 'FOT:U1', UNI: 'UNI:U1', TPM: 'TPM:U1', TAO: 'TAO:GC', FAN: 'FAN:U1', SHU: 'SHU:U1', LOW: 'LOW:U1', LMC: 'LMC:U1' };
+  SHS: 'SHS:U1', FOT: 'FOT:U1', UNI: 'UNI:U1', TPM: 'TPM:U1', TAO: 'TAO:GC', FAN: 'FAN:U1', SHU: 'SHU:U1', LOW: 'LOW:U1', LMC: 'LMC:U1',
+  TSY: 'TSY:U1', SUN: 'SUN:U1', TUC: 'TUC:L1', AIR: 'AIR:U1', AWE: 'AWE:U1', DIS: 'DIS:U1' };
 
 // label placement — [dx, dy, anchor] for the zh line; en stacks +8px
 // below it. Dense corridors alternate above/below like the official map;
