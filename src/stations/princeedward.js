@@ -42,14 +42,14 @@ export const PRE = {
       kind: 'island',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
-        { num: 2, line: 'KTL', side: 1,  dir: -1, terminus: true, to: { zh: '往黃埔', en: 'to Whampoa' } },
+        { num: 2, line: 'KTL', side: 1,  dir: -1, to: { zh: '往黃埔', en: 'to Whampoa' } },
       ],
     },
     L3: {
       kind: 'island',
       faces: [
         { num: 4, line: 'TWL', side: -1, dir: -1, to: { zh: '往中環',   en: 'to Central' } },
-        { num: 3, line: 'KTL', side: 1,  dir: 1,  terminus: true, to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
+        { num: 3, line: 'KTL', side: 1,  dir: 1,  to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
       ],
     },
   },

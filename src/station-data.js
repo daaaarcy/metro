@@ -44,8 +44,19 @@ import { HUH } from './stations/hunghom.js';
 import { MKE } from './stations/mongkokeast.js';
 import { KOT } from './stations/kowloontong.js';
 import { TAW } from './stations/taiwai.js';
+import { SKM } from './stations/shekkipmei.js';
+import { LOF } from './stations/lokfu.js';
+import { WTS } from './stations/wongtaisin.js';
+import { DIH } from './stations/diamondhill.js';
+import { CHH } from './stations/choihung.js';
+import { KOB } from './stations/kowloonbay.js';
+import { NTK } from './stations/ngautaukok.js';
+import { KWT } from './stations/kwuntong.js';
+import { LAT } from './stations/lamtin.js';
+import { YAT } from './stations/yautong.js';
+import { TKL } from './stations/tiukengleng.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW, SKM, LOF, WTS, DIH, CHH, KOB, NTK, KWT, LAT, YAT, TKL };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

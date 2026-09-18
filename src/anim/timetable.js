@@ -40,6 +40,17 @@ const FEEDS = [
   ['EAL', 'MKE'],
   ['EAL', 'KOT'],
   ['EAL', 'TAW'],
+  ['KTL', 'SKM'],
+  ['KTL', 'LOF'],
+  ['KTL', 'WTS'],
+  ['KTL', 'DIH'],
+  ['KTL', 'CHH'],
+  ['KTL', 'KOB'],
+  ['KTL', 'NTK'],
+  ['KTL', 'KWT'],
+  ['KTL', 'LAT'],
+  ['KTL', 'YAT'],
+  ['KTL', 'TKL'],
 ];
 const POLL_S = 45;
 

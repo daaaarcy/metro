@@ -747,15 +747,46 @@ export const ROUTES = [
             { uid: 'KWH:U1', num: 1 },
             { uid: 'TWH:L2', num: 1 },
             { uid: 'TSW:P', num: 1, dwell: 55 }] },
-  // Kwun Tong Line — Yau Ma Tei ↔ Mong Kok ↔ Prince Edward. Both ends
-  // are termini for now: PRE reverses between its L3 northbound face
-  // (P3) and L2 southbound face (P2); YMT reverses between its L3
-  // island's faces at the east portal.
-  { line: 'KTL', travel: 75, legs: ['tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'off'], consists: 2,
+  // Kwun Tong Line: YMT's L3 terminus <-> cross-platform pair at MOK ->
+  // PRE, then east through Shek Kip Mei and the Kowloon Tong interchange
+  // (KTL island below the EAL trench), along the corridor to Choi Hung,
+  // onto the Kwun Tong Rd viaduct, and out to the Tiu Keng Leng
+  // terminus where 'off' legs wrap the reversal.
+  { line: 'KTL', consists: 2,
+    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'tunnel', 'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'tunnel', 'off'],
     stops: [{ uid: 'YMT:L3', num: 3 },
             { uid: 'MOK:L2', num: 3 },
-            { uid: 'PRE:L3', num: 3, dwell: 40 },
-            { uid: 'PRE:L2', num: 2, dwell: 40 },
+            { uid: 'PRE:L3', num: 3 },
+            { uid: 'SKM:L2', num: 1 },
+            { uid: 'KOT:L2', num: 3 },
+            { uid: 'LOF:L2', num: 1 },
+            { uid: 'WTS:L2', num: 1 },
+            { uid: 'DIH:L2', num: 1 },
+            { uid: 'CHH:L2', num: 1 },
+            { uid: 'KOB:U1', num: 1 },
+            { uid: 'NTK:U1', num: 1 },
+            { uid: 'KWT:U1', num: 1 },
+            { uid: 'LAT:P', num: 1 },
+            { uid: 'YAT:P', num: 1 },
+            { uid: 'TKL:P', num: 1 },
+            { uid: 'TKL:P', num: 2 },
+            { uid: 'YAT:P', num: 2 },
+            { uid: 'LAT:P', num: 2 },
+            { uid: 'KWT:U1', num: 2 },
+            { uid: 'NTK:U1', num: 2 },
+            { uid: 'KOB:U1', num: 2 },
+            { uid: 'CHH:L2', num: 2 },
+            { uid: 'DIH:L2', num: 2 },
+            { uid: 'WTS:L2', num: 2 },
+            { uid: 'LOF:L2', num: 2 },
+            { uid: 'KOT:L2', num: 4 },
+            { uid: 'SKM:L2', num: 2 },
+            { uid: 'PRE:L2', num: 2 },
             { uid: 'MOK:L3', num: 4 },
             { uid: 'YMT:L3', num: 4, dwell: 40 }] },
   // Island Line through service: Kennedy Town is the west terminus —

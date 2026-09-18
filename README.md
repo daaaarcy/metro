@@ -51,8 +51,19 @@ procedural Hong Kong skyline around each station.
 | EXC  | Exhibition Centre 會展 | East Rail Line (underground island, Wan Chai North reclamation) |
 | HUH  | Hung Hom 紅磡 | East Rail Line (at-grade side platforms under gallery, Coliseum/PolyU) |
 | MKE  | Mong Kok East 旺角東 | East Rail Line (at-grade side platforms, Grand Century Place) |
-| KOT  | Kowloon Tong 九龍塘 | East Rail Line (at-grade side platforms, Festival Walk) |
+| KOT  | Kowloon Tong 九龍塘 | East Rail + Kwun Tong Lines (at-grade EAL sides over the KTL island) |
 | TAW  | Tai Wai 大圍 | East Rail Line (elevated side platforms north of Lion Rock) |
+| SKM  | Shek Kip Mei 石硤尾 | Kwun Tong Line (underground island) |
+| LOF  | Lok Fu 樂富 | Kwun Tong Line (underground island, Lok Fu Plaza) |
+| WTS  | Wong Tai Sin 黃大仙 | Kwun Tong Line (underground island, temple at the hill foot) |
+| DIH  | Diamond Hill 鑽石山 | Kwun Tong Line (underground island, Plaza Hollywood) |
+| CHH  | Choi Hung 彩虹 | Kwun Tong Line (underground island, rainbow estate) |
+| KOB  | Kowloon Bay 九龍灣 | Kwun Tong Line (viaduct side platforms, Telford/depot) |
+| NTK  | Ngau Tau Kok 牛頭角 | Kwun Tong Line (viaduct side platforms) |
+| KWT  | Kwun Tong 觀塘 | Kwun Tong Line (viaduct side platforms, town centre) |
+| LAT  | Lam Tin 藍田 | Kwun Tong Line (hillside cutting, gallery concourse) |
+| YAT  | Yau Tong 油塘 | Kwun Tong Line (at-grade side platforms) |
+| TKL  | Tiu Keng Leng 調景嶺 | Kwun Tong Line (east terminus; at-grade side platforms) |
 
 ## Run
 

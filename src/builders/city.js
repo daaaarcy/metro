@@ -1231,6 +1231,183 @@ const SITES = [
     parks: [[-230, 755, -40, 785, 14]],  // waterfront promenade greens
     lamps: [[-230, 610, 70, 30], [-230, 746, 70, 30]],
   },
+  { // ---- Shek Kip Mei — estate slab blocks east of the Nathan Rd
+    //     corridor, Tai Hang Sai low-rise south, City U at the hill foot.
+    id: 'SKM', hole: [830, 1070, -1488, -1392],
+    roads: [[820, -1380, 1080, -1392], [820, -1500, 1080, -1488],
+            [818, -1500, 830, -1380], [1070, -1500, 1082, -1380]],
+    towers: [
+      [850, -1340, 34, 24, 40, 'res'],   // Shek Kip Mei Estate slabs
+      [900, -1330, 34, 24, 44, 'res'], [950, -1345, 34, 24, 38, 'res'],
+      [1005, -1330, 34, 24, 42, 'res'], [1050, -1345, 30, 22, 36, 'res'],
+      [860, -1530, 24, 18, 14, 'res'],   // Tai Hang Sai low-rise
+      [920, -1535, 24, 18, 12, 'res'], [980, -1528, 24, 18, 16, 'res'],
+      [1040, -1532, 24, 18, 13, 'res'],
+    ],
+    parks: [[840, -1560, 920, -1580, 8]],
+    lamps: [[830, -1386, 1070, 40], [830, -1494, 1070, 40]],
+  },
+  { // ---- Lok Fu — Lok Fu Plaza podium under the Wang Tau Hom estate
+    //     blocks at the Lion Rock foot.
+    id: 'LOF', hole: [1130, 1370, -1508, -1412],
+    roads: [[1120, -1400, 1380, -1412], [1120, -1520, 1380, -1508],
+            [1118, -1520, 1130, -1400], [1370, -1520, 1382, -1400]],
+    towers: [
+      [1160, -1355, 44, 30, 12, 'mall'],  // Lok Fu Plaza podium
+      [1200, -1310, 30, 22, 38, 'res'],   // estate towers behind the mall
+      [1250, -1315, 30, 22, 42, 'res'], [1300, -1305, 30, 22, 36, 'res'],
+      [1350, -1320, 30, 22, 40, 'res'],
+      [1160, -1545, 30, 22, 34, 'res'],   // Wang Tau Hom south blocks
+      [1220, -1555, 30, 22, 38, 'res'], [1300, -1550, 30, 22, 32, 'res'],
+      [1360, -1558, 28, 20, 30, 'res'],
+    ],
+    parks: [[1140, -1570, 1220, -1590, 8]],
+    lamps: [[1130, -1406, 1370, 40], [1130, -1514, 1370, 40]],
+  },
+  { // ---- Wong Tai Sin — the temple + Temple Mall at the hill foot,
+    //     Lower Wong Tai Sin estate slabs south of the dig.
+    id: 'WTS', hole: [1420, 1660, -1488, -1392],
+    roads: [[1410, -1380, 1670, -1392], [1410, -1500, 1670, -1488],
+            [1408, -1500, 1420, -1380], [1660, -1500, 1672, -1380]],
+    towers: [
+      [1440, -1350, 30, 22, 36, 'res'],   // Temple-side towers
+      [1500, -1340, 30, 22, 40, 'res'], [1560, -1355, 30, 22, 34, 'res'],
+      [1620, -1342, 30, 22, 38, 'res'],
+      [1470, -1535, 40, 24, 10, 'heritage'], // Sik Sik Yuen temple halls
+      [1560, -1530, 60, 26, 12, 'mall'],     // Temple Mall podium
+      [1460, -1580, 30, 22, 32, 'res'],   // Lower WTS estate slabs
+      [1520, -1590, 30, 22, 36, 'res'], [1600, -1585, 30, 22, 30, 'res'],
+    ],
+    parks: [[1430, -1560, 1470, -1570, 8]],
+    lamps: [[1420, -1386, 1660, 40], [1420, -1494, 1660, 40]],
+  },
+  { // ---- Diamond Hill — Plaza Hollywood + Galaxia at the Kowloon Peak
+    //     foot; Chi Lin Nunnery gardens across the road.
+    id: 'DIH', hole: [1710, 1950, -1488, -1392],
+    roads: [[1700, -1380, 1960, -1392], [1700, -1500, 1960, -1488],
+            [1698, -1500, 1710, -1380], [1950, -1500, 1962, -1380]],
+    towers: [
+      [1740, -1350, 70, 34, 14, 'mall'],  // Plaza Hollywood podium
+      [1750, -1305, 30, 22, 44, 'res'],   // Galaxia towers
+      [1800, -1300, 30, 22, 48, 'res'], [1850, -1310, 30, 22, 42, 'res'],
+      [1900, -1300, 30, 22, 46, 'res'],
+      [1890, -1540, 60, 30, 12, 'heritage'], // Chi Lin Nunnery halls
+      [1930, -1540, 30, 22, 34, 'res'],   // Tai Hom side blocks
+    ],
+    parks: [[1820, -1560, 1880, -1580, 14]], // nunnery gardens
+    lamps: [[1710, -1386, 1950, 40], [1710, -1494, 1950, 40]],
+  },
+  { // ---- Choi Hung — the rainbow estate's famous slab blocks marching
+    //     east past the ridge's end; Ngau Chi Wan village south.
+    id: 'CHH', hole: [2040, 2280, -1668, -1572],
+    roads: [[2030, -1560, 2290, -1572], [2030, -1680, 2290, -1668],
+            [2028, -1680, 2040, -1560], [2280, -1680, 2292, -1560]],
+    towers: [
+      [2060, -1520, 40, 20, 30, 'res'],   // Choi Hung rainbow slabs
+      [2110, -1530, 40, 20, 32, 'res'], [2160, -1518, 40, 20, 28, 'res'],
+      [2210, -1530, 40, 20, 34, 'res'], [2260, -1520, 40, 20, 30, 'res'],
+      [2070, -1720, 26, 18, 14, 'res'],   // Ngau Chi Wan low-rise
+      [2130, -1730, 26, 18, 12, 'res'], [2190, -1725, 26, 18, 16, 'res'],
+      [2250, -1735, 26, 18, 13, 'res'],
+    ],
+    parks: [[2050, -1700, 2110, -1560, 10]],
+    lamps: [[2040, -1566, 2280, 40], [2040, -1674, 2280, 40]],
+  },
+  { // ---- Kowloon Bay — the KTL climbs onto the Kwun Tong Rd viaduct;
+    //     Telford Gardens slab towers and the depot sheds alongside,
+    //     industrial blocks across the road.
+    id: 'KOB', hole: [2312, 2568, -1736, -1624],
+    roads: [[2300, -1612, 2580, -1624], [2300, -1748, 2580, -1736],
+            [2300, -1748, 2312, -1612], [2568, -1748, 2580, -1612]],
+    towers: [
+      [2340, -1560, 30, 22, 36, 'res'],   // Telford Gardens slabs
+      [2390, -1550, 30, 22, 40, 'res'], [2440, -1565, 30, 22, 34, 'res'],
+      [2490, -1550, 30, 22, 38, 'res'], [2540, -1562, 30, 22, 32, 'res'],
+      [2340, -1790, 60, 30, 10, 'com'],   // depot sheds south
+      [2420, -1795, 60, 30, 8, 'com'],
+      [2500, -1785, 40, 24, 30, 'office'], // industrial loft blocks
+      [2550, -1795, 34, 24, 36, 'office'],
+    ],
+    parks: [],
+    lamps: [[2320, -1618, 2560, 40], [2320, -1742, 2560, 40]],
+  },
+  { // ---- Ngau Tau Kok — garden estate blocks north, Millennium City
+    //     office towers south on the industrial strip.
+    id: 'NTK', hole: [2592, 2848, -1796, -1684],
+    roads: [[2580, -1672, 2860, -1684], [2580, -1808, 2860, -1796],
+            [2580, -1808, 2592, -1672], [2848, -1808, 2860, -1672]],
+    towers: [
+      [2620, -1630, 32, 24, 30, 'res'],   // Garden Estate blocks
+      [2680, -1620, 32, 24, 34, 'res'], [2740, -1632, 32, 24, 28, 'res'],
+      [2800, -1620, 32, 24, 32, 'res'],
+      [2640, -1850, 36, 28, 52, 'office'], // Millennium City towers
+      [2720, -1860, 36, 28, 58, 'office'], [2800, -1848, 36, 28, 48, 'office'],
+    ],
+    parks: [[2600, -1830, 2660, -1850, 8]],
+    lamps: [[2600, -1678, 2840, 40], [2600, -1802, 2840, 40]],
+  },
+  { // ---- Kwun Tong — the town centre: apm mall + Yue Man Square at the
+    //     deck, office/industrial canyon along Kwun Tong Rd.
+    id: 'KWT', hole: [2872, 3128, -1856, -1744],
+    roads: [[2860, -1732, 3140, -1744], [2860, -1868, 3140, -1856],
+            [2860, -1868, 2872, -1732], [3128, -1868, 3140, -1732]],
+    towers: [
+      [2900, -1690, 50, 30, 16, 'mall'],   // apm / Yue Man Sq podium
+      [2940, -1650, 30, 22, 44, 'office'], // Millennium City 5
+      [3000, -1660, 30, 22, 50, 'office'], [3060, -1648, 30, 22, 40, 'office'],
+      [3100, -1660, 28, 20, 36, 'office'],
+      [2900, -1910, 30, 22, 38, 'com'],    // industrial loft strip
+      [2960, -1920, 30, 22, 34, 'com'], [3020, -1910, 30, 22, 42, 'com'],
+      [3080, -1920, 30, 22, 32, 'com'],
+    ],
+    parks: [[2880, -1890, 2940, -1910, 8]],
+    lamps: [[2880, -1738, 3120, 40], [2880, -1862, 3120, 40]],
+  },
+  { // ---- Lam Tin — hillside estate towers climbing the slope above the
+    //     cutting; Kai Tin Rd blocks south.
+    id: 'LAT', hole: [3140, 3380, -1928, -1832],
+    roads: [[3130, -1820, 3390, -1832], [3130, -1940, 3390, -1928],
+            [3128, -1940, 3140, -1820], [3380, -1940, 3392, -1820]],
+    towers: [
+      [3170, -1770, 32, 24, 36, 'res'],   // Lam Tin Estate slabs
+      [3230, -1760, 32, 24, 40, 'res'], [3290, -1775, 32, 24, 34, 'res'],
+      [3350, -1762, 32, 24, 38, 'res'],
+      [3180, -1990, 30, 22, 30, 'res'],   // Kai Tin blocks south
+      [3240, -2000, 30, 22, 34, 'res'], [3320, -1995, 30, 22, 28, 'res'],
+    ],
+    parks: [[3150, -1960, 3230, -1980, 10]],
+    lamps: [[3150, -1826, 3370, 40], [3150, -1934, 3370, 40]],
+  },
+  { // ---- Yau Tong — estate rebuild towers over the cutting, Cha Kwo
+    //     Ling industrial shore east.
+    id: 'YAT', hole: [3400, 3640, -2008, -1912],
+    roads: [[3390, -1900, 3650, -1912], [3390, -2020, 3650, -2008],
+            [3388, -2020, 3400, -1900], [3640, -2020, 3652, -1900]],
+    towers: [
+      [3430, -1860, 32, 24, 40, 'res'],   // Yau Tong Estate towers
+      [3490, -1850, 32, 24, 44, 'res'], [3550, -1865, 32, 24, 38, 'res'],
+      [3610, -1852, 32, 24, 42, 'res'],
+      [3440, -2060, 34, 24, 30, 'com'],   // Cha Kwo Ling industrial
+      [3510, -2070, 34, 24, 26, 'com'], [3580, -2060, 34, 24, 32, 'com'],
+    ],
+    parks: [[3420, -2030, 3500, -2050, 8]],
+    lamps: [[3410, -1906, 3630, 40], [3410, -2014, 3630, 40]],
+  },
+  { // ---- Tiu Keng Leng — the TKO new town's Metro Town towers over the
+    //     at-grade terminus; green hillside east toward the tunnel.
+    id: 'TKL', hole: [3660, 3900, -2088, -1992],
+    roads: [[3650, -1980, 3910, -1992], [3650, -2100, 3910, -2088],
+            [3648, -2100, 3660, -1980], [3900, -2100, 3912, -1980]],
+    towers: [
+      [3690, -1930, 32, 24, 46, 'res'],   // Metro Town towers
+      [3750, -1920, 32, 24, 50, 'res'], [3810, -1935, 32, 24, 44, 'res'],
+      [3870, -1920, 32, 24, 48, 'res'],
+      [3700, -2140, 30, 22, 36, 'res'],   // Kin Ming Estate blocks
+      [3760, -2150, 30, 22, 40, 'res'], [3840, -2145, 30, 22, 34, 'res'],
+    ],
+    parks: [[3660, -2120, 3740, -2140, 10]],
+    lamps: [[3670, -1986, 3890, 40], [3670, -2094, 3890, 40]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -1351,6 +1528,19 @@ const NAMES = [
   ['TAW', 700, 58, -2235, '名城 Festival City'],
   ['TAW', 870, 16, -2070, '車公廟 Che Kung Temple'],
   ['TAW', 883, 6, -2260, '城門河 Shing Mun River'],
+  ['SKM', 950, 46, -1320, '石硤尾邨 Shek Kip Mei Est'],
+  ['LOF', 1160, 14, -1355, '樂富廣場 Lok Fu Plaza'],
+  ['WTS', 1470, 12, -1535, '黃大仙祠 Wong Tai Sin Temple'],
+  ['DIH', 1740, 16, -1350, '荷里活廣場 Plaza Hollywood'],
+  ['DIH', 1890, 14, -1540, '志蓮淨苑 Chi Lin Nunnery'],
+  ['CHH', 2160, 34, -1518, '彩虹邨 Choi Hung Estate'],
+  ['KOB', 2390, 42, -1550, '德福花園 Telford Gardens'],
+  ['KOB', 2380, 12, -1790, '九龍灣車廠 Kowloon Bay Depot'],
+  ['NTK', 2720, 60, -1860, '創紀之城 Millennium City'],
+  ['KWT', 2900, 18, -1690, 'apm・裕民坊 Yue Man Sq'],
+  ['LAT', 3230, 42, -1760, '藍田邨 Lam Tin Estate'],
+  ['YAT', 3490, 46, -1850, '油塘邨 Yau Tong Estate'],
+  ['TKL', 3750, 52, -1920, '都會駅 Metro Town'],
   ['TSW', 140, 34, -2490, '綠楊新邨 Luk Yeung Sun Chuen'],
   ['TSW', 520, 50, -2420, '南豐中心 Nan Fung Centre'],
   ['TSW', 560, 46, -2450, '悅來酒店 Panda Hotel'],
