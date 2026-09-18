@@ -1,13 +1,26 @@
 import * as THREE from 'three';
-import { LEVELS, LINES, STATIONS, BOXES, PLATFORMS, boxToWorld } from './station-data.js';
+import { LEVELS, LINES, STATIONS, BOXES, PLATFORMS, boxToWorld, SIDE_TRACK_Z, BED_HALF } from './station-data.js';
 import { buildMiniMap } from './mtr-map.js';
 
 // Per-level interior viewpoints (world space) — a standing-height spot near
 // one end of each box looking down its length. Single-track platform levels
 // put the camera on the platform side, not over the trough. Bridges bespoke.
-function viewpoints() {
+// Candidate spots are probed with floorAt so 'go' never drops the player
+// into a track trough or an escalator well — falls back to the nominal
+// spot when nothing probes clean.
+function viewpoints(floorAt) {
   const eye = 1.7;
   const v = {};
+  // first candidate whose floor is at (not far under) the level's slab
+  const pick = (bx, cands, y) => {
+    for (const [lx, lz] of cands) {
+      const w = boxToWorld(bx, lx, lz);
+      const fl = floorAt?.(w.x, w.z, y + eye);
+      if (fl && fl.y > y - 0.55 && fl.y < y + 1.6) return { w, lz };
+    }
+    const [lx, lz] = cands[0];
+    return { w: boxToWorld(bx, lx, lz), lz };
+  };
   for (const lvl of LEVELS) {
     if (lvl.type === 'bridge') {
       v[lvl.uid] = { pos: new THREE.Vector3(-70, 9.6, -36), look: new THREE.Vector3(60, 8, -36) };
@@ -25,24 +38,36 @@ function viewpoints() {
       const far = east.length >= west.length ? east : west;
       const lx = far.reduce((s, e) => s + e.x, 0) / far.length;
       const lz = far.reduce((s, e) => s + e.side, 0) / far.length * zr * 0.8;
-      const e0 = boxToWorld(bx, cx, cz), t0 = boxToWorld(bx, lx, lz);
+      const e = pick(bx, [
+        [cx, cz], [cx, cz + zr * 0.45], [cx, cz - zr * 0.45],
+        [cx + 20, cz], [cx - 20, cz], [cx + 40, cz], [cx - 40, cz],
+      ], lvl.y);
+      const t0 = boxToWorld(bx, lx, lz);
       v[lvl.uid] = {
-        pos: new THREE.Vector3(e0.x, lvl.y + eye, e0.z),
+        pos: new THREE.Vector3(e.w.x, lvl.y + eye, e.w.z),
         look: new THREE.Vector3(t0.x, lvl.y + 0.6, t0.z),
       };
       continue;
     }
     const spec = PLATFORMS[lvl.uid];
-    const zs = spec?.kind === 'single' ? spec.single.side : -1;
-    const e = boxToWorld(bx, bx.len / 2 - 16, zs * bx.wid / 5);
-    const t = boxToWorld(bx, -bx.len / 3, zs * bx.wid / 7);
-    v[lvl.uid] = { pos: new THREE.Vector3(e.x, lvl.y + eye, e.z), look: new THREE.Vector3(t.x, lvl.y - 0.5, t.z) };
+    // stand ON a platform: islands/singles sit mid-box, side platforms hug
+    // the walls — the centreline there is the track trough
+    const mid = (bx.wid / 2 + SIDE_TRACK_Z + BED_HALF) / 2;
+    const zTry = spec?.kind === 'side'
+      ? [(spec.faces?.[0]?.side ?? -1) * mid, (spec.faces?.[0]?.side ?? -1) * -mid]
+      : spec?.kind === 'single'
+        ? [spec.single.side * bx.wid / 5, spec.single.side * bx.wid * 0.45, -spec.single.side * mid]
+        : [-bx.wid / 5, bx.wid / 5, 0];
+    const xTry = [bx.len / 2 - 16, bx.len / 4, 0, -bx.len / 4, -bx.len / 2 + 16];
+    const e = pick(bx, xTry.flatMap(x => zTry.map(z => [x, z])), lvl.y);
+    const t = boxToWorld(bx, -bx.len / 3, e.lz * 0.8);
+    v[lvl.uid] = { pos: new THREE.Vector3(e.w.x, lvl.y + eye, e.w.z), look: new THREE.Vector3(t.x, lvl.y - 0.5, t.z) };
   }
   return v;
 }
 
-export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, onSpeed }) {
-  const vp = viewpoints();
+export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, onSpeed, floorAt }) {
+  const vp = viewpoints(floorAt);
 
   // language toggle — flips the UI chrome between English-only and 繁中-only.
   // Pure CSS (data-lang on <html> hides the other side's spans); in-world

@@ -392,6 +392,7 @@ buildUI({
     passengers.group.visible = v;
   },
   onSpeed: v => { speed = v; },
+  floorAt: (x, z, y) => rig.floorAt(x, z, y),
 });
 
 // keep the mode buttons honest after a restored pose
