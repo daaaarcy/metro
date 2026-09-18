@@ -27,11 +27,10 @@ export const YMT = {
   ],
 
   // L2 island: TWL through station — P1 north (dir +1) toward Mong Kok/
-  // Tsuen Wan, P2 south (dir -1) toward Central. L3 island: the KTL's
-  // south end for now — the shuttle to Mong Kok departs both faces and
-  // reverses at the east portal. When Ho Man Tin lands the island goes
-  // through-running (P3 'to Tiu Keng Leng' dir +1 / P4 'to Whampoa'
-  // dir -1) and terminus clears.
+  // Tsuen Wan, P2 south (dir -1) toward Central. L3 island: KTL through
+  // station — P3 'to Tiu Keng Leng' dir -1 (arrives from Ho Man Tin's
+  // east portal, departs west toward Mong Kok); P4 'to Whampoa' dir +1
+  // (arrives from Mong Kok, departs east onto the Whampoa arm).
   platforms: {
     L2: {
       kind: 'island',
@@ -41,10 +40,10 @@ export const YMT = {
       ],
     },
     L3: {
-      kind: 'island', terminus: true,
+      kind: 'island',
       faces: [
-        { num: 3, line: 'KTL', side: -1, dir: 1,  to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
-        { num: 4, line: 'KTL', side: 1,  dir: 1,  to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
+        { num: 3, line: 'KTL', side: -1, dir: -1, to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
+        { num: 4, line: 'KTL', side: 1,  dir: 1,  to: { zh: '往黃埔',   en: 'to Whampoa' } },
       ],
     },
   },

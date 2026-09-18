@@ -385,6 +385,8 @@ class Stop {
 //  'tunnel' — visible run between stations, trapezoid speed profile
 //  'off'    — leave the map via one portal, reappear at the next stop's portal
 function resolveRoute(routeDef, doorSets) {
+  if (routeDef.legs.length !== routeDef.stops.length)
+    throw new Error(`route ${routeDef.line}: ${routeDef.legs.length} legs for ${routeDef.stops.length} stops`);
   const stops = routeDef.stops.map(sd => {
     const ds = doorSets.find(d => d.level === sd.uid && d.face.num === sd.num);
     if (!ds) throw new Error(`route ${routeDef.line}: no door set ${sd.uid} P${sd.num}`);
@@ -747,19 +749,21 @@ export const ROUTES = [
             { uid: 'KWH:U1', num: 1 },
             { uid: 'TWH:L2', num: 1 },
             { uid: 'TSW:P', num: 1, dwell: 55 }] },
-  // Kwun Tong Line: YMT's L3 terminus <-> cross-platform pair at MOK ->
-  // PRE, then east through Shek Kip Mei and the Kowloon Tong interchange
-  // (KTL island below the EAL trench), along the corridor to Choi Hung,
-  // onto the Kwun Tong Rd viaduct, and out to the Tiu Keng Leng
-  // terminus where 'off' legs wrap the reversal.
+  // Kwun Tong Line: Whampoa terminus <-> Ho Man Tin -> YMT's L3 ->
+  // cross-platform pair at MOK -> PRE, then east through Shek Kip Mei
+  // and the Kowloon Tong interchange (KTL island below the EAL trench),
+  // along the corridor to Choi Hung, onto the Kwun Tong Rd viaduct, and
+  // out to the Tiu Keng Leng terminus — 'off' legs wrap both reversals.
   { line: 'KTL', consists: 2,
     legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
-           'tunnel', 'tunnel', 'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
-           'tunnel', 'tunnel', 'off'],
-    stops: [{ uid: 'YMT:L3', num: 3 },
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'],
+    stops: [{ uid: 'WHA:P', num: 2 },
+            { uid: 'HOM:L2', num: 1 },
+            { uid: 'YMT:L3', num: 3 },
             { uid: 'MOK:L2', num: 3 },
             { uid: 'PRE:L3', num: 3 },
             { uid: 'SKM:L2', num: 1 },
@@ -788,7 +792,9 @@ export const ROUTES = [
             { uid: 'SKM:L2', num: 2 },
             { uid: 'PRE:L2', num: 2 },
             { uid: 'MOK:L3', num: 4 },
-            { uid: 'YMT:L3', num: 4, dwell: 40 }] },
+            { uid: 'YMT:L3', num: 4 },
+            { uid: 'HOM:L2', num: 2 },
+            { uid: 'WHA:P', num: 1, dwell: 45 }] },
   // Island Line through service: Kennedy Town is the west terminus —
   // consists reverse off-map in the Mount Davis overrun tunnel and head
   // east through Causeway Bay, Tin Hau, Fortress Hill, North Point and the

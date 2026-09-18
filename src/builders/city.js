@@ -1408,6 +1408,40 @@ const SITES = [
     parks: [[3660, -2120, 3740, -2140, 10]],
     lamps: [[3670, -1986, 3890, 40], [3670, -2094, 3890, 40]],
   },
+  { // ---- Ho Man Tin — upland estate slabs between Yau Ma Tei and the
+    //     Hung Hom corridor; Oi Man Estate + HKMU campus blocks.
+    id: 'HOM', hole: [450, 690, -1178, -1082],
+    roads: [[440, -1070, 700, -1082], [440, -1190, 700, -1178],
+            [438, -1190, 450, -1070], [690, -1190, 702, -1070]],
+    towers: [
+      [470, -1230, 34, 24, 38, 'res'],   // Oi Man Estate slabs
+      [530, -1240, 34, 24, 42, 'res'], [590, -1225, 34, 24, 36, 'res'],
+      [610, -1215, 30, 22, 40, 'res'],
+      [470, -1030, 30, 22, 30, 'office'], // HKMU campus blocks
+      [530, -1020, 34, 24, 26, 'office'], [600, -1035, 30, 22, 32, 'office'],
+      [660, -1022, 28, 20, 28, 'res'],
+    ],
+    parks: [[455, -1040, 525, -1060, 10]],  // Ho Man Tin hillside green
+    lamps: [[450, -1076, 690, 40], [450, -1184, 690, 40]],
+  },
+  { // ---- Whampoa — the waterfront terminus: Whampoa Garden slab rows
+    //     and the ship-shaped Whampoa mall beached on the promenade.
+    id: 'WHA', hole: [540, 780, -928, -832],
+    roads: [[530, -940, 790, -928],        // Tak On St north edge
+            [540, -820, 780, -808],        // promenade along the harbour
+            [528, -940, 540, -820], [780, -940, 792, -820]],
+    towers: [
+      [560, -970, 34, 24, 34, 'res'],    // Whampoa Garden slabs north
+      [615, -980, 34, 24, 38, 'res'], [670, -968, 34, 24, 32, 'res'],
+      [725, -978, 34, 24, 36, 'res'],
+      [800, -870, 90, 26, 12, 'mall'],   // The Whampoa — the ship mall
+      [800, -950, 30, 22, 40, 'res'],    // estate towers east
+      [500, -870, 34, 24, 30, 'res'],    // Hung Hom side slabs
+      [500, -960, 30, 22, 34, 'res'],
+    ],
+    parks: [[545, -800, 770, -790, 6]],  // harbourfront promenade greens
+    lamps: [[540, -934, 780, 40], [545, -814, 775, 40]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -1541,6 +1575,9 @@ const NAMES = [
   ['LAT', 3230, 42, -1760, '藍田邨 Lam Tin Estate'],
   ['YAT', 3490, 46, -1850, '油塘邨 Yau Tong Estate'],
   ['TKL', 3750, 52, -1920, '都會駅 Metro Town'],
+  ['HOM', 530, 44, -1240, '愛民邨 Oi Man Estate'],
+  ['WHA', 800, 14, -870, '黃埔號 The Whampoa'],
+  ['WHA', 615, 40, -980, '黃埔花園 Whampoa Garden'],
   ['TSW', 140, 34, -2490, '綠楊新邨 Luk Yeung Sun Chuen'],
   ['TSW', 520, 50, -2420, '南豐中心 Nan Fung Centre'],
   ['TSW', 560, 46, -2450, '悅來酒店 Panda Hotel'],

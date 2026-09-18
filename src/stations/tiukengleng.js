@@ -16,7 +16,7 @@ export const TKL = atGradeSide({
 
   terminus: true, tail: 1,  // KTL east end — overrun dives toward the TKO tunnel
   faces: [
-    { num: 1, line: 'KTL', side: -1, dir: 1,  to: { zh: '往調景嶺', en: 'to Tiu Keng Leng' } },
+    { num: 1, line: 'KTL', side: -1, dir: 1,  to: { zh: '終點站', en: 'Terminus' } },
     { num: 2, line: 'KTL', side: 1,  dir: -1, to: { zh: '往黃埔',   en: 'to Whampoa' } },
   ],
 

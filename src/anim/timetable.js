@@ -51,6 +51,8 @@ const FEEDS = [
   ['KTL', 'LAT'],
   ['KTL', 'YAT'],
   ['KTL', 'TKL'],
+  ['KTL', 'HOM'],
+  ['KTL', 'WHA'],
 ];
 const POLL_S = 45;
 

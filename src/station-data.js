@@ -55,8 +55,10 @@ import { KWT } from './stations/kwuntong.js';
 import { LAT } from './stations/lamtin.js';
 import { YAT } from './stations/yautong.js';
 import { TKL } from './stations/tiukengleng.js';
+import { HOM } from './stations/homantin.js';
+import { WHA } from './stations/whampoa.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW, SKM, LOF, WTS, DIH, CHH, KOB, NTK, KWT, LAT, YAT, TKL };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW, SKM, LOF, WTS, DIH, CHH, KOB, NTK, KWT, LAT, YAT, TKL, HOM, WHA };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height

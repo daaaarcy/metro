@@ -64,6 +64,8 @@ procedural Hong Kong skyline around each station.
 | LAT  | Lam Tin 藍田 | Kwun Tong Line (hillside cutting, gallery concourse) |
 | YAT  | Yau Tong 油塘 | Kwun Tong Line (at-grade side platforms) |
 | TKL  | Tiu Keng Leng 調景嶺 | Kwun Tong Line (east terminus; at-grade side platforms) |
+| HOM  | Ho Man Tin 何文田 | Kwun Tong Line (underground island on the uplands) |
+| WHA  | Whampoa 黃埔 | Kwun Tong Line (west terminus; waterfront side platforms, The Whampoa ship mall) |
 
 ## Run
 
