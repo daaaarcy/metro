@@ -998,8 +998,32 @@ const SITES = [
       [520, -2360, 22, 18, 11, 'res'], [550, -2360, 20, 18, 9, 'res'],
       [515, -2400, 24, 18, 12, 'res'],
     ],
-    parks: [[220, -2440, 370, -2380, 14]],    // Kwok Shui Rd Park, north edge
+    parks: [[220, -2390, 370, -2372, 10]],    // Kwok Shui Rd Park — strip between the digs
     lamps: [[200, -2263, 470, 30]],
+  },
+  { // ---- Tsuen Wan — the TWL's north end, at grade under the gallery
+    //     concourse. Luk Yeung Sun Chuen slabs west, the town-centre
+    //     towers east across Castle Peak Rd, depot sidings past the east
+    //     throat, Discovery Park green south.
+    id: 'TSW', hole: [200, 440, -2488, -2392],
+    roads: [[200, -2390, 470, -2380],          // Tai Ho Rd between the digs
+            [180, -2520, 192, -2390]],         // depot access road, west edge
+    towers: [
+      // Luk Yeung Sun Chuen — estate slabs west of the dig, south of
+      // Kwai Yin Court's footprint
+      [130, -2480, 30, 20, 26, 'res'], [170, -2480, 30, 20, 24, 'res'],
+      [130, -2530, 30, 20, 28, 'res'], [170, -2530, 30, 20, 22, 'res'],
+      [120, -2570, 28, 20, 24, 'res'],
+      // Tsuen Wan town centre — east across Castle Peak Rd
+      [520, -2420, 34, 26, 44, 'com'],        // Nan Fung Centre
+      [560, -2450, 30, 24, 40, 'hotel'],      // Panda Hotel
+      [520, -2490, 30, 24, 36, 'com'],
+      [560, -2520, 34, 26, 30, 'com'],        // Vision City
+      // Nina Tower — the landmark spike west over the depot
+      [60, -2510, 26, 22, 88, 'glass'],
+    ],
+    parks: [[230, -2560, 390, -2500, 12]],    // Discovery Park
+    lamps: [[200, -2385, 470, 30]],
   },
 ];
 
@@ -1097,9 +1121,15 @@ const NAMES = [
   ['KWH', 330, 8, -2145, '葵興路 Kwai Hing Road'],
   ['TWH', 140, 34, -2350, '大窩口邨 Tai Wo Hau Estate'],
   ['TWH', 130, 30, -2440, '葵賢苑 Kwai Yin Court'],
-  ['TWH', 300, 16, -2400, '國瑞路公園 Kwok Shui Rd Park'],
+  ['TWH', 300, 14, -2380, '國瑞路公園 Kwok Shui Rd Park'],
   ['TWH', 540, 16, -2340, '關門口村 Kwan Mun Hau Tsuen'],
   ['TWH', 481, 8, -2280, '青山公路 Castle Peak Road'],
+  ['TSW', 140, 34, -2490, '綠楊新邨 Luk Yeung Sun Chuen'],
+  ['TSW', 520, 50, -2420, '南豐中心 Nan Fung Centre'],
+  ['TSW', 560, 46, -2450, '悅來酒店 Panda Hotel'],
+  ['TSW', 60, 96, -2510, '如心廣場 Nina Tower'],
+  ['TSW', 300, 16, -2530, '愉景新城 Discovery Park'],
+  ['TSW', 330, 8, -2385, '大河道 Tai Ho Road'],
 ];
 
 export function buildCity() {

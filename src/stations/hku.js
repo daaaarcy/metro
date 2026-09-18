@@ -6,39 +6,14 @@
 // the hill; here each gets a rideable street lift beside its pavilion.
 // Exits per Wikipedia: A1 Pok Fu Lam Rd / A2 HKU Main Campus, B1 Whitty
 // St / B2 Hill Rd (north side), C1 The Belcher's / C2 Belcher's St.
+// Built on the islIsland() recipe.
 
-export const HKU = {
+import { islIsland } from './template.js';
+
+export const HKU = islIsland({
   id: 'HKU', zh: '香港大學', en: 'HKU',
   livery: '#9bb03f',   // HKU's lime-green mosaic tile
-
-  boxes: {
-    hkuSite: { cx: -3550, cz: 0, len: 220, wid: 64, rot: 0 },  // G ground slab
-    hkuConc: { cx: -3550, cz: 0, len: 210, wid: 44, rot: 0 },  // L1 concourse
-    hkuP:    { cx: -3550, cz: 0, len: 200, wid: 24, rot: 0 },  // L2 ISL island
-  },
-
-  levels: [
-    { id: 'G',  y: 0,   box: 'hkuSite', zh: '地面',   en: 'Ground',                 type: 'ground'   },
-    { id: 'L1', y: -7,  box: 'hkuConc', zh: '大堂',   en: 'Concourse',              type: 'concourse'},
-    { id: 'L2', y: -14, box: 'hkuP',    zh: '月台・港島綫', en: 'Island Line Platform', type: 'platform' },
-  ],
-
-  platforms: {
-    L2: {
-      kind: 'island',
-      faces: [
-        { num: 1, line: 'ISL', side: -1, dir: 1,  to: { zh: '往柴灣',     en: 'to Chai Wan' } },
-        { num: 2, line: 'ISL', side: 1,  dir: -1, to: { zh: '往堅尼地城', en: 'to Kennedy Town' } },
-      ],
-    },
-  },
-
-  // Two 3-lane banks drop from the concourse ends onto the island
-  // platform centre, like the plan's twin escalator clusters.
-  escalators: [
-    { from: 'L1', to: 'L2', frame: 'hkuP', cx: -62, cz: 0, dir: [-1, 0], n: 3 },
-    { from: 'L1', to: 'L2', frame: 'hkuP', cx:  62, cz: 0, dir: [ 1, 0], n: 3 },
-  ],
+  cx: -3550, siteLen: 220,
 
   // Exit fan per Wikipedia — A exits east toward the university, B exits
   // north toward the harbour, C exits west toward The Belcher's. Shafts
@@ -51,8 +26,6 @@ export const HKU = {
     { id: 'C1', x: -16, side: 1,  zh: '寶翠園・百周年校園',     en: 'The Belcher’s · Centennial Campus' },
     { id: 'C2', x: -92, side: -1, zh: '卑路乍街・西寶城',       en: 'Belcher’s St · The Westwood' },
   ],
-  exitZ: 9.5,
-  exitLetters: ['A', 'B', 'C'],
 
   lifts: [
     { frame: 'hkuConc', x: -8,  z: 0,   levels: ['L1', 'L2'] },   // paid lift onto the island
@@ -60,16 +33,6 @@ export const HKU = {
     { frame: 'hkuConc', x: 75,  z: 15,  levels: ['G', 'L1'] },    // A2 lift tower (lift-only exit)
     { frame: 'hkuConc', x: -21, z: 15,  levels: ['G', 'L1'] },    // C1 lift tower (lift-only exit)
   ],
-
-  // Octopus gate lanes on the paid core; the unpaid band wraps the ends
-  // like the plan's yellow ring around each concourse blob.
-  gateRows: [
-    { z: -9, x0: -66, x1: -28 },
-    { z: -9, x0: 28,  x1: 66 },
-    { z: 9,  x0: -66, x1: -28 },
-    { z: 9,  x0: 28,  x1: 66 },
-  ],
-  gateEnds: { x0: -72, x1: 72 },
 
   kioskXs:  [-48, 0, 34],      // north band, dodging the exit shafts
   kioskXsS: [-40, 12, 50],     // south band
@@ -81,4 +44,4 @@ export const HKU = {
   },
 
   people: { G: 14, L1: 42, L2: 34 },
-};
+});

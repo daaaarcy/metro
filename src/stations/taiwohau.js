@@ -13,8 +13,7 @@ import { twlIsland } from './template.js';
 export const TWH = twlIsland({
   id: 'TWH', zh: '大窩口', en: 'Tai Wo Hau',
   livery: '#84cc16',   // TWH's lime green mosaic
-  cz: -2320,
-  terminus: true,      // temporary north end until Tsuen Wan lands
+  cz: -2320,           // through station — Tsuen Wan is the terminus
 
   // only two exits — A north to the villages up Kwok Shui Rd, B south
   // to Castle Peak Rd and the estate blocks

@@ -32,8 +32,9 @@ import { LAK } from './stations/laiking.js';
 import { KWF } from './stations/kwaifong.js';
 import { KWH } from './stations/kwaihing.js';
 import { TWH } from './stations/taiwohau.js';
+import { TSW } from './stations/tsuenwan.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
