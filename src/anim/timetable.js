@@ -14,6 +14,7 @@ const FEEDS = [
   ['ISL', 'WAC'], ['ISL', 'CAB'], ['ISL', 'SHW'], ['ISL', 'SYP'], ['ISL', 'HKU'], ['ISL', 'KET'],
   ['ISL', 'TIH'], ['ISL', 'FOH'], ['ISL', 'NOP'], ['TKO', 'NOP'],
   ['ISL', 'QUB'], ['TKO', 'QUB'], ['ISL', 'TAK'], ['ISL', 'SWH'], ['ISL', 'SKW'], ['ISL', 'HFC'],
+  ['TKO', 'TKW'], ['TKO', 'HAH'], ['TKO', 'POL'], ['TKO', 'LHP'],
   ['ISL', 'CHW'],
   ['TWL', 'TST'],
   ['TWL', 'JOR'],

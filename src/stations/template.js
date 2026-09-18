@@ -29,7 +29,7 @@ export function twlIsland(o) {
     platforms: {
       L2: {
         kind: 'island',
-        ...(o.terminus ? { terminus: true } : {}),
+        ...(o.terminus ? { terminus: true, bufDir: o.bufDir ?? -1 } : {}),
         faces: o.faces ?? [
           { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
           { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },

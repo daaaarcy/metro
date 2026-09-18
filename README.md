@@ -62,10 +62,14 @@ procedural Hong Kong skyline around each station.
 | NTK  | Ngau Tau Kok 牛頭角 | Kwun Tong Line (viaduct side platforms) |
 | KWT  | Kwun Tong 觀塘 | Kwun Tong Line (viaduct side platforms, town centre) |
 | LAT  | Lam Tin 藍田 | Kwun Tong Line (hillside cutting, gallery concourse) |
-| YAT  | Yau Tong 油塘 | Kwun Tong Line (at-grade side platforms) |
-| TKL  | Tiu Keng Leng 調景嶺 | Kwun Tong Line (east terminus; at-grade side platforms) |
+| YAT  | Yau Tong 油塘 | Kwun Tong + Tseung Kwan O Lines (at-grade KTL sides, TKO island below) |
+| TKL  | Tiu Keng Leng 調景嶺 | Kwun Tong Line east terminus + Tseung Kwan O Line (TKO island at L1, LOHAS shuttle) |
 | HOM  | Ho Man Tin 何文田 | Kwun Tong Line (underground island on the uplands) |
 | WHA  | Whampoa 黃埔 | Kwun Tong Line (west terminus; waterfront side platforms, The Whampoa ship mall) |
+| TKW  | Tseung Kwan O 將軍澳 | Tseung Kwan O Line (underground island, PopCorn/Park Central) |
+| HAH  | Hang Hau 坑口 | Tseung Kwan O Line (underground island, East Point City) |
+| POL  | Po Lam 寶琳 | Tseung Kwan O Line (north terminus; underground island under Metro City) |
+| LHP  | LOHAS Park 康城 | Tseung Kwan O Line (branch terminus; at-grade side platforms by the depot) |
 
 ## Run
 

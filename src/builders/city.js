@@ -1434,13 +1434,80 @@ const SITES = [
       [560, -970, 34, 24, 34, 'res'],    // Whampoa Garden slabs north
       [615, -980, 34, 24, 38, 'res'], [670, -968, 34, 24, 32, 'res'],
       [725, -978, 34, 24, 36, 'res'],
-      [800, -870, 90, 26, 12, 'mall'],   // The Whampoa — the ship mall
+      [840, -870, 90, 26, 12, 'mall'],   // The Whampoa — the ship mall
       [800, -950, 30, 22, 40, 'res'],    // estate towers east
       [500, -870, 34, 24, 30, 'res'],    // Hung Hom side slabs
       [500, -960, 30, 22, 34, 'res'],
     ],
     parks: [[545, -800, 770, -790, 6]],  // harbourfront promenade greens
     lamps: [[540, -934, 780, 40], [545, -814, 775, 40]],
+  },
+  { // ---- Tseung Kwan O — new-town centre: PopCorn mall podium and the
+    //     Park Central / TKO Plaza slab rows flanking the dig.
+    id: 'TKW', hole: [4180, 4420, -2228, -2132],
+    roads: [[4170, -2120, 4430, -2132], [4170, -2240, 4430, -2228],
+            [4168, -2240, 4180, -2120], [4420, -2240, 4432, -2120]],
+    towers: [
+      [4200, -2080, 34, 24, 44, 'res'],   // Park Central row north
+      [4260, -2090, 34, 24, 48, 'res'], [4320, -2078, 34, 24, 40, 'res'],
+      [4380, -2088, 34, 24, 46, 'res'],
+      [4140, -2180, 60, 40, 14, 'mall'],  // PopCorn podium
+      [4210, -2280, 34, 24, 42, 'res'],   // TKO Plaza row south
+      [4280, -2295, 34, 24, 38, 'res'], [4350, -2285, 34, 24, 44, 'res'],
+      [4410, -2298, 30, 22, 36, 'res'],
+    ],
+    parks: [[4200, -2110, 4300, -2120, 10]],
+    lamps: [[4180, -2126, 4420, 40], [4180, -2234, 4420, 40]],
+  },
+  { // ---- Hang Hau — East Point City podium and the Hau Tak estate
+    //     slabs around the town-centre dig.
+    id: 'HAH', hole: [4580, 4820, -2328, -2232],
+    roads: [[4570, -2220, 4830, -2232], [4570, -2340, 4830, -2328],
+            [4568, -2340, 4580, -2220], [4820, -2340, 4832, -2220]],
+    towers: [
+      [4600, -2180, 34, 24, 40, 'res'],   // East Point City towers north
+      [4660, -2190, 34, 24, 44, 'res'], [4720, -2178, 34, 24, 38, 'res'],
+      [4780, -2188, 34, 24, 42, 'res'],
+      [4530, -2280, 50, 36, 12, 'mall'],  // East Point City podium
+      [4620, -2380, 34, 24, 36, 'res'],   // Hau Tak Estate slabs south
+      [4700, -2395, 34, 24, 40, 'res'], [4780, -2385, 34, 24, 34, 'res'],
+    ],
+    parks: [[4630, -2210, 4730, -2220, 10]],
+    lamps: [[4580, -2226, 4820, 40], [4580, -2334, 4820, 40]],
+  },
+  { // ---- Po Lam — the north terminus under Metro City; Po Lam Estate
+    //     slabs and the Mau Wu Tsai green edge to the south.
+    id: 'POL', hole: [4960, 5200, -2428, -2332],
+    roads: [[4950, -2320, 5210, -2332], [4950, -2440, 5210, -2428],
+            [4948, -2440, 4960, -2320], [5200, -2440, 5212, -2320]],
+    towers: [
+      [4990, -2280, 34, 24, 42, 'res'],   // Metro City towers north
+      [5050, -2290, 34, 24, 46, 'res'], [5110, -2278, 34, 24, 40, 'res'],
+      [5170, -2288, 34, 24, 44, 'res'],
+      [5240, -2380, 56, 40, 14, 'mall'],  // Metro City podium
+      [5000, -2470, 34, 24, 36, 'res'],   // Po Lam Estate slabs south
+      [5070, -2485, 34, 24, 40, 'res'], [5140, -2475, 34, 24, 34, 'res'],
+    ],
+    parks: [[5030, -2310, 5130, -2320, 10], [4980, -2450, 5050, -2460, 10]],
+    lamps: [[4960, -2326, 5200, 40], [4960, -2434, 5200, 40]],
+  },
+  { // ---- LOHAS Park — the branch terminus at grade beside the depot
+    //     shed; The LOHAS mall podium and the Capitol estate slabs tower
+    //     over the platforms.
+    id: 'LHP', hole: [4400, 4640, -2608, -2512],
+    roads: [[4390, -2500, 4650, -2512], [4390, -2620, 4650, -2608],
+            [4388, -2620, 4400, -2500], [4640, -2620, 4652, -2500]],
+    towers: [
+      [4430, -2460, 34, 24, 50, 'res'],   // Capitol slabs north
+      [4490, -2470, 34, 24, 54, 'res'], [4550, -2458, 34, 24, 46, 'res'],
+      [4610, -2468, 34, 24, 52, 'res'],
+      [4350, -2560, 60, 40, 14, 'mall'],  // The LOHAS podium
+      [4700, -2560, 80, 60, 10, 'com'],   // TKO depot shed east
+      [4440, -2660, 34, 24, 44, 'res'],   // Le Prestige slabs south
+      [4520, -2675, 34, 24, 48, 'res'], [4600, -2665, 34, 24, 40, 'res'],
+    ],
+    parks: [[4440, -2490, 4560, -2500, 10]],
+    lamps: [[4400, -2506, 4640, 40], [4400, -2614, 4640, 40]],
   },
 ];
 
@@ -1576,7 +1643,7 @@ const NAMES = [
   ['YAT', 3490, 46, -1850, '油塘邨 Yau Tong Estate'],
   ['TKL', 3750, 52, -1920, '都會駅 Metro Town'],
   ['HOM', 530, 44, -1240, '愛民邨 Oi Man Estate'],
-  ['WHA', 800, 14, -870, '黃埔號 The Whampoa'],
+  ['WHA', 840, 14, -870, '黃埔號 The Whampoa'],
   ['WHA', 615, 40, -980, '黃埔花園 Whampoa Garden'],
   ['TSW', 140, 34, -2490, '綠楊新邨 Luk Yeung Sun Chuen'],
   ['TSW', 520, 50, -2420, '南豐中心 Nan Fung Centre'],
@@ -1584,6 +1651,14 @@ const NAMES = [
   ['TSW', 60, 96, -2510, '如心廣場 Nina Tower'],
   ['TSW', 300, 16, -2530, '愉景新城 Discovery Park'],
   ['TSW', 330, 8, -2385, '大河道 Tai Ho Road'],
+  ['TKW', 4300, 52, -2085, '將軍澳中心 Park Central'],
+  ['TKW', 4140, 16, -2180, 'PopCorn'],
+  ['HAH', 4700, 46, -2185, '東港城 East Point City'],
+  ['HAH', 4700, 44, -2390, '厚德邨 Hau Tak Estate'],
+  ['POL', 5080, 48, -2285, '新都城 Metro City'],
+  ['POL', 5070, 42, -2480, '寶林邨 Po Lam Estate'],
+  ['LHP', 4520, 56, -2465, '日出康城 LOHAS Park'],
+  ['LHP', 4700, 14, -2560, '將軍澳車廠 TKO Depot'],
 ];
 
 export function buildCity() {

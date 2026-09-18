@@ -823,13 +823,39 @@ export const ROUTES = [
             { uid: 'CEN:L4', num: 4 }, { uid: 'SHW:L2', num: 2 },
             { uid: 'SYP:L2', num: 2 }, { uid: 'HKU:L2', num: 2 },
             { uid: 'KET:L2', num: 2 }] },
-  // Tseung Kwan O Line terminates at North Point: consists berth at P4
-  // on the upper island (cross-platform with westbound ISL), reverse
-  // off-map in the tail tunnel, then re-enter at P3 on the lower island
-  // for the eastbound departure to Po Lam/LOHAS Park.
-  { line: 'TKO', travel: 75, legs: ['off', 'tunnel', 'off', 'tunnel'], consists: 2,
-    stops: [{ uid: 'NOP:L2', num: 4 }, { uid: 'NOP:L3', num: 3 },
-            { uid: 'QUB:L3', num: 3 }, { uid: 'QUB:L3', num: 4 }] },
+  // Tseung Kwan O Line: North Point terminus -> Quarry Bay, under the
+  // harbour to the Yau Tong / Tiu Keng Leng interchanges, then east into
+  // the new town — Tseung Kwan O, Hang Hau, and the Po Lam terminus.
+  // Both faces use each terminus' west portal (NOP off-map wrap, POL
+  // dead-end reversal).
+  { line: 'TKO', travel: 75, consists: 2,
+    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'off'],
+    stops: [{ uid: 'NOP:L3', num: 3 },
+            { uid: 'QUB:L3', num: 3 },
+            { uid: 'YAT:L1', num: 3 },
+            { uid: 'TKL:L1', num: 3 },
+            { uid: 'TKW:L2', num: 1 },
+            { uid: 'HAH:L2', num: 1 },
+            { uid: 'POL:L2', num: 1 },
+            { uid: 'POL:L2', num: 2 },
+            { uid: 'HAH:L2', num: 2 },
+            { uid: 'TKW:L2', num: 2 },
+            { uid: 'TKL:L1', num: 4 },
+            { uid: 'YAT:L1', num: 4 },
+            { uid: 'QUB:L3', num: 4 },
+            { uid: 'NOP:L2', num: 4 }] },
+  // LOHAS Park shuttle: TKL face 3 departs east into the branch, wraps
+  // at the LHP terminus, returns to face 4, then reverses off-map back
+  // onto face 3 — mirroring the real TKL<->LHP shuttle working.
+  { line: 'TKO', travel: 75, consists: 1,
+    legs: ['tunnel', 'off', 'tunnel', 'off'],
+    stops: [{ uid: 'TKL:L1', num: 3 },
+            { uid: 'LHP:P', num: 1 },
+            { uid: 'LHP:P', num: 2 },
+            { uid: 'TKL:L1', num: 4 }] },
   // terminus reversals: each line's island has two faces — a consist
   // departs one face through its portal and re-enters berthing at the
   // other (a rider gets carried across to the opposite platform edge)
