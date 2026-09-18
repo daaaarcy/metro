@@ -1025,6 +1025,57 @@ const SITES = [
     parks: [[230, -2560, 390, -2500, 12]],    // Discovery Park
     lamps: [[200, -2385, 470, 30]],
   },
+  { // ---- Kowloon — the Airport Railway dig under Union Square. ICC
+    //     stands on the hole's north edge (already in the skyline band);
+    //     Elements podium roofs the box, WKCD opens west toward the
+    //     point, the Union Square towers ring the site.
+    id: 'KOW', hole: [-1600, -1360, -1058, -982],
+    roads: [[-1700, -937, -1260, -925],       // Nga Cheung Rd between the mall wings and skyline
+            [-1260, -1120, -1248, -960],      // Austin Rd W east side
+            [-1700, -1092, -1260, -1080]],    // Museum Dr / south apron edge
+    towers: [
+      // Union Square — the towers over the Elements podium
+      [-1660, -1010, 34, 26, 66, 'res'],      // The Harbourside
+      [-1690, -1040, 30, 24, 58, 'res'],      // The Arch
+      [-1300, -1010, 34, 26, 72, 'res'],      // Sorrento
+      [-1270, -1040, 30, 24, 62, 'res'],      // Sorrento 2
+      [-1640, -960, 44, 22, 18, 'mall'],      // Elements west wing
+      [-1320, -960, 44, 22, 18, 'mall'],      // Elements east wing
+      // WKCD edge + The Cullinan over the mall's north side
+      [-1660, -1080, 26, 20, 30, 'com'],      // M+ block silhouette
+      [-1560, -920, 30, 20, 54, 'res'],       // The Cullinan north
+      [-1400, -920, 30, 20, 50, 'res'],       // The Cullinan south
+      // south apron — Austin Rd W low-rise
+      [-1420, -1120, 26, 18, 22, 'res'], [-1520, -1120, 26, 18, 26, 'res'],
+      [-1620, -1120, 24, 18, 20, 'res'], [-1340, -1120, 24, 18, 24, 'res'],
+    ],
+    parks: [[-1760, -1120, -1680, -1060, 8]], // WKCD nursery park strip
+    lamps: [[-1690, -931, -1270, 30]],
+  },
+  { // ---- Olympic — the reclamation station: Olympian City mall on the
+    //     north edge, Island Harbourview/HSBC Centre towers along Sham
+    //     Mong Rd, Tai Kok Tsui low-rise to the south.
+    id: 'OLY', hole: [-920, -680, -1492, -1408],
+    roads: [[-1040, -1390, -560, -1378],      // Cherry St east of the dig
+            [-1040, -1520, -560, -1508],      // Sham Mong Rd south
+            [-1040, -1520, -1028, -1390],     // Hoi Fai Rd west edge
+            [-560, -1520, -548, -1390]],      // Lin Cheung Rd east edge
+    towers: [
+      [-1000, -1360, 40, 30, 34, 'mall'],     // Olympian City
+      [-1060, -1430, 28, 20, 52, 'res'],      // Island Harbourview
+      [-1060, -1490, 28, 20, 48, 'res'],
+      [-620, -1360, 30, 22, 46, 'office'],    // HSBC Centre
+      [-580, -1430, 28, 20, 40, 'office'],
+      [-560, -1490, 26, 20, 36, 'hotel'],
+      [-1000, -1560, 30, 22, 38, 'res'],      // Hampton Place
+      [-620, -1560, 28, 20, 34, 'res'],
+      [-940, -1580, 24, 18, 18, 'res'],       // Tai Kok Tsui blocks
+      [-860, -1580, 24, 18, 20, 'res'], [-740, -1580, 24, 18, 16, 'res'],
+    ],
+    parks: [[-1040, -1560, -1000, -1530, 8],  // Cherry St Park corner
+            [-700, -1560, -580, -1530, 10]],
+    lamps: [[-1030, -1384, -570, 30], [-1030, -1514, -570, 30]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -1124,6 +1175,10 @@ const NAMES = [
   ['TWH', 300, 14, -2380, '國瑞路公園 Kwok Shui Rd Park'],
   ['TWH', 540, 16, -2340, '關門口村 Kwan Mun Hau Tsuen'],
   ['TWH', 481, 8, -2280, '青山公路 Castle Peak Road'],
+  ['KOW', -1640, 26, -952, '圓方 Elements'],
+  ['KOW', -1730, 36, -1090, '西九文化區 WKCD'],
+  ['OLY', -1000, 40, -1352, '奧海城 Olympian City'],
+  ['OLY', -608, 50, -1354, '滙豐中心 HSBC Centre'],
   ['TSW', 140, 34, -2490, '綠楊新邨 Luk Yeung Sun Chuen'],
   ['TSW', 520, 50, -2420, '南豐中心 Nan Fung Centre'],
   ['TSW', 560, 46, -2450, '悅來酒店 Panda Hotel'],

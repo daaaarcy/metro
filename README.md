@@ -42,6 +42,8 @@ procedural Hong Kong skyline around each station.
 | TWH  | Tai Wo Hau 大窩口 | Tsuen Wan Line (underground island, lime green) |
 | TSW  | Tsuen Wan 荃灣 | Tsuen Wan Line (north terminus; at-grade side platforms, U1 gallery concourse) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
+| KOW  | Kowloon 九龍 | Tung Chung Line + Airport Express (stacked islands under Elements/Union Square) |
+| OLY  | Olympic 奧運 | Tung Chung Line (at-grade side platforms, U1 gallery concourse) |
 
 ## Run
 

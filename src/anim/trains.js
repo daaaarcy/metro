@@ -799,9 +799,34 @@ export const ROUTES = [
     stops: [{ uid: 'ADM:L5', num: 7 }, { uid: 'ADM:L5', num: 8 }] },
   { line: 'SIL', legs: ['off', 'off'], consists: 2,
     stops: [{ uid: 'ADM:L6', num: 5 }, { uid: 'ADM:L6', num: 6 }] },
-  { line: 'TCL', legs: ['off', 'off'], consists: 2,
-    stops: [{ uid: 'HOK:L4', num: 3 }, { uid: 'HOK:L4', num: 4 }] },
-  { line: 'AEX', legs: ['off'], consists: 1, stops: [{ uid: 'HOK:L2', num: 1 }] },
+  // Tung Chung Line: Hong Kong terminus -> under the strait to Kowloon
+  // (Elements/ICC), southeast across the reclamation to Olympic, then
+  // the long West Kowloon leg up to Lai King's stacked islands where the
+  // TWL shares the boxes — Nam Cheong isn't built yet so the consist
+  // runs that reach as one tunnel. Past LAK the line runs off-map
+  // (Tsing Yi / Sunny Bay / Tung Chung unbuilt) and re-enters LAK's
+  // lower island inbound. legs[i] runs after stops[i]; 'off' at the HOK
+  // terminus wraps onto the other face.
+  { line: 'TCL', travel: 80, consists: 2,
+    legs: ['tunnel', 'tunnel', 'tunnel', 'off',
+           'tunnel', 'tunnel', 'tunnel', 'off'],
+    stops: [{ uid: 'HOK:L4', num: 3 },
+            { uid: 'KOW:L3', num: 3 },
+            { uid: 'OLY:P',  num: 3 },
+            { uid: 'LAK:L3', num: 3 },
+            { uid: 'LAK:L5', num: 4 },
+            { uid: 'OLY:P',  num: 4 },
+            { uid: 'KOW:L3', num: 4 },
+            { uid: 'HOK:L4', num: 4, dwell: 55 }] },
+  // Airport Express: HOK terminus -> Kowloon, then off-map toward
+  // Tsing Yi / Airport / AsiaWorld-Expo; the consist re-enters KOW's
+  // inbound face for the run back to Hong Kong.
+  { line: 'AEX', travel: 80, consists: 1,
+    legs: ['tunnel', 'off', 'tunnel', 'off'],
+    stops: [{ uid: 'HOK:L2', num: 1 },
+            { uid: 'KOW:L2', num: 1 },
+            { uid: 'KOW:L2', num: 2 },
+            { uid: 'HOK:L2', num: 1, dwell: 50 }] },
 ];
 
 // a PSD bay is a solid barrier unless the consist berthed there is dwelling

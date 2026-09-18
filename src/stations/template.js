@@ -227,3 +227,89 @@ export function twlViaduct(o) {
     people: o.people,
   };
 }
+
+// atGradeSide(): the open-air terminus form — two side platforms flank
+// the track pair at ground level under an elevated gallery concourse
+// (U1) spanning the tracks, like HFC. TSW runs it as the TWL terminus
+// (terminus + tail overrun); OLY is the same form without the buffers.
+// Exits drop off the gallery edges to the street apron; `door` exits on
+// the platform box are street doors straight off a face.
+//
+// Options: id/zh/en/livery/cz, faces (platform face specs — line +
+//   numbering differ per line), exits, exitZ (default 20), roadSide,
+//   lifts, gateRows/gateEnds, kiosks, walkRects, people, terminus.
+export function atGradeSide(o) {
+  const p = o.id.toLowerCase();
+  const site = `${p}Site`, conc = `${p}Conc`, plat = `${p}Plat`;
+  return {
+    id: o.id, zh: o.zh, en: o.en,
+    livery: o.livery,
+
+    boxes: {
+      [site]: { cx: o.cx ?? 320, cz: o.cz, len: 240, wid: 84, rot: 0 }, // G apron
+      [conc]: { cx: o.cx ?? 320, cz: o.cz, len: 150, wid: 36, rot: 0 }, // U1 gallery concourse
+      [plat]: { cx: o.cx ?? 320, cz: o.cz, len: 200, wid: 24, rot: 0 }, // G side platforms
+    },
+
+    levels: [
+      { id: 'U1', y: 8, box: conc, zh: '大堂',          en: 'Concourse',  type: 'concourse' },
+      { id: 'G',  y: 0, box: site, zh: '地面',          en: 'Ground',     type: 'ground'    },
+      { id: 'P',  y: 0, box: plat, zh: o.platZh ?? '月台', en: o.platEn ?? 'Platforms', type: 'platform' },
+    ],
+
+    // the platform box stands at grade inside the site — cut its
+    // footprint out of the apron slab so the hall reads through
+    slabCuts: { G: [{ x0: -100, z0: -12, x1: 100, z1: 12 }] },
+
+    platforms: {
+      P: {
+        kind: 'side',
+        ...(o.terminus ? { terminus: true, tail: 1 } : {}),
+        faces: o.faces,
+      },
+    },
+
+    // gallery deck -> each side platform strip
+    escalators: o.escalators ?? [
+      { from: 'U1', to: 'P', frame: plat, cx: -30, cz: -8.6, dir: [-1, 0], n: 2 },
+      { from: 'U1', to: 'P', frame: plat, cx:  30, cz:  8.6, dir: [ 1, 0], n: 2 },
+    ],
+
+    exits: o.exits,
+    exitZ: o.exitZ ?? 20,
+    roadSide: o.roadSide,
+    exitLetters: o.exitLetters ?? [...new Set(o.exits.map(e => e.id[0]))].sort(),
+
+    lifts: o.lifts ?? [
+      { frame: plat, x: 0,   z: -9.5, levels: ['U1', 'P'] },  // paid lift — north face
+      { frame: plat, x: 0,   z:  9.5, levels: ['U1', 'P'] },  // paid lift — south face
+      { frame: site, x: -70, z:  15,  levels: ['U1', 'G'] },  // street lift — south
+      { frame: site, x: 70,  z: -15,  levels: ['U1', 'G'] },  // street lift — north
+    ],
+
+    // paid gallery core between the two platform wells; unpaid edge
+    // bands feed the exit stairs + street lifts
+    gateRows: o.gateRows ?? [
+      { z: -11.5, x0: -62, x1: -26 },
+      { z: -11.5, x0: 26,  x1: 62 },
+      { z: 11.5,  x0: -62, x1: -26 },
+      { z: 11.5,  x0: 26,  x1: 62 },
+    ],
+    gateEnds: o.gateEnds ?? { x0: -68, x1: 68 },
+
+    kioskXs:  o.kioskXs,
+    kioskXsS: o.kioskXsS,
+
+    walkRects: o.walkRects ?? {
+      U1: [{ x0: -70, z0: -16, x1: 70, z1: 16 }],
+      G:  [{ x0: -112, z0: 13,  x1: 112,  z1: 40 },
+           { x0: -112, z0: -40, x1: 112,  z1: -13 },
+           { x0: -112, z0: -40, x1: -101, z1: 40 },
+           { x0: 101,  z0: -40, x1: 112,  z1: 40 }],
+      P:  [{ x0: -92, z0: 7.2,   x1: 92, z1: 11.4 },
+           { x0: -92, z0: -11.4, x1: 92, z1: -7.2 }],
+    },
+
+    people: o.people,
+  };
+}

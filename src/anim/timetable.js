@@ -29,6 +29,8 @@ const FEEDS = [
   ['TWL', 'KWH'],
   ['TWL', 'TWH'],
   ['TWL', 'TSW'],
+  ['TCL', 'KOW'], ['AEX', 'KOW'],
+  ['TCL', 'OLY'],
 ];
 const POLL_S = 45;
 
