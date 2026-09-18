@@ -499,7 +499,12 @@ function tick() {
   // gate / lift / boarding prompt + ticker + clock refresh
   if (rig.mode === 'walk') {
     if (rig._aboard) {
-      showPrompt('<span class="zh">乘搭中 — 下一站開門落車</span><span class="en">On board — doors open at the next stop</span>');
+      const s = rig._aboard;
+      const nxt = s.stops[(s.i + (s.state === 'dwell' ? 1 : 0)) % s.stops.length];
+      const nm = nxt ? STATIONS[nxt.stn] : null;
+      showPrompt(nm
+        ? `<span class="zh">乘搭中 — 下一站 ${nm.zh} 開門落車</span><span class="en">On board — next stop ${nm.en}</span>`
+        : '<span class="zh">乘搭中 — 下一站開門落車</span><span class="en">On board — doors open at the next stop</span>');
     } else if (liftSim.inCar) {
       showPrompt('<span class="zh">按 <b>E</b> 往下一層 · 或行出升降機</span><span class="en">Press <b>E</b> for the next floor — or step out</span>');
     } else if (rig.nearLift) {

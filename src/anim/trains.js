@@ -421,6 +421,16 @@ class Consist {
     this.train = t.group;
     this.leafSets = t.leaves;
     this.trainLen = t.len;
+    // tunnel bore around the consist while running between stations — a
+    // rider sees dark walls rushing past instead of the city/void flying
+    // through the car. BackSide: invisible to any outside camera.
+    const bore = new THREE.Mesh(
+      new THREE.CylinderGeometry(4.2, 4.2, this.trainLen + 40, 20, 1, true).rotateZ(Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x0b0e12, side: THREE.BackSide, fog: false }));
+    bore.position.set(0, 2.1, 0);
+    bore.visible = false;
+    this._bore = bore;
+    this.train.add(bore);
     scene.add(this.train);
 
     // stagger the consist along the route — two consists must not start
@@ -657,6 +667,9 @@ class Consist {
         break;
       }
     }
+    // tunnel walls only while actually moving between stops — off so
+    // berthed doors open onto the platform, not the bore
+    this._bore.visible = this.state === 'run' || this.state === 'offOut' || this.state === 'offIn';
     // world displacement for carrying a standing player — translation of
     // the consist plus rotation of its constraint frame (run-frames yaw
     // through tunnel curves)
