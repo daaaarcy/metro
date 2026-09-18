@@ -59,7 +59,7 @@ export const CAB = {
   // (it carries the wheelchair symbol on the real plan).
   exits: [
     { id: 'A',  x: -95,  side: 1,  zh: '時代廣場',     en: 'Times Square' },
-    { id: 'B',  x: -80,  side: 1,  zh: '銅鑼灣廣場',   en: 'Causeway Bay Plaza' },
+    { id: 'B',  x: -80,  side: 1,  zh: '銅鑼灣廣場一期', en: 'Causeway Bay Plaza 1' },
     { id: 'C',  x: -88,  side: -1, zh: '信和廣場',     en: 'Sino Plaza' },
     { id: 'D1', x: 82,   side: -1, zh: '崇光百貨',     en: 'SOGO' },
     { id: 'D2', x: 44,   side: -1, zh: '崇光百貨',     en: 'SOGO' },
