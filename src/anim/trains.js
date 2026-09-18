@@ -533,7 +533,7 @@ class Consist {
 
   _beginRun(audio) {
     const leg = this.legs[this.i];
-    if (this.ds) this.ds.openSvc = null;  // bays become barriers again
+    if (this.ds && this.ds.openSvc === this) this.ds.openSvc = null;  // bays become barriers again
     this.ds = null;
     this.state = leg.via === 'tunnel' ? 'run' : 'offOut';
     this.leg = leg;
@@ -547,6 +547,10 @@ class Consist {
     this.t -= dt;
     switch (this.state) {
       case 'dwell': {
+        // re-claim the door set if its owner moved on without releasing it —
+        // an openSvc pointing at a consist that is no longer berthed here
+        // would leave every bay sealed despite our open doors
+        if (this.ds && this.ds.openSvc !== this && this.ds.openSvc?.ds !== this.ds) this.ds.openSvc = this;
         const closing = this.t < 1.6;
         this.setDoors(!closing, dt);
         if (!this._dwelled && this.t < this.stop.dwell * 0.55) {
@@ -623,12 +627,11 @@ class Consist {
           // a rider aboard shouldn't sit in the void through a full
           // layover — turn the consist around quickly and keep it visible
           if (this.hasRider) this.t = Math.min(this.t, 9);
-          this.train.visible = !this.hasRider;
+          this.train.visible = true;
         }
         break;
       }
       case 'offWait': {
-        this.nextAt = null;
         if (this.t <= 0) { this.state = 'offIn'; this.t = ARR_T; this.train.visible = true; this._ann = false; }
         break;
       }
