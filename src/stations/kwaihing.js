@@ -6,8 +6,8 @@
 // down through the concourse to change direction. Exits A–D are street
 // doors in the ground concourse; E is the footbridge off P1's north edge
 // to Kowloon Commerce Centre (deck + stair stub built in builders/link.js).
-// Temporary TWL north end: P1 berths arrivals, wraps off-map and re-enters
-// P2 to head back south. Livery: bright yellow.
+// Temporary TWL north end no more — Tai Wo Hau is built north, so KWH is
+// a through station on both faces. Livery: bright yellow.
 // Exits (5): A Kwai Hing Estate, B Transport Interchange / Kwai Hing
 // Government Offices, C Kwai Hong Court, D Sun Kwai Hing Gardens,
 // E Kowloon Commerce Centre footbridge.
@@ -30,10 +30,9 @@ export const KWH = {
 
   // Opposed side platforms flanking the track pair — P1 northbound to
   // Tsuen Wan (via Tai Wo Hau), P2 southbound to Central (via Kwai Fong).
-  // Temporary terminus: P1 berths arrivals, wraps off-map to P2.
   platforms: {
     U1: {
-      kind: 'side', terminus: true,
+      kind: 'side',
       faces: [
         { num: 1, line: 'TWL', side: -1, dir: 1,  to: { zh: '往荃灣', en: 'to Tsuen Wan' } },
         { num: 2, line: 'TWL', side: 1,  dir: -1, to: { zh: '往中環', en: 'to Central' } },

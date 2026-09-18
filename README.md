@@ -38,7 +38,8 @@ procedural Hong Kong skyline around each station.
 | MEF  | Mei Foo 美孚 | Tsuen Wan + Tuen Ma Lines (split-site interchange, L1 subway link) |
 | LAK  | Lai King 荔景 | Tsuen Wan + Tung Chung Lines (stacked cross-platform pair) |
 | KWF  | Kwai Fong 葵芳 | Tsuen Wan Line (elevated side platforms, Metroplaza footbridge) |
-| KWH  | Kwai Hing 葵興 | Tsuen Wan Line (north terminus; elevated side platforms, Kowloon Commerce Centre footbridge) |
+| KWH  | Kwai Hing 葵興 | Tsuen Wan Line (elevated side platforms, Kowloon Commerce Centre footbridge) |
+| TWH  | Tai Wo Hau 大窩口 | Tsuen Wan Line (north terminus; underground island, lime green) |
 | HOK  | Hong Kong 香港 | Tung Chung Line + Airport Express |
 
 ## Run

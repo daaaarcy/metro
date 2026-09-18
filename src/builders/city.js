@@ -943,7 +943,7 @@ const SITES = [
     //     tower east, Kwai Fong Estate + Gardens west, theatre/plaza south.
     id: 'KWF', hole: [192, 448, -2136, -2024],
     roads: [[200, -2022, 470, -2012],         // Kwai Fong Rd between the digs
-            [470, -2300, 492, -2020]],        // Kwai Chung Rd east flank (runs under the viaduct)
+            [470, -2440, 492, -2020]],        // Kwai Chung Rd → Castle Peak Rd east flank, on to Tsuen Wan
     towers: [
       [490, -2090, 34, 30, 64, 'com'],        // Metroplaza office tower
       [462, -2090, 20, 28, 14, 'com'],        // Metroplaza mall podium
@@ -979,6 +979,27 @@ const SITES = [
       [150, -2310, 28, 20, 26, 'res'], [110, -2310, 26, 20, 22, 'res'],
     ],
     lamps: [[200, -2145, 470, 30]],
+  },
+  { // ---- Tai Wo Hau — back underground: the line dives off the viaduct
+    //     into the hillside box under Kwok Shui Rd. Tai Wo Hau Estate and
+    //     Kwai Yin Court west/south, the resited village houses east across
+    //     Castle Peak Rd, Kwok Shui Rd Park greening the north edge.
+    id: 'TWH', hole: [200, 440, -2368, -2272],
+    roads: [[200, -2268, 470, -2258]],        // Castle Peak Rd continues between the digs
+    towers: [
+      // Tai Wo Hau Estate — slab blocks west of the dig, south of KWH's infill
+      [130, -2350, 30, 20, 26, 'res'], [170, -2350, 30, 20, 24, 'res'],
+      [130, -2400, 30, 20, 28, 'res'], [170, -2400, 30, 20, 22, 'res'],
+      // Kwai Yin Court — south-west of the dig
+      [150, -2440, 28, 20, 24, 'res'], [110, -2440, 26, 20, 20, 'res'],
+      // resited village houses (Kwan Mun Hau / Hoi Pa San Tsuen) — low-rise
+      // east across Castle Peak Rd
+      [520, -2320, 22, 18, 10, 'res'], [550, -2320, 20, 18, 12, 'res'],
+      [520, -2360, 22, 18, 11, 'res'], [550, -2360, 20, 18, 9, 'res'],
+      [515, -2400, 24, 18, 12, 'res'],
+    ],
+    parks: [[220, -2440, 370, -2380, 14]],    // Kwok Shui Rd Park, north edge
+    lamps: [[200, -2263, 470, 30]],
   },
 ];
 
@@ -1074,6 +1095,11 @@ const NAMES = [
   ['KWH', 140, 34, -2250, '葵興邨 Kwai Hing Estate'],
   ['KWH', 140, 28, -2190, '新葵興花園 Sun Kwai Hing Gardens'],
   ['KWH', 330, 8, -2145, '葵興路 Kwai Hing Road'],
+  ['TWH', 140, 34, -2350, '大窩口邨 Tai Wo Hau Estate'],
+  ['TWH', 130, 30, -2440, '葵賢苑 Kwai Yin Court'],
+  ['TWH', 300, 16, -2400, '國瑞路公園 Kwok Shui Rd Park'],
+  ['TWH', 540, 16, -2340, '關門口村 Kwan Mun Hau Tsuen'],
+  ['TWH', 481, 8, -2280, '青山公路 Castle Peak Road'],
 ];
 
 export function buildCity() {
