@@ -9,6 +9,7 @@ import { LIFT_SIZE } from '../station-data.js';
 import { M } from '../builders/materials.js';
 import { box } from '../builders/structure.js';
 import { LIFT_DOORS } from '../registry.js';
+import { CELL } from '../colliders.js';
 
 const SPEED = 1.8;        // m/s vertical travel
 const DOOR_T = 1.5;       // door slide rate (0..1)
@@ -16,13 +17,17 @@ const DWELL = 6;          // seconds berthed-open before moving on
 
 export class LiftSim {
   // defs: [{x, z, door:±1, levels:[{uid,y}]}] — levels sorted top→bottom
-  constructor(scene, defs, floors) {
+  // col: the shared colliders index — each car floor is registered in
+  // fgrid (which floorAt actually reads); pushing only into col.floors
+  // used to leave the shaft with no floor at all
+  constructor(scene, defs, col) {
     this.cars = defs.map(d => {
       const ys = d.levels.map(l => l.y);
       const fz = d.z + d.door * LIFT_SIZE.d / 2;
       const c = {
         x: d.x, z: d.z, door: d.door, ys, idx: 0, dir: 1, y: ys[0],
-        open: 0, t: DWELL, state: 'dwell', callIdx: null,
+        open: 0, t: DWELL, state: 'dwell', callIdx: null, sel: null,
+        levels: d.levels,
         // car floor reaches past the door face so the sill has footing
         floor: {
           x0: d.x - LIFT_SIZE.w / 2 + 0.05, x1: d.x + LIFT_SIZE.w / 2 - 0.05,
@@ -32,7 +37,17 @@ export class LiftSim {
         },
         doors: [],
       };
-      floors.push(c.floor);
+      col.floors.push(c.floor);
+      // the floor rect's xz bounds are static even though `top` animates —
+      // bucket it into the walkable grid like a built slab
+      for (let cx = Math.floor((c.floor.x0 - 0.5) / CELL); cx <= Math.floor((c.floor.x1 + 0.5) / CELL); cx++) {
+        for (let cz = Math.floor((c.floor.z0 - 0.5) / CELL); cz <= Math.floor((c.floor.z1 + 0.5) / CELL); cz++) {
+          const k = cx + ',' + cz;
+          let arr = col.fgrid.get(k);
+          if (!arr) col.fgrid.set(k, arr = []);
+          arr.push({ f: c.floor });
+        }
+      }
 
       const g = new THREE.Group();
       const fl = box(LIFT_SIZE.w - 0.2, 0.16, c.floor.z1 - c.floor.z0, M.steel);
@@ -65,7 +80,7 @@ export class LiftSim {
         scene.add(dg);
         const barrier = {
           x0: d.x - 0.95, x1: d.x + 0.95, z0: fz - 0.09, z1: fz + 0.09,
-          y0: y - 0.3, y1: y + 2.4, open: 0,
+          y0: y - 0.3, y1: y + 2.4, open: 0, car: c,
         };
         LIFT_DOORS.push(barrier);
         c.doors.push({ leaves, barrier });
@@ -83,13 +98,21 @@ export class LiftSim {
         && Math.abs(rig.feetY - c.y) < 1.2;
   }
 
-  // E pressed: aboard a berthed car → next level; near a landing → call
+  // the floor E would send a rider to right now — a pending selection,
+  // else the car's next shuttle stop
+  previewIdx(c) { return c.callIdx ?? this.#nextIdx(c); }
+
+  // E pressed: aboard a berthed car → cycle the target through the other
+  // landings (the doors hold while the rider keeps choosing); near a
+  // landing → call the car
   interact(rig) {
     if (this.inCar) {
       const c = this.inCar;
       if (c.state === 'dwell') {
-        c.callIdx = this.#nextIdx(c);
-        c.t = Math.min(c.t, 0.6);
+        c.sel = c.sel == null ? this.#nextIdx(c) : (c.sel + 1) % c.ys.length;
+        if (c.sel === c.idx) c.sel = (c.sel + 1) % c.ys.length;
+        c.callIdx = c.sel;
+        c.t = Math.max(c.t, 1.6);
       }
       return;
     }
@@ -126,6 +149,7 @@ export class LiftSim {
         if (c.t <= 0 && !inDoor) {
           c.target = c.callIdx ?? this.#nextIdx(c);
           c.callIdx = null;
+          c.sel = null;
           c.state = 'closing';
         }
       } else if (c.state === 'closing') {

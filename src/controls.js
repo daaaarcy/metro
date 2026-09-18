@@ -204,8 +204,12 @@ export class CameraRig {
     for (const b of bayList) if (psdBlocked(b)) bayList[bayN++] = b;
     bayList.length = bayN;
     // closed lift landing doors are barriers too — a doorway opens only
-    // where the car is berthed with its doors parted
+    // where the car is berthed with its doors parted. Aboard a moving car
+    // they're skipped: the rider's feet sweep every landing's closed door
+    // band on the way past and each would jolt them (the shaft walls keep
+    // the rider inside anyway)
     for (const d of LIFT_DOORS) {
+      if (d.car === this._inLift) continue;
       if (d.open > 0.55) continue;
       if (d.y1 < feet + 0.25 || d.y0 > feet + h) continue;
       gateRects.push(d);

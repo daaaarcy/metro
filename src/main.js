@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { buildStation, computeOpenings } from './station.js';
-import { LEVELS, BOXES, STATIONS, worldToBox, boxToWorld, groundBoxes } from './station-data.js';
+import { LEVELS, BOXES, STATIONS, worldToBox, boxToWorld, groundBoxes, levelById } from './station-data.js';
 import { CameraRig } from './controls.js';
 import { buildUI, showInfo, showPrompt, updateTicker, updateClock } from './ui.js';
 import { EscalatorSteps } from './anim/escalators.js';
@@ -128,7 +128,7 @@ scene.add(ground);
 const escSteps = new EscalatorSteps();
 scene.add(escSteps.mesh, escSteps.stripMesh);
 const trainSim = new TrainSim(scene);
-const liftSim = new LiftSim(scene, liftDefs, colliders.floors);
+const liftSim = new LiftSim(scene, liftDefs, colliders);
 const passengers = new Passengers(scene, computeOpenings(), colliders);
 const audio = new StationAudio();
 // live Hong Kong weather drives the above-ground sky, light and rain
@@ -506,7 +506,11 @@ function tick() {
         ? `<span class="zh">乘搭中 — 下一站 ${nm.zh} 開門落車</span><span class="en">On board — next stop ${nm.en}</span>`
         : '<span class="zh">乘搭中 — 下一站開門落車</span><span class="en">On board — doors open at the next stop</span>');
     } else if (liftSim.inCar) {
-      showPrompt('<span class="zh">按 <b>E</b> 往下一層 · 或行出升降機</span><span class="en">Press <b>E</b> for the next floor — or step out</span>');
+      const c = liftSim.inCar;
+      const lv = levelById(c.levels[c.state === 'dwell' ? liftSim.previewIdx(c) : c.target].uid);
+      showPrompt(c.state === 'travel'
+        ? `<span class="zh">往 ${lv.id} ${lv.zh}</span><span class="en">To ${lv.id} ${lv.en}</span>`
+        : `<span class="zh">按 <b>E</b> 往 ${lv.id} ${lv.zh} · 再按轉層</span><span class="en"><b>E</b> — ${lv.id} ${lv.en} · press again to change floor</span>`);
     } else if (rig.nearLift) {
       const here = rig.nearLift.car.state === 'dwell' && rig.nearLift.car.idx === rig.nearLift.idx;
       showPrompt(here
