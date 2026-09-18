@@ -1509,6 +1509,149 @@ const SITES = [
     parks: [[4440, -2490, 4560, -2500, 10]],
     lamps: [[4400, -2506, 4640, 40], [4400, -2614, 4640, 40]],
   },
+  { // ---- Sha Tin — New Town Plaza podium and mall towers around the
+    //     town-centre dig; the Shing Mun river channel runs east.
+    id: 'SHS', hole: [980, 1220, -2808, -2712],
+    roads: [[970, -2700, 1230, -2712], [970, -2820, 1230, -2808],
+            [958, -2820, 970, -2700], [1220, -2820, 1232, -2700]],
+    towers: [
+      [930, -2760, 60, 44, 16, 'mall'],   // New Town Plaza podium
+      [1000, -2660, 34, 24, 44, 'res'],   // New Town Towers north
+      [1060, -2670, 34, 24, 48, 'res'], [1120, -2658, 34, 24, 40, 'res'],
+      [1180, -2668, 34, 24, 46, 'res'],
+      [1270, -2760, 30, 24, 14, 'office'], // Sha Tin Town Hall
+      [1010, -2860, 34, 24, 42, 'res'],   // Lek Yuen / Wo Che slabs south
+      [1080, -2875, 34, 24, 38, 'res'], [1150, -2865, 34, 24, 44, 'res'],
+      [1210, -2880, 30, 22, 36, 'res'],
+    ],
+    water: [[1320, -2870, 1380, -2620]],  // Shing Mun River east
+    parks: [[1050, -2690, 1150, -2700, 10]],
+    lamps: [[980, -2706, 1220, 40], [980, -2814, 1220, 40]],
+  },
+  { // ---- Fo Tan — Ho Tung Lau depot shed and the industrial loft rows;
+    //     Jubilee Garden towers south.
+    id: 'FOT', hole: [1380, 1620, -2888, -2792],
+    roads: [[1370, -2780, 1630, -2792], [1370, -2900, 1630, -2888],
+            [1368, -2900, 1380, -2780], [1620, -2900, 1632, -2780]],
+    towers: [
+      [1400, -2740, 30, 22, 26, 'office'], // industrial lofts north
+      [1460, -2750, 30, 22, 30, 'office'], [1520, -2738, 30, 22, 24, 'office'],
+      [1500, -2940, 120, 40, 8, 'com'],   // Ho Tung Lau depot shed
+      [1660, -2870, 34, 24, 40, 'res'],   // Jubilee Garden towers east
+      [1700, -2880, 34, 24, 44, 'res'],
+      [1400, -2920, 30, 22, 32, 'res'],
+    ],
+    parks: [[1560, -2770, 1620, -2780, 8]],
+    lamps: [[1380, -2786, 1620, 40], [1380, -2894, 1620, 40]],
+  },
+  { // ---- University — CUHK campus blocks stepping up the hillside
+    //     north; Ma Liu Shui waterfront and Science Park glimpse south,
+    //     Tolo Harbour east.
+    id: 'UNI', hole: [1830, 2070, -2968, -2872],
+    roads: [[1820, -2860, 2080, -2872], [1820, -2980, 2080, -2968],
+            [1818, -2980, 1830, -2860], [2070, -2980, 2082, -2860]],
+    towers: [
+      [1860, -2820, 30, 22, 24, 'office'], // CUHK campus terraces
+      [1920, -2830, 30, 22, 28, 'office'], [1980, -2818, 30, 22, 22, 'office'],
+      [2040, -2828, 30, 22, 26, 'office'],
+      [1900, -3020, 34, 24, 18, 'office'], // Science Park labs south
+      [1970, -3030, 34, 24, 20, 'office'],
+    ],
+    water: [[2150, -3050, 2250, -2900]],  // Tolo Harbour east
+    parks: [[2100, -2940, 2140, -2960, 8]],
+    lamps: [[1830, -2866, 2070, 40], [1830, -2974, 2070, 40]],
+  },
+  { // ---- Tai Po Market — the market-town centre: Mega Mall podium,
+    //     Uptown Plaza, estate slabs in the Tai Po valley.
+    id: 'TPM', hole: [2330, 2570, -3048, -2952],
+    roads: [[2320, -2940, 2580, -2952], [2320, -3060, 2580, -3048],
+            [2318, -3060, 2330, -2940], [2570, -3060, 2582, -2940]],
+    towers: [
+      [2290, -3000, 56, 40, 14, 'mall'],  // Tai Po Mega Mall
+      [2360, -2900, 34, 24, 40, 'res'],   // Uptown Plaza towers north
+      [2420, -2910, 34, 24, 44, 'res'], [2480, -2898, 34, 24, 36, 'res'],
+      [2540, -2908, 34, 24, 42, 'res'],
+      [2380, -3100, 34, 24, 38, 'res'],   // Tai Po Centre slabs south
+      [2450, -3115, 34, 24, 42, 'res'], [2520, -3105, 34, 24, 34, 'res'],
+    ],
+    parks: [[2600, -2990, 2660, -3030, 10]],
+    lamps: [[2330, -2946, 2570, 40], [2330, -3054, 2570, 40]],
+  },
+  { // ---- Tai Wo — viaduct stop over the estate; Tai Wo Plaza podium
+    //     west, estate slabs both sides.
+    id: 'TAO', hole: [2678, 2922, -3132, -3028],
+    roads: [[2668, -3016, 2932, -3028], [2668, -3144, 2932, -3132],
+            [2666, -3144, 2678, -3016], [2922, -3144, 2934, -3016]],
+    towers: [
+      [2710, -2980, 34, 24, 34, 'res'],   // Tai Wo Estate slabs north
+      [2770, -2990, 34, 24, 38, 'res'], [2830, -2978, 34, 24, 30, 'res'],
+      [2890, -2988, 34, 24, 36, 'res'],
+      [2640, -3080, 50, 36, 12, 'mall'],  // Tai Wo Plaza
+      [2730, -3180, 34, 24, 32, 'res'],   // estate slabs south
+      [2800, -3195, 34, 24, 36, 'res'], [2870, -3185, 30, 22, 30, 'res'],
+    ],
+    parks: [[2700, -3000, 2780, -3014, 8]],
+    lamps: [[2680, -3022, 2920, 40], [2680, -3138, 2920, 40]],
+  },
+  { // ---- Fanling — Fanling Centre and Flora Plaza towers in the
+    //     Fanling/Sheung Shui new town.
+    id: 'FAN', hole: [3030, 3270, -3188, -3092],
+    roads: [[3020, -3080, 3280, -3092], [3020, -3200, 3280, -3188],
+            [3018, -3200, 3030, -3080], [3270, -3200, 3282, -3080]],
+    towers: [
+      [3060, -3040, 34, 24, 38, 'res'],   // Fanling Centre north
+      [3120, -3050, 34, 24, 42, 'res'], [3180, -3038, 34, 24, 34, 'res'],
+      [3240, -3048, 34, 24, 40, 'res'],
+      [2990, -3140, 50, 36, 12, 'mall'],  // Flora Plaza
+      [3090, -3240, 34, 24, 36, 'res'],   // Wah Sum slabs south
+      [3160, -3255, 34, 24, 40, 'res'], [3230, -3245, 30, 22, 34, 'res'],
+    ],
+    parks: [[3100, -3070, 3180, -3088, 8]],
+    lamps: [[3030, -3086, 3270, 40], [3030, -3194, 3270, 40]],
+  },
+  { // ---- Sheung Shui — the junction town: Sheung Shui Centre, Shek Wu
+    //     Hui market blocks, Choi Yuen estate. The LMC spur branches
+    //     south here.
+    id: 'SHU', hole: [3400, 3640, -3248, -3152],
+    roads: [[3390, -3140, 3650, -3152], [3390, -3260, 3650, -3248],
+            [3388, -3260, 3400, -3140], [3640, -3260, 3652, -3140]],
+    towers: [
+      [3440, -3100, 34, 24, 40, 'res'],   // Sheung Shui Centre north
+      [3500, -3110, 34, 24, 44, 'res'], [3560, -3098, 34, 24, 36, 'res'],
+      [3620, -3108, 34, 24, 42, 'res'],
+      [3360, -3200, 50, 36, 12, 'mall'],  // Landmark North
+      [3450, -3300, 34, 24, 38, 'res'],   // Choi Yuen Estate south
+      [3520, -3315, 34, 24, 42, 'res'], [3590, -3305, 30, 22, 36, 'res'],
+    ],
+    parks: [[3460, -3130, 3540, -3148, 8]],
+    lamps: [[3400, -3146, 3640, 40], [3400, -3254, 3640, 40]],
+  },
+  { // ---- Lo Wu — the boundary terminus: long control-point hall, no
+    //     towers inside the frontier restricted zone; Shenzhen River
+    //     meander south.
+    id: 'LOW', hole: [3800, 4040, -3328, -3232],
+    roads: [[3790, -3220, 4050, -3232], [3790, -3340, 4050, -3328],
+            [3788, -3340, 3800, -3220], [4040, -3340, 4052, -3220]],
+    towers: [
+      [3920, -3180, 100, 30, 10, 'com'],  // Lo Wu control-point hall
+      [3830, -3130, 30, 22, 12, 'office'], // barrack blocks
+      [3890, -3140, 30, 22, 14, 'office'],
+    ],
+    parks: [[3830, -3380, 4010, -3440, 8]], // frontier green
+    lamps: [[3800, -3226, 4040, 40], [3800, -3334, 4040, 40]],
+  },
+  { // ---- Lok Ma Chau — the spur terminus on the wetlands edge: Futian
+    //     control hall, marshes and the Shenzhen River loop south.
+    id: 'LMC', hole: [3400, 3640, -3568, -3472],
+    roads: [[3390, -3460, 3650, -3472], [3390, -3580, 3650, -3568],
+            [3388, -3580, 3400, -3460], [3640, -3580, 3652, -3460]],
+    towers: [
+      [3520, -3420, 90, 28, 10, 'com'],   // Lok Ma Chau control hall
+    ],
+    water: [[3440, -3660, 3600, -3600]],  // Shenzhen River loop
+    parks: [[3660, -3600, 3760, -3700, 10]], // wetlands
+    lamps: [[3400, -3466, 3640, 40], [3400, -3574, 3640, 40]],
+  },
 ];
 
 // landmark tags — bilingual, tagged to each station's ground level so they
@@ -1659,6 +1802,18 @@ const NAMES = [
   ['POL', 5070, 42, -2480, '寶林邨 Po Lam Estate'],
   ['LHP', 4520, 56, -2465, '日出康城 LOHAS Park'],
   ['LHP', 4700, 14, -2560, '將軍澳車廠 TKO Depot'],
+  ['SHS', 930, 18, -2760, '新城市廣場 New Town Plaza'],
+  ['SHS', 1350, 8, -2740, '城門河 Shing Mun River'],
+  ['FOT', 1500, 12, -2940, '何東樓車廠 Ho Tung Lau Depot'],
+  ['UNI', 1950, 30, -2825, '中文大學 CUHK'],
+  ['UNI', 2200, 8, -2980, '吐露港 Tolo Harbour'],
+  ['TPM', 2290, 16, -3000, '大埔超級城 Tai Po Mega Mall'],
+  ['TAO', 2640, 14, -3080, '太和廣場 Tai Wo Plaza'],
+  ['FAN', 2990, 14, -3140, '花都廣場 Flora Plaza'],
+  ['SHU', 3360, 14, -3200, '上水廣場 Landmark North'],
+  ['LOW', 3920, 12, -3180, '羅湖管制站 Lo Wu Control Point'],
+  ['LMC', 3520, 12, -3420, '落馬洲管制站 Lok Ma Chau'],
+  ['LMC', 3710, 6, -3650, '落馬洲濕地 Wetlands'],
 ];
 
 export function buildCity() {

@@ -41,6 +41,8 @@ const FEEDS = [
   ['EAL', 'MKE'],
   ['EAL', 'KOT'],
   ['EAL', 'TAW'],
+  ['EAL', 'SHS'], ['EAL', 'FOT'], ['EAL', 'UNI'], ['EAL', 'TPM'], ['EAL', 'TAO'],
+  ['EAL', 'FAN'], ['EAL', 'SHU'], ['EAL', 'LOW'], ['EAL', 'LMC'],
   ['KTL', 'SKM'],
   ['KTL', 'LOF'],
   ['KTL', 'WTS'],

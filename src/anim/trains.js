@@ -861,23 +861,55 @@ export const ROUTES = [
   // other (a rider gets carried across to the opposite platform edge)
   // East Rail Line: Admiralty's L5 terminus -> Exhibition Centre on the
   // Wan Chai North reclamation, under the harbour surfacing at Hung Hom,
-  // then north past Mong Kok East and Kowloon Tong to Tai Wai where the
-  // 'off' legs continue the corridor toward Lo Wu / Lok Ma Chau off-map.
+  // then north past Mong Kok East, Kowloon Tong and Tai Wai into the New
+  // Territories — Sha Tin, Fo Tan, University, Tai Po Market, Tai Wo,
+  // Fanling, Sheung Shui — to the Lo Wu boundary terminus. The consist
+  // wraps at LOW's west portal and at ADM's off-map reversal.
   { line: 'EAL', consists: 2,
-    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
-           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'],
+    legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'off',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
+           'tunnel', 'off'],
     stops: [{ uid: 'ADM:L5', num: 7 },
             { uid: 'EXC:L2', num: 1 },
             { uid: 'HUH:P', num: 1 },
             { uid: 'MKE:P', num: 1 },
             { uid: 'KOT:P', num: 1 },
             { uid: 'TAW:U1', num: 1 },
+            { uid: 'SHS:P', num: 1 },
+            { uid: 'FOT:P', num: 1 },
+            { uid: 'UNI:P', num: 1 },
+            { uid: 'TPM:P', num: 1 },
+            { uid: 'TAO:U1', num: 1 },
+            { uid: 'FAN:P', num: 1 },
+            { uid: 'SHU:P', num: 1 },
+            { uid: 'LOW:P', num: 1 },
+            { uid: 'LOW:P', num: 2 },
+            { uid: 'SHU:P', num: 2 },
+            { uid: 'FAN:P', num: 2 },
+            { uid: 'TAO:U1', num: 2 },
+            { uid: 'TPM:P', num: 2 },
+            { uid: 'UNI:P', num: 2 },
+            { uid: 'FOT:P', num: 2 },
+            { uid: 'SHS:P', num: 2 },
             { uid: 'TAW:U1', num: 2 },
             { uid: 'KOT:P', num: 2 },
             { uid: 'MKE:P', num: 2 },
             { uid: 'HUH:P', num: 2 },
             { uid: 'EXC:L2', num: 2 },
             { uid: 'ADM:L5', num: 8, dwell: 50 }] },
+  // Lok Ma Chau spur: the Futian-branch shuttle leaves Sheung Shui's
+  // southbound face, wraps at the LMC terminus, returns to the
+  // northbound face and reverses off-map onto face 2 — the real
+  // SHU↔LMC shuttle working.
+  { line: 'EAL', consists: 1,
+    legs: ['tunnel', 'off', 'tunnel', 'off'],
+    stops: [{ uid: 'SHU:P', num: 2 },
+            { uid: 'LMC:P', num: 1 },
+            { uid: 'LMC:P', num: 2 },
+            { uid: 'SHU:P', num: 1 }] },
   // South Island Line: Admiralty's L6 terminus -> tunnel south under the
   // hills to Ocean Park, along the viaduct to Wong Chuk Hang, under the
   // Aberdeen Channel to Lei Tung, and out to the South Horizons terminus.

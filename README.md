@@ -70,6 +70,15 @@ procedural Hong Kong skyline around each station.
 | HAH  | Hang Hau 坑口 | Tseung Kwan O Line (underground island, East Point City) |
 | POL  | Po Lam 寶琳 | Tseung Kwan O Line (north terminus; underground island under Metro City) |
 | LHP  | LOHAS Park 康城 | Tseung Kwan O Line (branch terminus; at-grade side platforms by the depot) |
+| SHS  | Sha Tin 沙田 | East Rail Line (at-grade side platforms, New Town Plaza) |
+| FOT  | Fo Tan 火炭 | East Rail Line (at-grade side platforms, Ho Tung Lau depot) |
+| UNI  | University 大學 | East Rail Line (at-grade side platforms, CUHK waterfront) |
+| TPM  | Tai Po Market 大埔墟 | East Rail Line (at-grade side platforms, market town) |
+| TAO  | Tai Wo 太和 | East Rail Line (viaduct side platforms, Tai Wo Estate) |
+| FAN  | Fanling 粉嶺 | East Rail Line (at-grade side platforms, Fanling Centre) |
+| SHU  | Sheung Shui 上水 | East Rail Line (at-grade side platforms; LMC spur junction) |
+| LOW  | Lo Wu 羅湖 | East Rail Line (boundary terminus; frontier control point) |
+| LMC  | Lok Ma Chau 落馬洲 | East Rail Line (spur terminus; wetlands, Futian crossing) |
 
 ## Run
 
