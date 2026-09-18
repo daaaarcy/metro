@@ -1,16 +1,15 @@
 // Tai Wai Station 大圍 — schematic data based on the official MTR
 // layout (mtr.com.hk/archive/ch/services/layouts/taw.pdf) + Wikipedia.
-// Elevated stop in the Shing Mun valley north of the Lion Rock tunnel —
-// the viaduct form (grade concourse under opposed side decks), with the
-// line continuing off-map to Sha Tin and the New Territories. The real
-// station interchanges with the Tuen Ma Line; condensed to EAL faces.
+// EAL/TML interchange in the Shing Mun valley north of the Lion Rock
+// tunnel — the EAL keeps the viaduct form (grade concourse under
+// opposed side decks) while the TML island sits at L1 beneath.
 // Livery: navy.
 // Exits (per Wikipedia, condensed): A Tai Wai village, B Festival City,
 // C Che Kung Temple, D Hin Keng.
 
 import { twlViaduct } from './template.js';
 
-export const TAW = twlViaduct({
+const taw = twlViaduct({
   id: 'TAW', zh: '大圍', en: 'Tai Wai',
   livery: '#1f4a8c',   // Tai Wai's navy mosaic
   cx: 640, cz: -2140,
@@ -33,3 +32,30 @@ export const TAW = twlViaduct({
 
   people: { G: 18, GC: 40, U1: 44 },
 });
+
+// The TML island at L1 under the grade concourse — riders drop from the
+// U1 decks through GC onto the island. Faces 3/4 keep clear of the EAL
+// feed's plat keys.
+taw.boxes.tawTml = { cx: 640, cz: -2140, len: 190, wid: 24, rot: 0 };
+taw.levels.push(
+  { id: 'L1', y: -7, box: 'tawTml', zh: '月台・屯馬綫', en: 'Tuen Ma Line Platform', type: 'platform' },
+);
+taw.platforms.L1 = {
+  kind: 'island',
+  faces: [
+    { num: 3, line: 'TML', side: -1, dir: 1,  to: { zh: '往烏溪沙', en: 'to Wu Kai Sha' } },
+    { num: 4, line: 'TML', side: 1,  dir: -1, to: { zh: '往屯門',   en: 'to Tuen Mun' } },
+  ],
+};
+taw.escalators = [
+  ...taw.escalators,
+  { from: 'GC', to: 'L1', frame: 'tawTml', cx: -40, cz: 0, dir: [-1, 0], n: 2 },
+];
+taw.lifts = [
+  ...taw.lifts,
+  { frame: 'tawTml', x: 10, z: 0, levels: ['GC', 'L1'] },
+];
+taw.walkRects.L1 = [{ x0: -92, z0: -4.9, x1: 92, z1: 4.9 }];
+taw.people.L1 = 40;
+
+export const TAW = taw;

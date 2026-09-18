@@ -49,14 +49,14 @@ procedural Hong Kong skyline around each station.
 | LET  | Lei Tung 利東 | South Island Line (underground island beneath Ap Lei Chau) |
 | SOH  | South Horizons 海怡半島 | South Island Line (south terminus; elevated side platforms) |
 | EXC  | Exhibition Centre 會展 | East Rail Line (underground island, Wan Chai North reclamation) |
-| HUH  | Hung Hom 紅磡 | East Rail Line (at-grade side platforms under gallery, Coliseum/PolyU) |
+| HUH  | Hung Hom 紅磡 | East Rail + Tuen Ma Lines (at-grade EAL sides over the TML island, Coliseum/PolyU) |
 | MKE  | Mong Kok East 旺角東 | East Rail Line (at-grade side platforms, Grand Century Place) |
 | KOT  | Kowloon Tong 九龍塘 | East Rail + Kwun Tong Lines (at-grade EAL sides over the KTL island) |
-| TAW  | Tai Wai 大圍 | East Rail Line (elevated side platforms north of Lion Rock) |
+| TAW  | Tai Wai 大圍 | East Rail + Tuen Ma Lines (EAL viaduct sides over the L1 TML island) |
 | SKM  | Shek Kip Mei 石硤尾 | Kwun Tong Line (underground island) |
 | LOF  | Lok Fu 樂富 | Kwun Tong Line (underground island, Lok Fu Plaza) |
 | WTS  | Wong Tai Sin 黃大仙 | Kwun Tong Line (underground island, temple at the hill foot) |
-| DIH  | Diamond Hill 鑽石山 | Kwun Tong Line (underground island, Plaza Hollywood) |
+| DIH  | Diamond Hill 鑽石山 | Kwun Tong + Tuen Ma Lines (underground islands, Plaza Hollywood) |
 | CHH  | Choi Hung 彩虹 | Kwun Tong Line (underground island, rainbow estate) |
 | KOB  | Kowloon Bay 九龍灣 | Kwun Tong Line (viaduct side platforms, Telford/depot) |
 | NTK  | Ngau Tau Kok 牛頭角 | Kwun Tong Line (viaduct side platforms) |
@@ -64,7 +64,7 @@ procedural Hong Kong skyline around each station.
 | LAT  | Lam Tin 藍田 | Kwun Tong Line (hillside cutting, gallery concourse) |
 | YAT  | Yau Tong 油塘 | Kwun Tong + Tseung Kwan O Lines (at-grade KTL sides, TKO island below) |
 | TKL  | Tiu Keng Leng 調景嶺 | Kwun Tong Line east terminus + Tseung Kwan O Line (TKO island at L1, LOHAS shuttle) |
-| HOM  | Ho Man Tin 何文田 | Kwun Tong Line (underground island on the uplands) |
+| HOM  | Ho Man Tin 何文田 | Kwun Tong + Tuen Ma Lines (underground islands on the uplands) |
 | WHA  | Whampoa 黃埔 | Kwun Tong Line (west terminus; waterfront side platforms, The Whampoa ship mall) |
 | TKW  | Tseung Kwan O 將軍澳 | Tseung Kwan O Line (underground island, PopCorn/Park Central) |
 | HAH  | Hang Hau 坑口 | Tseung Kwan O Line (underground island, East Point City) |
@@ -85,6 +85,34 @@ procedural Hong Kong skyline around each station.
 | AIR  | Airport 機場 | Airport Express (at-grade side platforms beside Terminal 1) |
 | AWE  | AsiaWorld-Expo 博覽館 | Airport Express (west terminus; expo halls) |
 | DIS  | Disneyland Resort 迪士尼 | Disneyland Resort Line (terminus; parkland, castle keep) |
+| TUM  | Tuen Mun 屯門 | Tuen Ma Line (west terminus; viaduct over V City) |
+| SIH  | Siu Hong 兆康 | Tuen Ma Line (viaduct beside the depot) |
+| TIS  | Tin Shui Wai 天水圍 | Tuen Ma Line (viaduct, Kingswood slabs) |
+| LOP  | Long Ping 朗屏 | Tuen Ma Line (viaduct, Yuen Long edge) |
+| YUL  | Yuen Long 元朗 | Tuen Ma Line (viaduct over YOHO Mall) |
+| KSR  | Kam Sheung Road 錦上路 | Tuen Ma Line (viaduct, Kam Tin valley) |
+| TWW  | Tsuen Wan West 荃灣西 | Tuen Ma Line (underground island, waterfront) |
+| NAC  | Nam Cheong 南昌 | Tuen Ma Line (at-grade sides, V·Walk/Cullinan) |
+| AUS  | Austin 柯士甸 | Tuen Ma Line (underground island, Xiqu Centre) |
+| ETS  | East Tsim Sha Tsui 尖東 | Tuen Ma Line (underground island, TST East) |
+| TOS  | To Kwa Wan 土瓜灣 | Tuen Ma Line (underground island, old town) |
+| SUW  | Sung Wong Toi 宋皇臺 | Tuen Ma Line (underground island, garden) |
+| KAT  | Kai Tak 啟德 | Tuen Ma Line (underground island, AIRSIDE) |
+| HIK  | Hin Keng 顯徑 | Tuen Ma Line (underground island, hill saddle) |
+| CKT  | Che Kung Temple 車公廟 | Tuen Ma Line (viaduct, Shing Mun bank) |
+| STW  | Sha Tin Wai 沙田圍 | Tuen Ma Line (viaduct, estate rows) |
+| CIO  | City One 第一城 | Tuen Ma Line (viaduct, mega-estate) |
+| SHM  | Shek Mun 石門 | Tuen Ma Line (viaduct, business fringe) |
+| TSH  | Tai Shui Hang 大水坑 | Tuen Ma Line (viaduct, foothill) |
+| HEO  | Heng On 恆安 | Tuen Ma Line (viaduct, estate edge) |
+| MOS  | Ma On Shan 馬鞍山 | Tuen Ma Line (viaduct over MOSTown) |
+| WKS  | Wu Kai Sha 烏溪沙 | Tuen Ma Line (east terminus; at-grade, shore) |
+
+The Tuen Ma Line interchanges splice into the existing stations: Hung
+Hom (TML island at L2 below the EAL trench), Ho Man Tin and Diamond
+Hill (TML islands at L3 below the KTL platforms), Tai Wai (TML island
+at L1 below the viaduct concourse), and Mei Foo's TML box was built
+with the station.
 
 ## Run
 

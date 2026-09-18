@@ -1,7 +1,8 @@
 // Ho Man Tin Station 何文田 — schematic data based on the official MTR
 // layout (mtr.com.hk/archive/ch/services/layouts/hom.pdf) + Wikipedia.
-// KTL underground island on the Ho Man Tin uplands between Yau Ma Tei
-// and the Whampoa waterfront. Faces run flipped vs the rest of the
+// KTL/TML underground interchange on the Ho Man Tin uplands between
+// Yau Ma Tei and the Whampoa waterfront — the TML island stacks at L3
+// below the KTL platform. KTL faces run flipped vs the rest of the
 // line: northbound departs the west portal (YMT is −x of here).
 // Livery: pale green.
 // Exits (per Wikipedia, condensed): A Oi Man Estate, B Sheung Lok St,
@@ -9,7 +10,7 @@
 
 import { twlIsland } from './template.js';
 
-export const HOM = twlIsland({
+const hom = twlIsland({
   id: 'HOM', zh: '何文田', en: 'Ho Man Tin',
   livery: '#8fbf9f',
   cx: 570, cz: -1130,
@@ -28,3 +29,30 @@ export const HOM = twlIsland({
 
   people: { G: 14, L1: 38, L2: 40 },
 });
+
+// The TML island at L3 below the KTL platform — transfer is down the
+// mid-platform escalator pair. Faces 3/4 keep clear of the KTL feed's
+// plat keys.
+hom.boxes.homTml = { cx: 570, cz: -1130, len: 190, wid: 24, rot: 0 };
+hom.levels.push(
+  { id: 'L3', y: -21, box: 'homTml', zh: '月台・屯馬綫', en: 'Tuen Ma Line Platform', type: 'platform' },
+);
+hom.platforms.L3 = {
+  kind: 'island',
+  faces: [
+    { num: 3, line: 'TML', side: -1, dir: 1,  to: { zh: '往烏溪沙', en: 'to Wu Kai Sha' } },
+    { num: 4, line: 'TML', side: 1,  dir: -1, to: { zh: '往屯門',   en: 'to Tuen Mun' } },
+  ],
+};
+hom.escalators = [
+  ...hom.escalators,
+  { from: 'L2', to: 'L3', frame: 'homTml', cx: -40, cz: 0, dir: [-1, 0], n: 2 },
+];
+hom.lifts = [
+  ...hom.lifts,
+  { frame: 'homTml', x: 10, z: 0, levels: ['L2', 'L3'] },
+];
+hom.walkRects.L3 = [{ x0: -92, z0: -4.9, x1: 92, z1: 4.9 }];
+hom.people.L3 = 42;
+
+export const HOM = hom;

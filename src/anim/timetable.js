@@ -60,6 +60,15 @@ const FEEDS = [
   ['KTL', 'TKL'],
   ['KTL', 'HOM'],
   ['KTL', 'WHA'],
+  // TML interchanges (HUH/HOM/DIH/TAW) number their TML faces 3/4 while
+  // the feed returns plats 1/2 — they'd leak onto the other line's
+  // faces, so only the standalone stations poll.
+  ['TML', 'TUM'], ['TML', 'SIH'], ['TML', 'TIS'], ['TML', 'LOP'],
+  ['TML', 'YUL'], ['TML', 'KSR'], ['TML', 'TWW'], ['TML', 'NAC'],
+  ['TML', 'AUS'], ['TML', 'ETS'], ['TML', 'TOS'], ['TML', 'SUW'],
+  ['TML', 'KAT'], ['TML', 'HIK'], ['TML', 'CKT'], ['TML', 'STW'],
+  ['TML', 'CIO'], ['TML', 'SHM'], ['TML', 'TSH'], ['TML', 'HEO'],
+  ['TML', 'MOS'], ['TML', 'WKS'],
 ];
 const POLL_S = 45;
 

@@ -76,8 +76,30 @@ import { TUC } from './stations/tungchung.js';
 import { AIR } from './stations/airport.js';
 import { AWE } from './stations/asiaworldexpo.js';
 import { DIS } from './stations/disneyland.js';
+import { TUM } from './stations/tuenmun.js';
+import { SIH } from './stations/siuhong.js';
+import { TIS } from './stations/tinshuiwai.js';
+import { LOP } from './stations/longping.js';
+import { YUL } from './stations/yuenlong.js';
+import { KSR } from './stations/kamsheungroad.js';
+import { TWW } from './stations/tsuenwanwest.js';
+import { NAC } from './stations/namcheong.js';
+import { AUS } from './stations/austin.js';
+import { ETS } from './stations/easttsimshatsui.js';
+import { TOS } from './stations/tokawawan.js';
+import { SUW } from './stations/sungwongtoi.js';
+import { KAT } from './stations/kaitak.js';
+import { HIK } from './stations/hinkeng.js';
+import { CKT } from './stations/chekungtemple.js';
+import { STW } from './stations/shatinwai.js';
+import { CIO } from './stations/cityone.js';
+import { SHM } from './stations/shekmun.js';
+import { TSH } from './stations/taishuihang.js';
+import { HEO } from './stations/hengon.js';
+import { MOS } from './stations/maonshan.js';
+import { WKS } from './stations/wukaisha.js';
 
-export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW, SKM, LOF, WTS, DIH, CHH, KOB, NTK, KWT, LAT, YAT, TKL, HOM, WHA, TKW, HAH, POL, LHP, SHS, FOT, UNI, TPM, TAO, FAN, SHU, LOW, LMC, TSY, SUN, TUC, AIR, AWE, DIS };
+export const STATIONS = { ADM, CEN, HOK, WAC, CAB, SHW, SYP, HKU, KET, TIH, FOH, NOP, QUB, TAK, SWH, SKW, HFC, CHW, TST, JOR, YMT, MOK, PRE, SSP, CSW, LCK, MEF, LAK, KWF, KWH, TWH, TSW, KOW, OLY, OCP, WCH, LET, SOH, EXC, HUH, MKE, KOT, TAW, SKM, LOF, WTS, DIH, CHH, KOB, NTK, KWT, LAT, YAT, TKL, HOM, WHA, TKW, HAH, POL, LHP, SHS, FOT, UNI, TPM, TAO, FAN, SHU, LOW, LMC, TSY, SUN, TUC, AIR, AWE, DIS, TUM, SIH, TIS, LOP, YUL, KSR, TWW, NAC, AUS, ETS, TOS, SUW, KAT, HIK, CKT, STW, CIO, SHM, TSH, HEO, MOS, WKS };
 
 // ---------------------------------------------------------------- constants
 export const FLOOR_H = 7;      // floor-to-floor height
