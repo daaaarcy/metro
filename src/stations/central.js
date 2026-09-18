@@ -72,7 +72,7 @@ export const CEN = {
     { id: 'F',  x: 8,   side: 1,  zh: '聖佐治大廈・文華東方酒店', en: "St George's Bldg · Mandarin Oriental" },
     { id: 'G',  x: 24,  side: 1,  zh: '置地廣場',                en: 'The Landmark' },
     { id: 'H',  x: 40,  side: -1, zh: '歷山大廈',                en: 'Alexandra House' },
-    { id: 'K',  x: 52,  side: 1,  zh: '皇后像廣場・滙豐總行・渣打銀行', en: 'Statue Sq · HSBC · Standard Chartered' },
+    { id: 'K',  x: 52,  side: 1,  zh: '皇后像廣場・大會堂・展城館',  en: 'Statue Sq · City Hall · City Gallery' },
     { id: 'L',  x: 62,  side: -1, zh: '中國建設銀行大廈',        en: 'CCB Tower' },
     { id: 'J1', x: 72,  side: 1,  zh: '終審法院',                en: 'Court of Final Appeal' },
     { id: 'J3', x: 82,  side: -1, zh: '友邦金融中心・美國銀行中心', en: 'AIA Central · Bank of America Tower' },
