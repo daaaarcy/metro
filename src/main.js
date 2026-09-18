@@ -18,7 +18,7 @@ import { GATES, ESC_RUNS } from './registry.js';
 
 // ---------- renderer ----------
 const app = document.getElementById('app');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', stencil: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));   // 3.7M-tri scene is fill-bound on Retina
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
@@ -143,6 +143,9 @@ scene.traverse(o => { if (o.isInstancedMesh) o.castShadow = false; });
 const lastSun = new THREE.Vector3(Infinity, Infinity, Infinity);
 
 // ---------- CSS2D labels ----------
+// separate flat scene: CSS2DRenderer traverses whatever it's handed, so a
+// dedicated scene visits ~500 label nodes instead of the whole 11k-node scene
+const labelScene = new THREE.Scene();
 const labelObjs = [];
 let labelsOn = true;
 for (const l of labels) {
@@ -153,7 +156,7 @@ for (const l of labels) {
   const o = new CSS2DObject(div);
   o.position.copy(l.pos);
   o.userData.level = l.level;
-  root.add(o);
+  labelScene.add(o);
   labelObjs.push(o);
 }
 
@@ -168,18 +171,28 @@ for (const l of labels) {
 //  walk                → labels on the level the camera is inside
 const sortedLevels = [...LEVELS].sort((a, b) => b.y - a.y);
 const TYPE_OF = {}; for (const l of LEVELS) TYPE_OF[l.uid] = l.type;
+const LVL_OF = {}; for (const l of LEVELS) LVL_OF[l.uid] = l;
+// levels stacked above each uid at the same station — bakes the
+// exposedLevel/coverY scans so updateLabels isn't O(labels × levels)
+const ABOVE = {}, COVER_Y = {};
+for (const l of LEVELS) {
+  const above = LEVELS.filter(m => m.station === l.station && m.y > l.y + 1);
+  ABOVE[l.uid] = above.map(m => m.uid);
+  COVER_Y[l.uid] = above.length ? Math.min(...above.map(m => m.y)) : Infinity;
+}
 const EXT_TYPES = new Set(['ground', 'checkin', 'bridge']);
 function levelAtY(y) {
   for (const l of sortedLevels) if (y >= l.y - 1.2) return l.uid;
   return sortedLevels[sortedLevels.length - 1].uid;
 }
 // which level's box (if any) contains the point — handles rotated boxes
+const _lb = {};
 function levelBoxAt(p) {
   for (const lvl of LEVELS) {
     const bx = BOXES[lvl.box];
     if (!bx) continue;
     if (p.y < lvl.y - 0.3 || p.y > lvl.y + 6.9) continue;
-    const l = worldToBox(bx, p.x, p.z);
+    const l = worldToBox(bx, p.x, p.z, _lb);
     if (Math.abs(l.x) < bx.len / 2 && Math.abs(l.z) < bx.wid / 2) return lvl.uid;
   }
   return null;
@@ -212,10 +225,9 @@ function updateTitle() {
 
 // a level is "exposed" once a level above it *at the same station* is hidden
 function exposedLevel(uid) {
-  const lvl = LEVELS.find(l => l.uid === uid);
-  if (!lvl) return true;
-  return LEVELS.some(l => l.station === lvl.station && l.y > lvl.y + 1
-    && levelGroups[l.uid] && !levelGroups[l.uid].visible);
+  const above = ABOVE[uid];
+  if (!above) return true;
+  return above.some(u => levelGroups[u] && !levelGroups[u].visible);
 }
 function updateLabels() {
   // walk mode: only the level box the camera is inside (station-aware —
@@ -230,9 +242,7 @@ function updateLabels() {
     if (clipAxis === 'y') {
       // a level is only exposed once the slab covering it is cut — the floor
       // of the next level up *at that station*. Top levels have no cover.
-      const me = LEVELS.find(l => l.uid === lvl);
-      const coverY = me ? Math.min(...LEVELS.filter(l => l.station === me.station && l.y > me.y + 1).map(l => l.y), Infinity) : Infinity;
-      o.visible = clipConst < coverY && o.position.y < clipConst + 0.5;
+      o.visible = clipConst < (COVER_Y[lvl] ?? Infinity) && o.position.y < clipConst + 0.5;
       continue;
     }
     if (clipAxis === 'x') { o.visible = o.position.x < clipConst; continue; }
@@ -252,10 +262,15 @@ for (const lvl of LEVELS) {
   m.position.set(bx.cx, lvl.y + 3, bx.cz);
   m.rotation.y = bx.rot;
   m.userData.level = lvl;
-  m.renderOrder = -1;
+  m.visible = false;   // raycast targets only — Raycaster ignores .visible
   scene.add(m);
   pickMeshes.push(m);
 }
+
+// every transform under these trees is baked — instance matrices animate
+// without touching matrixWorld, so the per-frame traversal can skip them
+scene.updateMatrixWorld(true);
+for (const o of [root, city.group, ground, ...pickMeshes]) o.matrixWorldAutoUpdate = false;
 
 // ---------- clipping planes ----------
 const clipPlanes = {
@@ -429,7 +444,7 @@ function updatePick(dt) {
   }
   if (!pt && kept) pt = kept.point;
   if (!pt) { showInfo(null); return; }
-  const l = LEVELS.find(l => l.uid === levelBoxAt(pt));
+  const l = LVL_OF[levelBoxAt(pt)];
   if (!l) { showInfo(null); return; }
   showInfo(`<span class="zh">${l.station === 'ADM' ? '' : l.station + ' · '}${l.id} ${l.zh}</span><span class="en">${l.en}</span>`);
 }
@@ -477,7 +492,8 @@ function tick() {
     passengers.onTrainEvent(ev, audio);
   }
   if (peopleOn) passengers.update(sdt, escT, trainSim, audio,
-    rig.mode === 'walk' ? camera.position : rig.orbit.target);
+    rig.mode === 'walk' ? camera.position : rig.orbit.target,
+    rig.mode === 'walk' ? 150 : Math.max(250, rig.orbit.getDistance()));
   updateGates(sdt);
 
   // gate / lift / boarding prompt + ticker + clock refresh
@@ -509,7 +525,7 @@ function tick() {
   }
 
   renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
+  labelRenderer.render(labelScene, camera);
   requestAnimationFrame(tick);
 }
 tick();

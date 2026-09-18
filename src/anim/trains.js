@@ -491,14 +491,17 @@ class Consist {
   setDoors(open, dt) {
     this.open = THREE.MathUtils.clamp(this.open + (open ? dt : -dt) / DOOR_T, 0, 1);
     const o = this.open;
-    const { im, specs } = this.leafSets;
-    for (let i = 0; i < specs.length; i++) {
-      const sp = specs[i];
-      const slide = (sp.side === this.doorSide ? o : 0) * 0.78;
-      this._m4.makeTranslation(sp.x + sp.s * slide, 2.05, sp.z);
-      im.setMatrixAt(i, this._m4);
+    if (o !== this._lastO) {   // clamped at 0/1 most of the time — skip the rewrite
+      this._lastO = o;
+      const { im, specs } = this.leafSets;
+      for (let i = 0; i < specs.length; i++) {
+        const sp = specs[i];
+        const slide = (sp.side === this.doorSide ? o : 0) * 0.78;
+        this._m4.makeTranslation(sp.x + sp.s * slide, 2.05, sp.z);
+        im.setMatrixAt(i, this._m4);
+      }
+      im.instanceMatrix.needsUpdate = true;
     }
-    im.instanceMatrix.needsUpdate = true;
     // PSD leaves: slide open with the train doors while berthed — and keep
     // driving the LAST door set shut after departure so bays never gape.
     const ds = this.ds;
@@ -517,9 +520,9 @@ class Consist {
         if (Math.abs(cur - target) > 0.001) {
           d._slides[i] = cur + Math.sign(target - cur) * Math.min(Math.abs(target - cur), dt * 1.4);
           moving = true;
+          this._m4.makeTranslation(d.leafX[i] + d.leafDir[i] * d._slides[i], d.y, d.z);
+          d.doors.setMatrixAt(i, this._m4);
         }
-        this._m4.makeTranslation(d.leafX[i] + d.leafDir[i] * d._slides[i], d.y, d.z);
-        d.doors.setMatrixAt(i, this._m4);
       }
       if (moving) d.doors.instanceMatrix.needsUpdate = true;
       else if (!ds) this._lastDs = null;   // fully shut — release the set

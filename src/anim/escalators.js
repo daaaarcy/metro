@@ -6,6 +6,7 @@ const STEP_LEN = 0.4;      // step pitch along the slope (real M-Train pitch ~0.
 const STEP_H = 0.22;       // step block height — covers the riser between treads
 const SPEED = 0.6;         // m/s along the slope
 const SINK = 0.55;         // end zones where steps fold under the comb
+const TICK = 1 / 30;       // 0.6 m/s × 1/30 s = 2 cm/tick — reads smooth
 
 // Instanced moving steps for every escalator run in ESC_RUNS. Each tread stays
 // HORIZONTAL like a real escalator — consecutive treads step up/down forming
@@ -14,8 +15,7 @@ const SINK = 0.55;         // end zones where steps fold under the comb
 export class EscalatorSteps {
   constructor() {
     this.hidden = new Set();          // level ids currently toggled off
-    this.instances = [];              // {run, phase}
-    this.strips = [];                 // subset on sloped runs — {inst}
+    this.instances = [];              // {run, phase, strip}
     let total = 0;
     for (const run of ESC_RUNS) total += Math.ceil(run.slopeLen / STEP_LEN) + 1;
     this.mesh = new THREE.InstancedMesh(
@@ -25,77 +25,81 @@ export class EscalatorSteps {
       new THREE.BoxGeometry(0.055, 0.016, ESC_RUNS[0] ? ESC_RUNS[0].w - 0.12 : 0.9),
       M.tactile, total);
     this.mesh.frustumCulled = this.stripMesh.frustumCulled = false;
-    let i = 0;
+    let i = 0, j = 0;
     for (const run of ESC_RUNS) {
       const n = Math.ceil(run.slopeLen / STEP_LEN) + 1;
+      const sloped = run.drop > 0.05;
       run.stepRange = [i, i + n];
+      run.stripRange = [j, j + (sloped ? n : 0)];
+      // slope trig + yaw never change — bake them once
+      run._cosA = run.len / run.slopeLen;
+      run._sinA = run.drop / run.slopeLen;
+      run._q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.atan2(run.dz, run.dx));
       for (let k = 0; k < n; k++) {
-        this.instances.push({ run, phase: k * STEP_LEN });
-        if (run.drop > 0.05) this.strips.push({ inst: i + k });
+        this.instances.push({ run, phase: k * STEP_LEN, strip: sloped ? j++ : -1 });
       }
       i += n;
     }
     this.mesh.count = this.instances.length;
-    this.stripMesh.count = this.strips.length;
+    this.stripMesh.count = j;
     this._m4 = new THREE.Matrix4();
     this._hide = new THREE.Matrix4().makeScale(0, 0, 0);
     this._p = new THREE.Vector3();
     this._s = new THREE.Vector3(1, 1, 1);
-    this._q = new THREE.Quaternion();
-    this._up = new THREE.Vector3(0, 1, 0);
+    this._lastT = -1;
   }
 
   setLevelVisible(levelId, visible) {
-    visible ? this.hidden.delete(levelId) : this.hidden.add(levelId);
-  }
-
-  // step s along the run -> {hx, topY}: horizontal offset + tread-top height
-  _pos(run, phase, t) {
-    const dir = run.going === 'down' ? 1 : -1;
-    let s = (phase + dir * t * SPEED) % run.slopeLen;
-    if (s < 0) s += run.slopeLen;
-    const cosA = run.len / run.slopeLen, sinA = run.drop / run.slopeLen;
-    const hx = s * cosA;
-    let topY = run.y1 - s * sinA + 0.02;      // tread surface rides just above the ramp line
-    if (s < SINK) topY -= (SINK - s) * 0.7;
-    else if (s > run.slopeLen - SINK) topY -= (s - (run.slopeLen - SINK)) * 0.7;
-    return { hx, topY, cosA, sinA };
+    if (visible) {
+      this.hidden.delete(levelId);
+      for (const run of ESC_RUNS) if (run.from === levelId) run._hid = false;
+    } else {
+      this.hidden.add(levelId);
+    }
+    this._lastT = -1;   // force a pass so the hide writes land immediately
   }
 
   update(t) {
-    const m4 = this._m4, p = this._p, q = this._q, hide = this._hide;
+    if (t - this._lastT < TICK) return;
+    this._lastT = t;
+    const m4 = this._m4, p = this._p, hide = this._hide;
+    const e = STEP_LEN * 0.96 / 2 - 0.028;   // strip offset to the downhill tread edge
+    let wroteSteps = false, wroteStrips = false;
     for (let i = 0; i < this.instances.length; i++) {
-      const { run, phase } = this.instances[i];
+      const { run, phase, strip } = this.instances[i];
       if (this.hidden.has(run.from)) {
-        this.mesh.setMatrixAt(i, hide);
+        // blank the run's instance range once, not every frame
+        if (!run._hid) {
+          run._hid = true;
+          for (let k = run.stepRange[0]; k < run.stepRange[1]; k++) this.mesh.setMatrixAt(k, hide);
+          for (let k = run.stripRange[0]; k < run.stripRange[1]; k++) this.stripMesh.setMatrixAt(k, hide);
+          wroteSteps = wroteStrips = true;
+        }
         continue;
       }
-      const { hx, topY } = this._pos(run, phase, t);
+      const dir = run.going === 'down' ? 1 : -1;
+      let s = (phase + dir * t * SPEED) % run.slopeLen;
+      if (s < 0) s += run.slopeLen;
+      const hx = s * run._cosA;
+      let topY = run.y1 - s * run._sinA + 0.02;   // tread surface rides just above the ramp line
+      if (s < SINK) topY -= (SINK - s) * 0.7;
+      else if (s > run.slopeLen - SINK) topY -= (s - (run.slopeLen - SINK)) * 0.7;
       // tread stays horizontal — yaw only; the staircase look comes from the
       // vertical offset between consecutive horizontal treads
       p.set(run.x1 + run.dx * hx, topY - STEP_H / 2, run.z1 + run.dz * hx);
-      q.setFromAxisAngle(this._up, -Math.atan2(run.dz, run.dx));
-      m4.compose(p, q, this._s);
+      m4.compose(p, run._q, this._s);
       this.mesh.setMatrixAt(i, m4);
-    }
-    // yellow demarcation on each tread's downhill edge (sloped runs only)
-    for (let j = 0; j < this.strips.length; j++) {
-      const i = this.strips[j].inst;
-      const { run, phase } = this.instances[i];
-      if (this.hidden.has(run.from)) {
-        this.stripMesh.setMatrixAt(j, hide);
-        continue;
+      wroteSteps = true;
+      if (strip >= 0) {
+        // yellow demarcation on the tread's downhill edge (+u), just proud of the surface
+        p.set(run.x1 + run.dx * (hx + e * run._cosA), topY + 0.008 - e * run._sinA,
+          run.z1 + run.dz * (hx + e * run._cosA));
+        m4.compose(p, run._q, this._s);
+        this.stripMesh.setMatrixAt(strip, m4);
+        wroteStrips = true;
       }
-      const { hx, topY, cosA, sinA } = this._pos(run, phase, t);
-      // strip sits on the tread's downhill edge (+u), just proud of the surface
-      const e = STEP_LEN * 0.96 / 2 - 0.028;
-      p.set(run.x1 + run.dx * (hx + e * cosA), topY + 0.008 - e * sinA,
-        run.z1 + run.dz * (hx + e * cosA));
-      q.setFromAxisAngle(this._up, -Math.atan2(run.dz, run.dx));
-      m4.compose(p, q, this._s);
-      this.stripMesh.setMatrixAt(j, m4);
     }
-    this.mesh.instanceMatrix.needsUpdate = true;
-    this.stripMesh.instanceMatrix.needsUpdate = true;
+    if (wroteSteps) this.mesh.instanceMatrix.needsUpdate = true;
+    if (wroteStrips) this.stripMesh.instanceMatrix.needsUpdate = true;
   }
 }

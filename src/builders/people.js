@@ -51,10 +51,10 @@ const _hand = mergeGeometries([
 const _foot = new THREE.BoxGeometry(0.13, 0.09, 0.24);  _foot.translate(0, -0.835, 0.045);
 const _footC = new THREE.BoxGeometry(0.13, 0.09, 0.24); // centred, placed directly for seated figures
 const _torso = new THREE.CylinderGeometry(0.155, 0.19, 0.6, 8); _torso.translate(0, 0.3, 0);
-const _head = new THREE.SphereGeometry(0.115, 10, 8);   _head.translate(0, 0.13, 0);
-const _hair = new THREE.SphereGeometry(0.128, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.62);
+const _head = new THREE.SphereGeometry(0.115, 8, 6);    _head.translate(0, 0.13, 0);
+const _hair = new THREE.SphereGeometry(0.128, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.62);
 _hair.translate(0, 0.14, -0.015);
-const _bun = new THREE.SphereGeometry(0.06, 8, 6);
+const _bun = new THREE.SphereGeometry(0.06, 6, 5);
 const _skirt = new THREE.CylinderGeometry(0.19, 0.27, 0.44, 8); _skirt.translate(0, -0.2, 0);
 
 // face features baked into head-pivot space — head centre sits +0.13 above the

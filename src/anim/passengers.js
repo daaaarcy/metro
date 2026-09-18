@@ -59,13 +59,17 @@ export class Passengers {
     for (const id of Object.keys(N_LEVELS)) this.boxOf[id] = BOXES[levelById(id).box] || IDBOX;
     this.hidden = new Set();
 
+    this._wyOf = {};                                  // level id -> floor y
+    this._typeOf = {};                                // level id -> type
+    for (const id of Object.keys(N_LEVELS)) {
+      const l = levelById(id);
+      this._wyOf[id] = l.y; this._typeOf[id] = l.type;
+    }
+
     this.list = [];
     for (const [lvl, n] of Object.entries(N_LEVELS)) {
       for (let i = 0; i < n; i++) this.list.push(this.spawn(lvl));
     }
-
-    this._wyOf = {};                                  // level id -> floor y
-    for (const id of Object.keys(N_LEVELS)) this._wyOf[id] = levelById(id).y;
 
     // dynamic barriers bucketed by level — the per-ped collision pass only
     // ever tests the peds' own level, not every gate/bay in the network
@@ -79,10 +83,38 @@ export class Passengers {
       const a = this.baysOf.get(b.level) || [];
       a.push(b); this.baysOf.set(b.level, a);
     }
+    // choose() runs hundreds of times a frame — precompute its per-level
+    // option lists so picking a destination doesn't allocate filtered arrays
+    this.escOptsOf = new Map();   // lvl -> {run, top, lx, lz} mouth in local
+    for (const run of ESC_RUNS) {
+      const top = run.going === 'down';
+      const lvl = top ? run.from : run.to;
+      if (!this.boxOf[lvl]) continue;
+      const ex = top ? run.x1 - run.dx * 1.1 : run.x2 + run.dx * 1.1;
+      const ez = top ? run.z1 - run.dz * 1.1 : run.z2 + run.dz * 1.1;
+      const l = worldToBox(this.boxOf[lvl], ex, ez);
+      let a = this.escOptsOf.get(lvl);
+      if (!a) this.escOptsOf.set(lvl, a = []);
+      a.push({ run, top, lx: l.x, lz: l.z });
+    }
+    this.stairsFrom = new Map(); this.stairsTo = new Map();
+    for (const r of STAIR_RUNS) {
+      let a = this.stairsFrom.get(r.from);
+      if (!a) this.stairsFrom.set(r.from, a = []);
+      a.push(r);
+      a = this.stairsTo.get(r.to);
+      if (!a) this.stairsTo.set(r.to, a = []);
+      a.push(r);
+    }
 
     // instanced capacity = the whole crowd + headroom for dwell-time
     // boarding/alighting spawns (cap() recycles 'aboard' peds past this)
     this.max = this.list.length + 80;
+    // list order is the instance slot order: peds worth drawing are kept in
+    // [0, drawN) and the instanced meshes' count truncates the rest — undrawn
+    // peds cost zero vertex work instead of just a skipped matrix write
+    this.drawN = this.list.length;
+    this._repart = 0;
     this._m4 = new THREE.Matrix4();
     this._lm = new THREE.Matrix4();
     this._pm = new THREE.Matrix4();
@@ -93,6 +125,12 @@ export class Passengers {
     this._p = new THREE.Vector3();
     this._s = new THREE.Vector3();
     this._ps = new THREE.Vector3();
+    // scratch {x,z} for boxToWorld — the per-ped loop would otherwise churn
+    // thousands of short-lived objects a frame
+    this._wa = { x: 0, z: 0 };   // frame-start world pos
+    this._wb = { x: 0, z: 0 };   // post-move world pos
+    this._wc = { x: 0, z: 0 };   // transient (boarding checks, part poses)
+    this._wd = { x: 0, z: 0 };   // second transient where two locals coexist
     this._c = new THREE.Color();
     this._zero = new THREE.Matrix4().makeScale(0, 0, 0);
 
@@ -111,8 +149,8 @@ export class Passengers {
 
   // is a local point inside (or clipping) a collider?
   insideSolid(lvl, x, z) {
-    const w = boxToWorld(this.boxOf[lvl], x, z);
-    const [rx, rz] = resolvePed(this.col, w.x, w.z, levelById(lvl).y, 1.7);
+    const w = boxToWorld(this.boxOf[lvl], x, z, this._wc);
+    const [rx, rz] = resolvePed(this.col, w.x, w.z, this._wyOf[lvl] ?? levelById(lvl).y, 1.7);
     return Math.hypot(rx - w.x, rz - w.z) > 0.05;
   }
 
@@ -133,12 +171,26 @@ export class Passengers {
       tx: 0, tz: 0, speed: THREE.MathUtils.lerp(...SPEED, Math.random()) * a.speedK,
       state: 'idle', wait: Math.random() * 2, run: null, s: 0, gate: null,
       hideT: 0, yaw: Math.random() * Math.PI * 2, svc: null,
+      // _acc carries dt between the ped's slotted tick frames; _near starts
+      // true so peds collide before the first repartition stamps distances
+      _acc: 0, _near: true,
       px: x, pz: z, moving: 0, phase: Math.random() * 7, wy: null, dirty: true,
       ...a,
     };
   }
 
-  setLevelVisible(id, v) { v ? this.hidden.delete(id) : this.hidden.add(id); }
+  setLevelVisible(id, v) { v ? this.hidden.delete(id) : this.hidden.add(id); this._repart = 0; }
+
+  // should this ped occupy a drawn slot? aboard/hidden-level peds never draw;
+  // everyone else only draws inside the view radius (hysteresis keeps the
+  // boundary from thrashing). Also stamps p._near for the sim throttle.
+  _wantDraw(p, focus, r2) {
+    if (p.state === 'aboard' || this.hidden.has(p.level)) { p._near = false; return false; }
+    const w = boxToWorld(this.boxOf[p.level], p.x, p.z, this._wc);
+    const lim = p._near ? r2 * 1.5 : r2;
+    const dx = w.x - focus.x, dz = w.z - focus.z;
+    return p._near = dx * dx + dz * dz < lim;
+  }
 
   // per-instance colours, written when a (re)spawn changes appearance
   paint(i) {
@@ -193,7 +245,7 @@ export class Passengers {
     const roll = Math.random();
     const home = this.homeRect(p);
     const inHome = (x, z) => x >= home.x0 - 0.5 && x <= home.x1 + 0.5 && z >= home.z0 - 0.5 && z <= home.z1 + 0.5;
-    const lvlType = levelById(lvl).type;
+    const lvlType = this._typeOf[lvl] ?? levelById(lvl).type;
     // the paid strip is sealed by gate banks + railings — a ped only targets
     // what its own side can reach; crossing the line means taking a gate
     const core = PAID_CORE[lvl];
@@ -205,34 +257,28 @@ export class Passengers {
 
     if (roll < 0.22 && !(core && !inCore && lvlType === 'concourse')) {
       // find a rideable escalator from this level — mouth must be reachable,
-      // i.e. on the same platform strip / bridge section the ped is on
-      const opts = ESC_RUNS.filter(r =>
-        (r.going === 'down' && r.from === lvl) || (r.going === 'up' && r.to === lvl))
-        .map(run => {
-          const top = run.going === 'down';
-          const ex = top ? run.x1 - run.dx * 1.1 : run.x2 + run.dx * 1.1;
-          const ez = top ? run.z1 - run.dz * 1.1 : run.z2 + run.dz * 1.1;
-          return { run, top, l: worldToBox(this.boxOf[lvl], ex, ez) };
-        })
-        .filter(o => inHome(o.l.x, o.l.z));
-      if (opts.length) {
-        const { run, top, l } = opts[Math.floor(Math.random() * opts.length)];
-        p.run = run; p.rideTop = top;
-        p.tx = l.x; p.tz = l.z; p.state = 'toEsc';
-        return;
+      // i.e. on the same platform strip / bridge section the ped is on.
+      // Sample with rejection instead of filtering — no array allocs here.
+      const opts = this.escOptsOf.get(lvl);
+      if (opts) {
+        for (let k = 0; k < 8; k++) {
+          const o = opts[Math.floor(Math.random() * opts.length)];
+          if (!inHome(o.lx, o.lz)) continue;
+          p.run = o.run; p.rideTop = o.top;
+          p.tx = o.lx; p.tz = o.lz; p.state = 'toEsc';
+          return;
+        }
       }
     }
     if (lvlType === 'concourse' && roll < 0.4 && !inWrap) {
       const bx0 = this.boxOf[lvl];
-      const lanes = GATES.filter(g => g.level === lvl);
+      const lanes = this.gatesOf.get(lvl) || [];
       // outside the paid strip only this side's gate rows are reachable —
       // the opposite line is behind the railings
-      const pick = core && !inCore
-        ? lanes.filter(g => Math.sign(worldToBox(bx0, g.x, g.z).z) === Math.sign(p.z))
-        : lanes;
-      const g = pick[Math.floor(Math.random() * pick.length)];
-      if (g) {
-        const lg = worldToBox(bx0, g.x, g.z);
+      for (let k = 0; k < 8 && lanes.length; k++) {
+        const g = lanes[Math.floor(Math.random() * lanes.length)];
+        const lg = worldToBox(bx0, g.x, g.z, this._wc);
+        if (core && !inCore && Math.sign(lg.z) !== Math.sign(p.z)) continue;
         const approach = core
           ? (inCore ? -Math.sign(lg.z) : Math.sign(lg.z))
           : (p.z < lg.z ? -1 : 1);
@@ -245,15 +291,17 @@ export class Passengers {
     // street traffic: descend an exit stair toward the concourse, or climb
     // to the footbridge — stairs register station-level uids
     if ((lvlType === 'ground' || lvlType === 'checkin') && roll < 0.55) {
-      const down = STAIR_RUNS.filter(r => r.from === lvl && r.to !== lvl);
-      const up = STAIR_RUNS.filter(r => r.to === lvl);
-      const pick = Math.random() < 0.7 ? down : up;
-      if (pick.length) {
-        const r = pick[Math.floor(Math.random() * pick.length)];
+      const down = this.stairsFrom.get(lvl) || [];
+      const up = this.stairsTo.get(lvl) || [];
+      const useDown = Math.random() < 0.7;
+      const pickArr = useDown ? down : up;
+      for (let k = 0; k < 8 && pickArr.length; k++) {
+        const r = pickArr[Math.floor(Math.random() * pickArr.length)];
+        if (useDown && r.to === lvl) continue;   // same-level link, not a descent
         const goingDown = r.from === lvl;
         const a = goingDown ? r.top : r.bot;
         const sgn = goingDown ? -1 : 1;
-        const l = worldToBox(this.boxOf[lvl], a.x + r.ux * 1.4 * sgn, a.z + r.uz * 1.4 * sgn);
+        const l = worldToBox(this.boxOf[lvl], a.x + r.ux * 1.4 * sgn, a.z + r.uz * 1.4 * sgn, this._wc);
         p.stair = { r, down: goingDown };
         p.tx = l.x; p.tz = l.z; p.state = 'toStair';
         return;
@@ -264,23 +312,32 @@ export class Passengers {
     // tap out through a gate first; an unpaid ped only picks its own side
     // (the two bands are separated by the sealed strip)
     if ((lvlType === 'concourse' || lvlType === 'bridge') && roll < 0.08 && !inCore) {
-      const up = STAIR_RUNS.filter(r => r.to === lvl);
+      const up = this.stairsTo.get(lvl) || [];
       const bx0 = this.boxOf[lvl];
-      const sameSide = core ? up.filter(r => {
-        const bl = worldToBox(bx0, r.bot.x, r.bot.z);
-        // wraparound peds: reachable only if the straight path crosses the
-        // gate line beyond the cap — otherwise it runs into an end fence
-        if (inWrap) {
-          const t = (Math.sign(bl.z) * core.z - p.z) / (bl.z - p.z);
-          const xc = p.x + t * (bl.x - p.x);
-          return p.x > core.x1 ? xc > core.x1 : xc < core.x0;
+      // prefer a same-side (or wraparound-clearable) landing when a paid
+      // strip splits the level — but fall back to any stair if none match,
+      // like the original pick did
+      for (let k = 0; k < 8 && up.length; k++) {
+        const r = up[Math.floor(Math.random() * up.length)];
+        if (core) {
+          const bl = worldToBox(bx0, r.bot.x, r.bot.z, this._wc);
+          // wraparound peds: reachable only if the straight path crosses the
+          // gate line beyond the cap — otherwise it runs into an end fence
+          if (inWrap) {
+            const t = (Math.sign(bl.z) * core.z - p.z) / (bl.z - p.z);
+            const xc = p.x + t * (bl.x - p.x);
+            if (!(p.x > core.x1 ? xc > core.x1 : xc < core.x0)) continue;
+          } else if (Math.sign(bl.z) !== Math.sign(p.z)) continue;
         }
-        return Math.sign(bl.z) === Math.sign(p.z);
-      }) : up;
-      const pick = sameSide.length ? sameSide : up;
-      if (pick.length) {
-        const r = pick[Math.floor(Math.random() * pick.length)];
-        const l = worldToBox(this.boxOf[lvl], r.bot.x + r.ux * 1.4, r.bot.z + r.uz * 1.4);
+        const l = worldToBox(this.boxOf[lvl], r.bot.x + r.ux * 1.4, r.bot.z + r.uz * 1.4, this._wc);
+        p.stair = { r, down: false };
+        p.tx = l.x; p.tz = l.z; p.state = 'toStair';
+        return;
+      }
+      // no same-side stair found — take any (matches the old fallback)
+      if (core && up.length) {
+        const r = up[Math.floor(Math.random() * up.length)];
+        const l = worldToBox(bx0, r.bot.x + r.ux * 1.4, r.bot.z + r.uz * 1.4, this._wc);
         p.stair = { r, down: false };
         p.tx = l.x; p.tz = l.z; p.state = 'toStair';
         return;
@@ -367,54 +424,88 @@ export class Passengers {
     if (culled) for (const p of this.list) p.dirty = true;
   }
 
-  update(dt, t, trainSim, audio, focus) {
+  update(dt, t, trainSim, audio, focus, farR = 140) {
     const m4 = this._m4, lm = this._lm, pm = this._pm, q = this._q, pv = this._p;
     const count = Math.min(this.list.length, this.max);
-    for (const im of Object.values(this.parts)) im.count = count;
 
+    // keep the drawn set in slots [0, drawN): two-pointer partition over the
+    // list, swapping undrawn peds to the tail where im.count truncates them.
+    // Runs a few times a second — the swaps repaint only the boundary movers.
+    if (focus) {
+      this._repart -= dt;
+      if (this._repart <= 0) {
+        this._repart = 0.35;
+        const r2 = farR * farR;
+        let lo = 0, hi = count - 1;
+        while (lo <= hi) {
+          while (lo <= hi && this._wantDraw(this.list[lo], focus, r2)) lo++;
+          while (hi >= lo && !this._wantDraw(this.list[hi], focus, r2)) hi--;
+          if (lo >= hi) break;
+          const a = this.list[lo], b = this.list[hi];
+          this.list[lo] = b; this.list[hi] = a;
+          a.dirty = b.dirty = true;   // slots changed hands — repaint both
+          lo++; hi--;
+        }
+        this.drawN = lo;
+      }
+    } else {
+      this.drawN = count;
+    }
+    for (const im of Object.values(this.parts)) im.count = this.drawN;
+
+    // far-ped cadence: tick 1-in-K frames (~15 Hz) phased by slot index so
+    // the cohort spreads evenly — a shared accumulator threshold lets a whole
+    // wave cross on the same frame and bursts ~3k ticks at once
+    const K = Math.min(8, Math.max(1, Math.round(1 / (15 * dt))));
+    this._frame = (this._frame || 0) + 1;
+
+    const _ts = performance.now();
     for (let i = 0; i < count; i++) {
       const p = this.list[i];
       if (p.dirty) { this.paint(i); p.dirty = false; }
-      let visible = !this.hidden.has(p.level);
+      let visible = !this.hidden.has(p.level) && i < this.drawN;
 
       // frame-start pose — the "from" for the swept wall clamp; if a scripted
       // state teleports the ped across levels the sweep is skipped that frame
       const lvlPre = p.level;
       const stPre = p.state;
-      const wPre = boxToWorld(this.boxOf[lvlPre], p.x, p.z);
+      const px0 = p.x, pz0 = p.z;      // pre-tick locals for the swept clamp
 
-      // collapse hidden/aboard peds once, before the throttle skip — the
-      // instanced parts are global, so a ped that vanishes out of range
-      // would otherwise keep rendering frozen mid-pose
+      // collapse hidden/aboard peds once, before the throttle skip — a ped
+      // that vanishes inside the drawn range would otherwise keep rendering
+      // frozen mid-pose until the next repartition moves it out
       if ((!visible || p.state === 'aboard') && !p._zeroed) {
         p._zeroed = true;
         for (const im of Object.values(this.parts)) im.setMatrixAt(i, this._zero);
       }
 
-      // distant crowd runs at half rate: accumulate dt so speeds stay right
+      // distant crowd runs at low rate: accumulate dt so speeds stay right
       // and skip the frame entirely (no state, no matrix rewrites) on off
-      // frames — at >120 m the reduced cadence is invisible
+      // frames — past the draw radius most aren't even slotted to draw
       let pdt = dt;
-      if (focus) {
-        const ddx = wPre.x - focus.x, ddz = wPre.z - focus.z;
-        if (ddx * ddx + ddz * ddz > 14400) {
-          p._acc = (p._acc || 0) + dt;
-          if (p._acc < 1 / 15) continue;
-          pdt = p._acc; p._acc = 0;
-        } else p._acc = 0;
-      }
-      const sdt = dt; dt = pdt;
+      if (focus && !p._near) {
+        p._acc = (p._acc || 0) + dt;
+        if ((this._frame + i) % K !== 0) continue;
+        pdt = p._acc; p._acc = 0;
+      } else p._acc = 0;
 
       switch (p.state) {
         case 'aboard':
           visible = false;
-          p.hideT -= dt;
+          p.hideT -= pdt;
           // reappear on the platform the next time their consist dwells —
           // they really did ride the train to another station
           if (p.svc && p.svc.state === 'dwell' && p.svc.ds && p.hideT <= 0) {
             const lvl2 = p.svc.ds.level;
-            const doors = p.svc.doorWorld(4, -1.6);
-            const outs = p.svc.doorWorld(4, 1.6);
+            // door positions are static for the berth — cache on the consist
+            // or every aboard ped would allocate two arrays every frame
+            if (p.svc._dwFor !== p.svc.ds) {
+              p.svc._dwFor = p.svc.ds;
+              p.svc._dwIn = p.svc.doorWorld(4, -1.6);
+              p.svc._dwOut = p.svc.doorWorld(4, 1.6);
+            }
+            const doors = p.svc._dwIn;
+            const outs = p.svc._dwOut;
             if (doors.length) {
               const li = worldToBox(this.boxOf[lvl2], doors[0].x, doors[0].z);
               const lo = worldToBox(this.boxOf[lvl2], outs[0].x, outs[0].z);
@@ -429,11 +520,11 @@ export class Passengers {
           }
           break;
         case 'idle':
-          p.wait -= dt;
+          p.wait -= pdt;
           if (p.wait <= 0) this.choose(p);
           break;
         case 'toGate': {
-          if (this.stepTo(p, dt)) {
+          if (this.stepTo(p, pdt)) {
             openGate(p.gate, audio);
             p.state = 'throughGate';
           }
@@ -442,14 +533,14 @@ export class Passengers {
         case 'throughGate': {
           // walk through once the flaps open (gate coords are world-space)
           if (!p.gate || p.gate.open < 0.7) break;
-          const gl = worldToBox(this.boxOf[p.level], p.gate.x, p.gate.z - p.gateSide * 2.0);
-          const gx = worldToBox(this.boxOf[p.level], p.gate.x, p.gate.z).x;
+          const gl = worldToBox(this.boxOf[p.level], p.gate.x, p.gate.z - p.gateSide * 2.0, this._wc);
+          const gx = worldToBox(this.boxOf[p.level], p.gate.x, p.gate.z, this._wd).x;
           p.tz = gl.z;
-          if (this.stepTo(p, dt, gx)) { p.state = 'seek'; }
+          if (this.stepTo(p, pdt, gx)) { p.state = 'seek'; }
           break;
         }
         case 'toStair': {
-          if (this.stepTo(p, dt)) {
+          if (this.stepTo(p, pdt)) {
             p.state = 'stair';
             p.s = p.stair.down ? 0 : p.stair.r.slope;
           }
@@ -458,10 +549,10 @@ export class Passengers {
         case 'stair': {
           // walk the ramp at ~60% pace — slower than flat ground like real stairs
           const st = p.stair, r = st.r;
-          p.s += (st.down ? 1 : -1) * p.speed * 0.6 * dt;
+          p.s += (st.down ? 1 : -1) * p.speed * 0.6 * pdt;
           const f = THREE.MathUtils.clamp(p.s / r.slope, 0, 1);
           const l = worldToBox(this.boxOf[p.level],
-            r.top.x + r.ux * r.horiz * f, r.top.z + r.uz * r.horiz * f);
+            r.top.x + r.ux * r.horiz * f, r.top.z + r.uz * r.horiz * f, this._wc);
           p.x = l.x; p.z = l.z;
           p.wy = r.top.y - r.drop * f;
           p.yaw = Math.atan2(st.down ? r.ux : -r.ux, st.down ? r.uz : -r.uz);
@@ -471,8 +562,8 @@ export class Passengers {
               // arrival level can live in a different station box (ADM's ext
               // box is rotated) — re-express the position or the ped keeps
               // old-box coords and teleports onto the void/track
-              const w = boxToWorld(this.boxOf[p.level], p.x, p.z);
-              const l2 = worldToBox(this.boxOf[nl], w.x, w.z);
+              const w = boxToWorld(this.boxOf[p.level], p.x, p.z, this._wc);
+              const l2 = worldToBox(this.boxOf[nl], w.x, w.z, this._wd);
               p.x = l2.x; p.z = l2.z;
             }
             p.level = nl;
@@ -481,7 +572,7 @@ export class Passengers {
           break;
         }
         case 'toEsc': {
-          if (this.stepTo(p, dt)) {
+          if (this.stepTo(p, pdt)) {
             p.state = 'esc';
             p.s = p.rideTop ? 0 : p.run.slopeLen;
           }
@@ -490,20 +581,20 @@ export class Passengers {
         case 'esc': {
           const run = p.run;
           const d = p.rideTop ? 1 : -1;
-          p.s += d * (0.55 + 0.15 * Math.sin(t * 2 + i)) * dt;
+          p.s += d * (0.55 + 0.15 * Math.sin(t * 2 + i)) * pdt;
           const done = p.rideTop ? p.s >= run.slopeLen - 0.4 : p.s <= 0.4;
           const cosA = run.len / run.slopeLen, sinA = run.drop / run.slopeLen;
           const hx = Math.max(0, Math.min(run.slopeLen, p.s)) * cosA;
           const wx = run.x1 + run.dx * hx, wz = run.z1 + run.dz * hx;
-          const l = worldToBox(this.boxOf[p.level], wx, wz);
+          const l = worldToBox(this.boxOf[p.level], wx, wz, this._wc);
           p.x = l.x; p.z = l.z;
           p.wy = run.y1 - (hx / run.len) * run.drop;   // ride the ramp down/up
           p.yaw = Math.atan2(run.dx * d, run.dz * d);
           if (done) {
             const nl = p.rideTop ? run.to : run.from;
             if (nl !== p.level) {
-              const w = boxToWorld(this.boxOf[p.level], p.x, p.z);
-              const l2 = worldToBox(this.boxOf[nl], w.x, w.z);
+              const w = boxToWorld(this.boxOf[p.level], p.x, p.z, this._wc);
+              const l2 = worldToBox(this.boxOf[nl], w.x, w.z, this._wd);
               p.x = l2.x; p.z = l2.z;
             }
             p.level = nl;
@@ -516,7 +607,7 @@ export class Passengers {
           if (p.svc && p.svc.state !== 'dwell') {
             p.state = 'idle'; p.wait = 0.3; p.svc = null; break;
           }
-          if (this.stepTo(p, dt)) {
+          if (this.stepTo(p, pdt)) {
             // at the doorway — step through the open bay into the car
             p.tx = p.door.ix; p.tz = p.door.iz; p.state = 'boarding';
           }
@@ -526,14 +617,14 @@ export class Passengers {
           if (p.svc && (p.svc.state !== 'dwell' || p.svc.open < 0.5)) {
             p.state = 'idle'; p.wait = 0.3; p.svc = null; break;
           }
-          if (this.stepTo(p, dt)) {
+          if (this.stepTo(p, pdt)) {
             p.state = 'aboard'; p.hideT = 25 + Math.random() * 40; p.svc = null;
           }
           break;
         }
         case 'alight': {
           // step out of the car through the open bay, then join the crowd
-          if (this.stepTo(p, dt)) { p.state = 'seek'; }
+          if (this.stepTo(p, pdt)) { p.state = 'seek'; }
           break;
         }
         case 'seek':
@@ -545,20 +636,24 @@ export class Passengers {
           this.choose(p);
           break;
         default:   // 'walk'
-          if (this.stepTo(p, dt)) { p.state = 'idle'; p.wait = 0.5 + Math.random() * 2.5; }
+          if (this.stepTo(p, pdt)) { p.state = 'idle'; p.wait = 0.5 + Math.random() * 2.5; }
       }
 
       // physical collision: pedestrians slide along walls, glass, furniture
       // like the player does — only scripted crossings skip it. The swept
       // clamp stops thin glass being tunneled through at high sim speed.
-      // (idle peds don't move, and peds on hidden levels aren't seen — the
-      // barrier sweep is pointless for both)
-      if (!NOCLIP.has(p.state) && p.state !== 'idle' && visible) {
+      // Skipped for peds outside the near band: they're invisible, targets
+      // are already reachability-checked, and stuck-detection resets strays.
+      if ((!focus || p._near) && !NOCLIP.has(p.state) && p.state !== 'idle' && !this.hidden.has(p.level)) {
         const bx0 = this.boxOf[p.level];
-        const w0 = boxToWorld(bx0, p.x, p.z);
-        const wy0 = p.wy ?? levelById(p.level).y;
+        const w0 = boxToWorld(bx0, p.x, p.z, this._wb);
+        const wy0 = p.wy ?? this._wyOf[p.level];
         const sameSpot = p.level === lvlPre;
-        const ox = sameSpot ? wPre.x : w0.x, oz = sameSpot ? wPre.z : w0.z;
+        let ox = w0.x, oz = w0.z;
+        if (sameSpot) {
+          const wp = boxToWorld(bx0, px0, pz0, this._wa);
+          ox = wp.x; oz = wp.z;
+        }
         let [rx, rz] = resolvePed(this.col, w0.x, w0.z, wy0, 1.7, PED_RADIUS, ox, oz);
         // closed Octopus flaps block the lane (dynamic — not in SOLIDS)
         for (const g of this.gatesOf.get(p.level) || []) {
@@ -584,7 +679,7 @@ export class Passengers {
         }
       }
 
-      if (!visible) { dt = sdt; continue; }
+      if (!visible) continue;
       p._zeroed = false;
 
       // walk-cycle amount eases toward 1 while moving, 0 when standing —
@@ -600,18 +695,18 @@ export class Passengers {
         const dist = Math.hypot(p.tx - p.x, p.tz - p.z);
         if (p.lastD == null || dist < p.lastD - 0.004) { p.stuck = 0; p.lastD = dist; }
         else {
-          p.stuck = (p.stuck || 0) + dt;
+          p.stuck = (p.stuck || 0) + pdt;
           if (p.stuck > 2.5) { p.state = 'idle'; p.wait = 0.4 + Math.random() * 0.9; p.stuck = 0; p.lastD = null; }
         }
       } else { p.stuck = 0; p.lastD = null; }
 
       const movingTgt = p.state === 'esc' || p.stuck > 0.6 ? 0 : moved > 0.002 ? 1 : 0;
-      p.moving += (movingTgt - p.moving) * Math.min(1, dt * 8);
+      p.moving += (movingTgt - p.moving) * Math.min(1, pdt * 8);
       if (p.moving > 0.02) p.phase += moved / 0.38 * Math.PI;
 
       const bx = this.boxOf[p.level];
-      const w = boxToWorld(bx, p.x, p.z);
-      const wy = p.wy ?? levelById(p.level).y;
+      const w = boxToWorld(bx, p.x, p.z, this._wc);
+      const wy = p.wy ?? this._wyOf[p.level];
       const s = p.scale;
       const swing = 0.52 * p.moving;
       const bob = Math.abs(Math.sin(p.phase)) * 0.035 * p.moving * s;
@@ -643,19 +738,25 @@ export class Passengers {
       this.writePart(i, 'hair', 0, hs[0], hs[1], hs[2]);
       this.writePart(i, 'bun', 0, p.bun ? 1 : 0, p.bun ? 1 : 0, p.bun ? 1 : 0);
       this.writePart(i, 'skirt', 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0, p.skirted ? 1 : 0);
-      dt = sdt;
     }
+    (this._loopMs = performance.now() - _ts);
+    const _tf = performance.now();
     this.flushParts();
+    this._flushMs = performance.now() - _tf;
   }
 
-  // passengers within `r` metres of a world-space point — feeds crowd audio
+  // passengers within `r` metres of a world-space point — feeds crowd audio.
+  // Cached ~4 Hz: the listener mix doesn't need a fresh 3.5k-ped scan per frame
   countNear(wx, wy, wz, r = 16) {
+    const now = performance.now();
+    if (this._cn && now - this._cn.t < 250) return this._cn.n;
     let n = 0;
     for (const p of this.list) {
       if (Math.abs((p.wy ?? this._wyOf[p.level]) - wy) > 4) continue;
-      const w = boxToWorld(this.boxOf[p.level], p.x, p.z);
+      const w = boxToWorld(this.boxOf[p.level], p.x, p.z, this._wc);
       if (Math.hypot(w.x - wx, w.z - wz) < r) n++;
     }
+    this._cn = { t: now, n };
     return n;
   }
 

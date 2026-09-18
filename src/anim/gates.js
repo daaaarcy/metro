@@ -24,10 +24,13 @@ function writeFlap(f, open) {
 }
 
 // one InstancedMesh of swing paddles per level group — hides/shows with the
-// level like the old per-flap meshes did, but costs one draw call per bank
+// level like the old per-flap meshes did, but costs one draw call per bank.
+// The level bucketing doubles as the nearestGate index.
+let _byLevel = null;
+const _lvlY = new Map();          // uid -> floor y, avoids LEVELS.find per frame
 export function initGateFlaps(levelGroups) {
   const geo = new THREE.BoxGeometry(FLAP_LEN, 0.8, 0.06);
-  const byLevel = new Map();
+  const byLevel = _byLevel = new Map();
   for (const g of GATES) {
     if (!g.level) continue;
     let arr = byLevel.get(g.level);
@@ -35,6 +38,7 @@ export function initGateFlaps(levelGroups) {
     arr.push(g);
   }
   for (const [uid, gates] of byLevel) {
+    _lvlY.set(uid, levelById(uid).y);
     const grp = levelGroups[uid];
     if (!grp) continue;
     const inst = new THREE.InstancedMesh(geo, flapMat, gates.length * 2);
@@ -70,6 +74,16 @@ export function gateBlocks(g) { return g.open < 0.6; }
 // gates at identical x/z on different floors)
 export function nearestGate(x, z, maxDist = 2.2, feetY = null) {
   let best = null, bd = maxDist;
+  if (feetY !== null && _byLevel) {
+    for (const [uid, arr] of _byLevel) {
+      if (Math.abs(feetY - _lvlY.get(uid)) > 1.4) continue;
+      for (const g of arr) {
+        const d = Math.hypot(x - g.x, z - g.z);
+        if (d < bd) { bd = d; best = g; }
+      }
+    }
+    return best;
+  }
   for (const g of GATES) {
     if (feetY !== null && g.level && Math.abs(feetY - levelById(g.level).y) > 1.4) continue;
     const d = Math.hypot(x - g.x, z - g.z);

@@ -151,16 +151,21 @@ for (const stn of Object.values(STATIONS)) {
 export const BRIDGE = ADM.bridge;
 
 // ---------------------------------------------------------------- helpers
-// local (x,z) in a box frame -> world (x,z)
-export function boxToWorld(box, x, z) {
+// local (x,z) in a box frame -> world (x,z); pass `out` to avoid an alloc
+// (the crowd loop calls this ~10k times a frame)
+export function boxToWorld(box, x, z, out = {}) {
   const c = Math.cos(box.rot), s = Math.sin(box.rot);
-  return { x: box.cx + x * c + z * s, z: box.cz - x * s + z * c };
+  out.x = box.cx + x * c + z * s;
+  out.z = box.cz - x * s + z * c;
+  return out;
 }
 // world (x,z) -> local coords of a box frame
-export function worldToBox(box, x, z) {
+export function worldToBox(box, x, z, out = {}) {
   const c = Math.cos(box.rot), s = Math.sin(box.rot);
   const dx = x - box.cx, dz = z - box.cz;
-  return { x: dx * c - dz * s, z: dx * s + dz * c };
+  out.x = dx * c - dz * s;
+  out.z = dx * s + dz * c;
+  return out;
 }
 
 export function levelById(uid) { return LEVELS.find(l => l.uid === uid); }

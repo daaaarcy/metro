@@ -7,10 +7,11 @@ import * as THREE from 'three';
 import { SOLIDS, WALKABLES } from './registry.js';
 
 export const PED_RADIUS = 0.3;
-const CELL = 6;   // grid cell size, metres
+export const CELL = 6;   // grid cell size, metres
 
 export function buildColliders() {
   const solidAABBs = [], solidOBBs = [], floors = [], ramps = [];
+  const fgrid = new Map();   // walkable surfaces, for the player's floorAt
   const b = new THREE.Box3();
   const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
   const e = new THREE.Euler(), lc = new THREE.Vector3(), sz = new THREE.Vector3();
@@ -38,16 +39,17 @@ export function buildColliders() {
 
   // spatial buckets: insert each solid under every cell its bounds touch
   const grid = new Map();
-  const add = (bb, ent) => {
+  const addTo = (map, bb, ent) => {
     for (let cx = Math.floor((bb.min.x - 0.5) / CELL); cx <= Math.floor((bb.max.x + 0.5) / CELL); cx++) {
       for (let cz = Math.floor((bb.min.z - 0.5) / CELL); cz <= Math.floor((bb.max.z + 0.5) / CELL); cz++) {
         const k = cx + ',' + cz;
-        let arr = grid.get(k);
-        if (!arr) grid.set(k, arr = []);
+        let arr = map.get(k);
+        if (!arr) map.set(k, arr = []);
         arr.push(ent);
       }
     }
   };
+  const add = (bb, ent) => addTo(grid, bb, ent);
 
   for (const m of SOLIDS) {
     m.updateWorldMatrix(true, false);
@@ -63,7 +65,9 @@ export function buildColliders() {
     } else {
       const o = obbOf(m);
       if (o) {
-        const rec = { ...o, y0: b.min.y, y1: b.max.y };
+        // the local-frame test rect never changes — bake it once (lrect, not
+        // rect — PSD bays already carry a world-space `rect`)
+        const rec = { ...o, y0: b.min.y, y1: b.max.y, lrect: { x0: -o.hx, z0: -o.hz, x1: o.hx, z1: o.hz } };
         solidOBBs.push(rec);
         add(b, { o: rec });
       } else {
@@ -79,12 +83,16 @@ export function buildColliders() {
     if (b.isEmpty()) continue;
     const w = m.userData.walkable || {};
     if (w.esc || w.ramp) {
-      ramps.push({ run: w.esc || w.ramp, ...obbOf(m), carry: !!w.esc });
+      const rec = { run: w.esc || w.ramp, ...obbOf(m), carry: !!w.esc };
+      ramps.push(rec);
+      addTo(fgrid, b, { r: rec });
     } else {
-      floors.push({ x0: b.min.x, z0: b.min.z, x1: b.max.x, z1: b.max.z, top: b.max.y });
+      const rec = { x0: b.min.x, z0: b.min.z, x1: b.max.x, z1: b.max.z, top: b.max.y };
+      floors.push(rec);
+      addTo(fgrid, b, { f: rec });
     }
   }
-  return { solidAABBs, solidOBBs, floors, ramps, grid };
+  return { solidAABBs, solidOBBs, floors, ramps, grid, fgrid };
 }
 
 // circle-vs-rect overlap in XZ
@@ -99,6 +107,9 @@ const hitRect = (s, x, z, r) => {
 // would cross; then the z move. A step can never jump past a face it started
 // outside of — thin glass/panels stay solid at any speed — and diagonal moves
 // still slide along the free axis.
+// results land in module scratches — callers destructure immediately, so a
+// shared pair keeps the per-ped collision pass allocation-free
+const _cl = [0, 0], _co = [0, 0], _rp = [0, 0];
 export function clampRect(s, ox, oz, nx, nz, r) {
   if (hitRect(s, nx, oz, r) && !hitRect(s, ox, oz, r)) {
     nx = nx > ox ? Math.min(nx, s.x0 - r) : Math.max(nx, s.x1 + r);
@@ -106,26 +117,29 @@ export function clampRect(s, ox, oz, nx, nz, r) {
   if (hitRect(s, nx, nz, r) && !hitRect(s, nx, oz, r)) {
     nz = nz > oz ? Math.min(nz, s.z0 - r) : Math.max(nz, s.z1 + r);
   }
-  return [nx, nz];
+  _cl[0] = nx; _cl[1] = nz;
+  return _cl;
 }
 
 // same clamp against one OBB ({cx,cz,hx,hz,cos,sin}) — used for dynamic
 // barriers like PSD door bays that live in rotated level frames
 export function clampOBB(o, ox, oz, nx, nz, r) {
-  const rect = { x0: -o.hx, z0: -o.hz, x1: o.hx, z1: o.hz };
+  const rect = o.lrect || (o.lrect = { x0: -o.hx, z0: -o.hz, x1: o.hx, z1: o.hz });
   const lox = (ox - o.cx) * o.cos - (oz - o.cz) * o.sin;
   const loz = (ox - o.cx) * o.sin + (oz - o.cz) * o.cos;
   let lnx = (nx - o.cx) * o.cos - (nz - o.cz) * o.sin;
   let lnz = (nx - o.cx) * o.sin + (nz - o.cz) * o.cos;
   const [cx, cz] = clampRect(rect, lox, loz, lnx, lnz, r);
-  if (cx === lnx && cz === lnz) return [nx, nz];
-  return [o.cx + cx * o.cos + cz * o.sin, o.cz - cx * o.sin + cz * o.cos];
+  if (cx === lnx && cz === lnz) { _co[0] = nx; _co[1] = nz; return _co; }
+  _co[0] = o.cx + cx * o.cos + cz * o.sin;
+  _co[1] = o.cz - cx * o.sin + cz * o.cos;
+  return _co;
 }
 
 // Swept clamp against full AABB/OBB lists (controls.js keeps plain lists —
 // pedestrians use the grid in resolvePed instead). extras = dynamic rects
 // (closed gate flaps) with y0/y1 for the height band test.
-export function sweepMove(aabbs, obbs, extras, ox, oz, nx, nz, feet, h, r) {
+export function sweepMove(aabbs, obbs, extras, ox, oz, nx, nz, feet, h, r, out = [0, 0]) {
   for (const s of aabbs) {
     if (s.y1 < feet + 0.25 || s.y0 > feet + h) continue;
     [nx, nz] = clampRect(s, ox, oz, nx, nz, r);
@@ -136,7 +150,7 @@ export function sweepMove(aabbs, obbs, extras, ox, oz, nx, nz, feet, h, r) {
   }
   for (const s of obbs) {
     if (s.y1 < feet + 0.25 || s.y0 > feet + h) continue;
-    const rect = { x0: -s.hx, z0: -s.hz, x1: s.hx, z1: s.hz };
+    const rect = s.lrect || (s.lrect = { x0: -s.hx, z0: -s.hz, x1: s.hx, z1: s.hz });
     const lox = (ox - s.cx) * s.cos - (oz - s.cz) * s.sin;
     const loz = (ox - s.cx) * s.sin + (oz - s.cz) * s.cos;
     let lnx = (nx - s.cx) * s.cos - (nz - s.cz) * s.sin;
@@ -147,7 +161,8 @@ export function sweepMove(aabbs, obbs, extras, ox, oz, nx, nz, feet, h, r) {
       nz = s.cz - lnx * s.sin + lnz * s.cos;
     }
   }
-  return [nx, nz];
+  out[0] = nx; out[1] = nz;
+  return out;
 }
 
 // push a circle out of solids near (px,pz) overlapping the band [feet, feet+h].
@@ -185,7 +200,7 @@ export function resolvePed(col, px, pz, feet, h, r = PED_RADIUS, ox = px, oz = p
         } else {
           let lx = (px - s.cx) * s.cos - (pz - s.cz) * s.sin;
           let lz = (px - s.cx) * s.sin + (pz - s.cz) * s.cos;
-          const rect = { x0: -s.hx, z0: -s.hz, x1: s.hx, z1: s.hz };
+          const rect = s.lrect || (s.lrect = { x0: -s.hx, z0: -s.hz, x1: s.hx, z1: s.hz });
           const lox = (ox - s.cx) * s.cos - (oz - s.cz) * s.sin;
           const loz = (ox - s.cx) * s.sin + (oz - s.cz) * s.cos;
           [lx, lz] = clampRect(rect, lox, loz, lx, lz, r);
@@ -215,5 +230,6 @@ export function resolvePed(col, px, pz, feet, h, r = PED_RADIUS, ox = px, oz = p
       }
     }
   }
-  return [px, pz];
+  _rp[0] = px; _rp[1] = pz;
+  return _rp;
 }

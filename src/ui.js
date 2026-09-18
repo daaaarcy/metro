@@ -196,8 +196,11 @@ export function showInfo(html) {
   el.classList.add('show');
 }
 
+let _promptHtml = null;
 export function showPrompt(html) {
   const el = document.getElementById('prompt');
+  if (html === _promptHtml) return;   // called every frame — don't churn the DOM
+  _promptHtml = html;
   if (!html) { el.classList.remove('show'); return; }
   el.innerHTML = html;
   el.classList.add('show');
