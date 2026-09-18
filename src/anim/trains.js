@@ -401,8 +401,11 @@ function resolveRoute(routeDef, doorSets) {
       const wA = A.worldOf(A.stopX), wB = B.worldOf(B.stopX);
       const dist = Math.hypot(wB.x - wA.x, wB.z - wA.z);
       const dir = Math.sign(wB.x - wA.x) || 1;          // plan travel direction
+      // frame slew for the leg: A's berth rot -> B's, shortest way round —
+      // both endpoints then equal the berth rotation.y exactly (no snap)
+      const drot = Math.atan2(Math.sin(B.bx.rot - A.bx.rot), Math.cos(B.bx.rot - A.bx.rot));
       return { via, A, B, dist, travel: routeDef.travel ?? Math.max(40, dist / 13),
-               dir, yA: A.levelY, yB: B.levelY, inEnd };
+               dir, yA: A.levelY, yB: B.levelY, inEnd, rotA: A.bx.rot, drot };
     }
     // off-map leg: depart A through its dir portal; re-enter B through inEnd
     return { via, A, B, inEnd, travel: routeDef.travel ?? 30 };
@@ -490,12 +493,12 @@ class Consist {
     this.train.rotation.y = stop.bx.rot;
   }
 
-  // free-running position along a leg (world point + yaw), sets bx frame
-  _runPlace(x, z, yaw, y) {
+  // free-running position along a leg (world point + frame rot), sets bx
+  _runPlace(x, z, rot, y) {
     this.train.position.set(x, y - 0.62, z);
-    this.train.rotation.y = -yaw;
+    this.train.rotation.y = rot;
     // the live frame the constraint pass resolves the player against
-    this.bx = { cx: x, cz: z, rot: -yaw };
+    this.bx = { cx: x, cz: z, rot };
     this.tx = 0; this.zc = 0;
     this.floorY = y + 0.08;             // car floor tracks the running height
   }
@@ -579,21 +582,35 @@ class Consist {
         const leg = this.leg;
         const A = leg.A, B = leg.B;
         const p = 1 - Math.max(this.t, 0) / leg.travel;
-        // trapezoid-ish profile: smooth accelerate then brake
-        const k = p < 0.35 ? easeOut(p / 0.35) * 0.5
-                 : p < 0.65 ? 0.5 + (p - 0.35) / 0.3 * 0.28
-                 : 0.78 + easeIn((p - 0.65) / 0.35) * 0.22;
+        // trapezoidal speed: accelerate 0->V over TA, cruise, brake V->0
+        // over the last (1-TB). The old profile ran it backwards — full
+        // speed at the platform, a stall mid-tunnel, then accelerating
+        // into the berth and stopping dead: the "buppy bus"
+        const TA = 0.3, TB = 0.7, V = 2 / (1 + TB - TA);
+        const k = p < TA ? V * p * p / (2 * TA)
+                : p < TB ? V * (p - TA / 2)
+                : 1 - V * (1 - p) * (1 - p) / (2 * (1 - TB));
         // path: berth -> departure portal -> B's arrival portal -> berth.
         // The first/last segments run along the track axes, so the consist
-        // slides out of the platform and glides into B's berth aligned —
-        // non-collinear legs (the harbour crossing) only bend at portals.
+        // slides out of the platform and glides into B's berth aligned.
+        // Between the portals a bezier carries the bend — its end tangents
+        // lie along each track axis so the heading never kinks.
         if (!leg._path) {
-          const pts = [
-            A.worldOf(A.stopX),
-            A.worldOf(A.portalX(A.outEnd, this.trainLen / 2)),
-            B.worldOf(B.portalX(leg.inEnd, this.trainLen / 2)),
-            B.worldOf(B.stopX),
-          ];
+          const pA = A.worldOf(A.portalX(A.outEnd, this.trainLen / 2));
+          const pB = B.worldOf(B.portalX(leg.inEnd, this.trainLen / 2));
+          const sA = A.outEnd === 'x1' ? 1 : -1, sB = leg.inEnd === 'x0' ? 1 : -1;
+          const vA = { x: Math.cos(A.bx.rot) * sA, z: -Math.sin(A.bx.rot) * sA };
+          const vB = { x: Math.cos(B.bx.rot) * sB, z: -Math.sin(B.bx.rot) * sB };
+          const h = Math.hypot(pB.x - pA.x, pB.z - pA.z) / 3;
+          const pts = [A.worldOf(A.stopX), pA];
+          for (let i = 1; i <= 24; i++) {
+            const u = i / 24, w = 1 - u;
+            pts.push({
+              x: w*w*w*pA.x + 3*w*w*u*(pA.x + vA.x*h) + 3*w*u*u*(pB.x - vB.x*h) + u*u*u*pB.x,
+              z: w*w*w*pA.z + 3*w*w*u*(pA.z + vA.z*h) + 3*w*u*u*(pB.z - vB.z*h) + u*u*u*pB.z,
+            });
+          }
+          pts.push(B.worldOf(B.stopX));
           const segs = [];
           let total = 0;
           for (let i = 0; i < pts.length - 1; i++) {
@@ -609,8 +626,10 @@ class Consist {
         const x = THREE.MathUtils.lerp(s.a.x, s.b.x, f);
         const z = THREE.MathUtils.lerp(s.a.z, s.b.z, f);
         const y = THREE.MathUtils.lerp(A.levelY, B.levelY, k);
-        const yaw = Math.atan2(s.b.z - s.a.z, s.b.x - s.a.x);
-        this._runPlace(x, z, yaw, y);
+        // slew berth orientation -> next berth's across the whole leg —
+        // never snap to the path's heading: a face departing its -x portal
+        // used to flip the consist 180° in one frame and hurl any rider
+        this._runPlace(x, z, leg.rotA + leg.drot * k, y);
         if (p > 0.82 && !this._ann) {
           this._ann = true;
           this.events.push({ type: 'arrive', face: B.face, level: B.uid });
@@ -671,11 +690,14 @@ class Consist {
     // berthed doors open onto the platform, not the bore
     this._bore.visible = this.state === 'run' || this.state === 'offOut' || this.state === 'offIn';
     // world displacement for carrying a standing player — translation of
-    // the consist plus rotation of its constraint frame (run-frames yaw
-    // through tunnel curves)
+    // the consist plus rotation of its constraint frame. The rot delta is
+    // wrapped to (-π,π]: the run-frame lerp can land on a coterminal angle
+    // of the berth's box rot (e.g. -π vs +π) and a raw diff would read a
+    // full turn of carry in one frame
     this.dwx = this.train.position.x - this._pw.x;
     this.dwz = this.train.position.z - this._pw.z;
-    this.drot = this.bx.rot - this._prot;
+    const dr = this.bx.rot - this._prot;
+    this.drot = Math.atan2(Math.sin(dr), Math.cos(dr));
     this._prot = this.bx.rot;
     this._pw.x = this.train.position.x; this._pw.z = this.train.position.z;
   }
