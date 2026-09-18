@@ -84,13 +84,14 @@ export const ADM = {
     { id: 'B',  x: -46, side: -1, zh: '德立街・力寶中心',  en: 'Drake St · Lippo Centre' },
     { id: 'C2', x: -28, side: -1, zh: '的士站',            en: 'Taxi Stand' },
     { id: 'D',  x: 20,  side: 1,  zh: '統一中心',          en: 'United Centre' },
+    { id: 'G',  x: 30,  side: 1,  zh: '旗桿大廈',          en: 'Flagstaff Towers' },
     { id: 'E1', x: 42,  side: -1, zh: '樂禮街',           en: 'Rodney Street' },
     { id: 'E2', x: 55,  side: -1, zh: '中信大廈',          en: 'CITIC Tower' },
     { id: 'F',  x: 66,  side: 1,  zh: '太古廣場',          en: 'Pacific Place' },
   ],
   // shaft spans |z| exitZ±6.3 — landings must clear the shop row (±17.6)
   exitZ: 8.5,
-  exitLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
+  exitLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
 
   lifts: [
     { frame: 'main', x: 12, z: -2.5, levels: ['L1', 'L2', 'L3'] },
