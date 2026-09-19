@@ -64,7 +64,7 @@ export const CAB = {
     { id: 'D1', x: 82,   side: -1, zh: '崇光百貨',     en: 'SOGO' },
     { id: 'D2', x: 44,   side: -1, zh: '崇光百貨',     en: 'SOGO' },
     { id: 'D3', x: 74,   side: 1,  zh: '怡和街 · 柏寧酒店', en: 'Yee Wo St · The Park Lane' },
-    { id: 'D4', x: 86,   side: 1,  zh: '崇光百貨',     en: 'SOGO' },
+    { id: 'D4', x: 86,   side: 1,  zh: '伊利沙伯體育館', en: 'Queen Elizabeth Stadium' },
     { id: 'E',  x: 100,  side: -1, zh: '維多利亞公園', en: 'Victoria Park' },
     { id: 'F1', x: 94,   side: 1,  zh: '渣甸坊',       en: "Jardine's Crescent" },
     { id: 'F2', x: 110,  side: 1,  zh: '希慎廣場',     en: 'Hysan Place' },
