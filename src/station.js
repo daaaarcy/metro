@@ -51,6 +51,17 @@ export function computeOpenings() {
       add(e.from, { ...u, sides: [...lat, deepEnd] });
       add(e.to + ':ceil', { ...u, sides: lat });
     }
+    // multi-storey runs pierce every slab between the endpoints too —
+    // e.g. TKL's U1->L1 escalators dive through the P trench floor; an
+    // uncut intermediate slab hijacks floorAt mid-ride and strands the
+    // player on it. Kerb all four edges: the run passes clean through.
+    const lo = Math.min(levelById(e.from).y, levelById(e.to).y);
+    const hi = Math.max(levelById(e.from).y, levelById(e.to).y);
+    for (const l2 of LEVELS) {
+      if (l2.station !== e.station || l2.y <= lo || l2.y >= hi) continue;
+      add(l2.uid, u);
+      add(l2.uid + ':ceil', u);
+    }
   }
   for (const ex of EXITS) {
     const stn = STATIONS[ex.stn];
