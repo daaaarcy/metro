@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ESC_RUNS, GATES, STAIR_RUNS, PSD_BAYS } from '../registry.js';
 import { psdBlocked } from './trains.js';
-import { WALK_RECTS, BOXES, PEOPLE_N, PAID_CORE, levelById, boxToWorld, worldToBox, concourseId } from '../station-data.js';
+import { WALK_RECTS, BOXES, PEOPLE_N, PAID_CORE, LIFT_SIZE, levelById, boxToWorld, worldToBox, concourseId } from '../station-data.js';
 import { pointInRects, worldRectToLocal } from '../builders/structure.js';
 import { openGate, gateBlocks } from './gates.js';
 import { resolvePed, clampRect, clampOBB, PED_RADIUS } from '../colliders.js';
@@ -42,9 +42,9 @@ const PART_DEFS = {
 
 // states where the scripted path deliberately crosses a collider face —
 // the gate lane, the open PSD bay, a ramp — so collision is skipped
-const NOCLIP = new Set(['esc', 'stair', 'aboard', 'board', 'boarding', 'throughGate', 'alight']);
+const NOCLIP = new Set(['esc', 'stair', 'aboard', 'board', 'boarding', 'throughGate', 'alight', 'liftIn', 'lift']);
 // states that are actively stepping somewhere (stall detection applies)
-const MOVING = new Set(['walk', 'toGate', 'throughGate', 'toEsc', 'toStair', 'board', 'boarding', 'alight']);
+const MOVING = new Set(['walk', 'toGate', 'throughGate', 'toEsc', 'toStair', 'board', 'boarding', 'alight', 'toLift', 'liftIn']);
 
 export class Passengers {
   constructor(scene, openings, colliders) {
@@ -145,6 +145,36 @@ export class Passengers {
       this.group.add(im);
     }
     scene.add(this.group);
+  }
+
+  // wire up the lift sim: for every landing, per-level local spots to wait
+  // at the door, step inside, and walk out to — so crowd peds can ride too
+  bindLifts(liftSim) {
+    this.liftSim = liftSim;
+    this.liftOpts = new Map();   // levelUid -> [{car, i, wx, wz, ix, iz, ox, oz}]
+    for (const c of liftSim.cars) {
+      const fz = c.z + c.door * LIFT_SIZE.d / 2;
+      for (const [i, l] of c.levels.entries()) {
+        const lvl = l.uid, bx = this.boxOf[lvl];
+        if (!bx) continue;
+        const w = worldToBox(bx, c.x, fz + c.door * 1.15, this._wc);
+        const rects = WALK_RECTS[lvl] || [];
+        const inRect = rects.some(r => w.x >= r.x0 - 0.6 && w.x <= r.x1 + 0.6 && w.z >= r.z0 - 0.6 && w.z <= r.z1 + 0.6);
+        if (!inRect || this.insideSolid(lvl, w.x, w.z)) continue;
+        const iw = worldToBox(bx, c.x, c.z - c.door * 0.4, this._wd);
+        const o = worldToBox(bx, c.x, fz + c.door * 1.9, this._wc);
+        let a = this.liftOpts.get(lvl);
+        if (!a) this.liftOpts.set(lvl, a = []);
+        a.push({ car: c, i, wx: w.x, wz: w.z, ix: iw.x, iz: iw.z, ox: o.x, oz: o.z });
+      }
+    }
+  }
+
+  // ped drops out of the lift pipeline before boarding — free its queue slot
+  _liftOut(p) {
+    const c = p.lift?.car;
+    if (c && c._queue > 0) c._queue--;
+    p.lift = null;
   }
 
   // is a local point inside (or clipping) a collider?
@@ -254,6 +284,24 @@ export class Passengers {
     // the wraparound — it can't reach a gate lane without first getting to
     // a side band, so gate/escalator choices wait until |z| clears the caps
     const inWrap = !!core && !inCore && Math.abs(p.z) < core.z;
+
+    // lift users: a few peds take the lift when one serves their level —
+    // the landing's wait spot must sit in their own walkable strip (same
+    // reachability rule as escalator mouths); capped so cars don't clump
+    const lo = this.liftOpts?.get(lvl);
+    if (lo && Math.random() < 0.1) {
+      for (let k = 0; k < 6; k++) {
+        const o = lo[Math.floor(Math.random() * lo.length)];
+        if (!inHome(o.wx, o.wz)) continue;
+        if ((o.car._queue ?? 0) + (o.car._riders ?? 0) >= 4) continue;
+        p.lift = o;
+        o.car._queue = (o.car._queue ?? 0) + 1;
+        p.tx = o.wx + (Math.random() - 0.5) * 0.9;
+        p.tz = o.wz + (Math.random() - 0.5) * 0.5;
+        p.state = 'toLift';
+        return;
+      }
+    }
 
     if (roll < 0.22 && !(core && !inCore && lvlType === 'concourse')) {
       // find a rideable escalator from this level — mouth must be reachable,
@@ -398,7 +446,7 @@ export class Passengers {
     // so anyone farther than ~20 m would never make it before departure
     const localOut = out.map(d => worldToBox(this.boxOf[lvl], d.x, d.z));
     const near = this.list.filter(p => p.level === lvl &&
-      !['aboard', 'esc', 'board', 'boarding', 'toEsc', 'throughGate', 'toStair', 'stair', 'toGate', 'alight'].includes(p.state) &&
+      !['aboard', 'esc', 'board', 'boarding', 'toEsc', 'throughGate', 'toStair', 'stair', 'toGate', 'alight', 'toLift', 'liftWait', 'liftIn', 'lift'].includes(p.state) &&
       localOut.some(d => Math.hypot(p.x - d.x, p.z - d.z) < 20));
     for (let i = 0; i < Math.min(6, near.length); i++) {
       const p = near[Math.floor(Math.random() * near.length)];
@@ -622,6 +670,69 @@ export class Passengers {
           }
           break;
         }
+        case 'toLift': {
+          // walk to the landing; on arrival call the car to this floor
+          if (this.stepTo(p, pdt)) {
+            const o = p.lift, c = o.car;
+            p.state = 'liftWait'; p.wait = 30;
+            if (c.idx !== o.i && c.callIdx == null && this.liftSim?.inCar !== c) c.callIdx = o.i;
+          }
+          break;
+        }
+        case 'liftWait': {
+          const o = p.lift, c = o?.car;
+          if (c == null || (p.wait -= pdt) <= 0) { this._liftOut(p); p.state = 'idle'; p.wait = 0.5; break; }
+          if (c.idx === o.i && c.state === 'dwell' && c.open > 0.7) {
+            p.tx = o.ix; p.tz = o.iz; p.state = 'liftIn';
+          }
+          break;
+        }
+        case 'liftIn': {
+          const o = p.lift, c = o?.car;
+          // doors shut or the car left before they got through — walk away
+          if (c == null || c.idx !== o.i || c.state !== 'dwell' || c.open < 0.4) {
+            this._liftOut(p); p.state = 'idle'; p.wait = 0.4; break;
+          }
+          if (this.stepTo(p, pdt)) {
+            // aboard: spread riders inside the car, press a button for any
+            // other floor, and ride wherever the car goes next
+            c._queue--; c._riders = (c._riders ?? 0) + 1;
+            p.liftFrom = o.i;
+            if (c.callIdx == null && this.liftSim?.inCar !== c) {
+              const others = c.levels.map((_, j) => j).filter(j => j !== o.i);
+              c.callIdx = others[Math.floor(Math.random() * others.length)];
+            }
+            const off = (Math.random() - 0.5) * 0.8;
+            const bx = this.boxOf[p.level];
+            const l = worldToBox(bx, c.x + off, c.z + (Math.random() - 0.5) * 0.5);
+            p.x = l.x; p.z = l.z;
+            p.yaw = c.door > 0 ? 0 : Math.PI;
+            p.state = 'lift';
+          }
+          break;
+        }
+        case 'lift': {
+          const c = p.lift?.car;
+          if (c == null) { p.state = 'seek'; p.wy = null; p.lift = null; break; }
+          p.wy = c.y;   // carried with the car
+          if (c.state === 'dwell' && c.idx !== p.liftFrom && c.open > 0.5) {
+            const nl = c.levels[c.idx].uid;
+            if (nl !== p.level) {
+              const bx0 = this.boxOf[p.level], bx1 = this.boxOf[nl];
+              const w0 = boxToWorld(bx0, p.x, p.z, this._wb);
+              const l1 = worldToBox(bx1, w0.x, w0.z);
+              p.x = l1.x; p.z = l1.z;
+            }
+            p.level = nl;
+            c._riders--;
+            // walk out through the landing door on the arrival floor
+            const o2 = this.liftOpts?.get(nl)?.find(o => o.car === c);
+            p.wy = null; p.lift = null;
+            if (o2) { p.tx = o2.ox; p.tz = o2.oz; p.state = 'alight'; }
+            else p.state = 'seek';
+          }
+          break;
+        }
         case 'alight': {
           // step out of the car through the open bay, then join the crowd
           if (this.stepTo(p, pdt)) { p.state = 'seek'; }
@@ -696,7 +807,7 @@ export class Passengers {
         if (p.lastD == null || dist < p.lastD - 0.004) { p.stuck = 0; p.lastD = dist; }
         else {
           p.stuck = (p.stuck || 0) + pdt;
-          if (p.stuck > 2.5) { p.state = 'idle'; p.wait = 0.4 + Math.random() * 0.9; p.stuck = 0; p.lastD = null; }
+          if (p.stuck > 2.5) { if (p.lift) this._liftOut(p); p.state = 'idle'; p.wait = 0.4 + Math.random() * 0.9; p.stuck = 0; p.lastD = null; }
         }
       } else { p.stuck = 0; p.lastD = null; }
 

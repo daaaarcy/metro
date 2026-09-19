@@ -133,6 +133,7 @@ scene.add(escSteps.mesh, escSteps.stripMesh);
 const trainSim = new TrainSim(scene);
 const liftSim = new LiftSim(scene, liftDefs, colliders);
 const passengers = new Passengers(scene, computeOpenings(), colliders);
+passengers.bindLifts(liftSim);
 const audio = new StationAudio();
 // live Hong Kong weather drives the above-ground sky, light and rain
 const weather = new Weather(scene, sun, hemi, ambient, ground);
