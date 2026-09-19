@@ -62,7 +62,7 @@ export const CAB = {
     { id: 'B',  x: -80,  side: 1,  zh: '銅鑼灣廣場一期', en: 'Causeway Bay Plaza 1' },
     { id: 'C',  x: -88,  side: -1, zh: '信和廣場',     en: 'Sino Plaza' },
     { id: 'D1', x: 82,   side: -1, zh: '崇光百貨',     en: 'SOGO' },
-    { id: 'D2', x: 44,   side: -1, zh: '崇光百貨',     en: 'SOGO' },
+    { id: 'D2', x: 44,   side: -1, zh: '麗悅酒店 · 英皇駿景酒店 · 錫克廟', en: 'COSMO Hotel · Emperor Hotel · Khalsa Diwan Sikh Temple' },
     { id: 'D3', x: 74,   side: 1,  zh: '怡和街 · 柏寧酒店', en: 'Yee Wo St · The Park Lane' },
     { id: 'D4', x: 86,   side: 1,  zh: '伊利沙伯體育館', en: 'Queen Elizabeth Stadium' },
     { id: 'E',  x: 100,  side: -1, zh: '維多利亞公園', en: 'Victoria Park' },
