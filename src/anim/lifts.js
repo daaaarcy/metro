@@ -83,7 +83,7 @@ export class LiftSim {
           y0: y - 0.3, y1: y + 2.4, open: 0, car: c,
         };
         LIFT_DOORS.push(barrier);
-        c.doors.push({ leaves, barrier });
+        c.doors.push({ dg, leaves, barrier });
       }
       return c;
     });

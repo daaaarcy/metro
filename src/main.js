@@ -69,9 +69,11 @@ labels.push(...city.labels);
 root.updateMatrixWorld(true);
 // one collision world shared by the player rig and the pedestrians
 const colliders = buildColliders();
-// collapse ~3.5k static meshes into one draw call per material per level —
-// colliders are already snapshotted; instanced/dynamic meshes are untouched
-mergeStation(scene, root, levelGroups, togglables);
+// collapse ~30k static meshes into one BatchedMesh per material network-wide
+// (one GL call each, per-level visibility via setVisibleAt, per-instance
+// frustum culling). Colliders are already snapshotted; instanced/dynamic
+// meshes are untouched. Returns uid -> batch-instance list for toggles.
+const visItems = mergeStation(scene, root, levelGroups, togglables);
 initGateFlaps(levelGroups);   // instanced Octopus paddles, one draw per level
 
 // every sign plate has a unique canvas texture, so they can't merge — that's
@@ -268,10 +270,55 @@ for (const lvl of LEVELS) {
   pickMeshes.push(m);
 }
 
-// every transform under these trees is baked — instance matrices animate
-// without touching matrixWorld, so the per-frame traversal can skip them
+// every transform is baked — the renderers skip the whole-scene traversal
+// entirely, and each tick updates only the few roots that still move:
+// train consists, lift cars + landing doors, the weather-driven sun.
+// Instanced parts (crowd, PSD leaves, escalator steps, gate flaps) animate
+// their instance buffers without touching matrixWorld.
 scene.updateMatrixWorld(true);
-for (const o of [root, city.group, ground, ...pickMeshes]) o.matrixWorldAutoUpdate = false;
+scene.matrixWorldAutoUpdate = false;
+const dynRoots = [
+  sun,
+  ...trainSim.services.map(s => s.train),
+  ...liftSim.cars.flatMap(c => [c.mesh, ...c.doors.map(d => d.dg)]),
+];
+
+// level visibility combines two drivers: the section-panel toggle and orbit
+// distance culling. Both write through applyLevelVis so neither clobbers the
+// other, and the sim layers (steps, crowd, berthed trains) follow the result.
+const levelUserOn = {};          // uid -> false when hidden via the panel
+const levelFar = new Set();      // uids dropped by orbit distance culling
+function applyLevelVis(id) {
+  const v = levelUserOn[id] !== false && !levelFar.has(id);
+  if (levelGroups[id]) levelGroups[id].visible = v;
+  for (const o of togglables[id] || []) o.visible = v;
+  for (const it of visItems.get(id) || []) it.batch.setVisibleAt(it.id, v);
+  escSteps.setLevelVisible(id, v);
+  passengers.setLevelVisible(id, v);
+  for (const s of trainSim.services) if (s.ds?.level === id) s.train.visible = v;
+}
+// in a wide orbit view an underground interior past ~1.1 km is a few pixels
+// inside its dig hole — the whole level group (one visibility flag ≈ 80 draw
+// calls) drops out, with hysteresis so it can't flicker at the boundary.
+// Ground/viaduct levels always stay — they're the skyline context.
+const levelCull = LEVELS
+  .filter(l => l.y < -0.5 && l.box && levelGroups[l.uid])
+  .map(l => ({ id: l.uid, p: new THREE.Vector3(BOXES[l.box].cx, l.y, BOXES[l.box].cz), far: false }));
+function cullLevels() {
+  const orbit = rig.mode === 'orbit';
+  // orbit reads interiors across the map → wide radius; walk mode sits inside
+  // one station so a neighbouring interior past ~450 m is always occluded.
+  // While the pointer is held either radius tightens ~40% — far interiors
+  // are illegible mid-drag, and dropping them frees vertex + draw budget.
+  const base = orbit ? [1100, 850] : [450, 330];
+  const [hideR, showR] = dragging ? [base[0] * 0.6, base[1] * 0.6] : base;
+  const f = orbit ? rig.orbit.target : camera.position;
+  for (const c of levelCull) {
+    const d2 = f.distanceToSquared(c.p);
+    const far = c.far ? d2 > showR * showR : d2 > hideR * hideR;
+    if (far !== c.far) { c.far = far; far ? levelFar.add(c.id) : levelFar.delete(c.id); applyLevelVis(c.id); }
+  }
+}
 
 // ---------- clipping planes ----------
 const clipPlanes = {
@@ -374,13 +421,7 @@ buildUI({
     }
   },
   onClip: applyClip,
-  onLevelVisible: (id, v) => {
-    if (levelGroups[id]) levelGroups[id].visible = v;
-    (togglables[id] || []).forEach(o => (o.visible = v));
-    escSteps.setLevelVisible(id, v);
-    passengers.setLevelVisible(id, v);
-    for (const s of trainSim.services) if (s.ds?.level === id) s.train.visible = v;
-  },
+  onLevelVisible: (id, v) => { levelUserOn[id] = v; applyLevelVis(id); },
   onGoto: (id, vp) => {
     if (!vp) return;
     if (rig.mode === 'orbit') rig.orbit.target.copy(vp.look);
@@ -420,7 +461,9 @@ let dragging = false;
 renderer.domElement.addEventListener('pointermove', e => {
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
 });
-renderer.domElement.addEventListener('pointerdown', () => { dragging = true; showInfo(null); });
+let dragHold = 0;   // seconds of low-res left after the pointer releases
+renderer.domElement.addEventListener('pointerdown', () => { dragging = true; dragHold = 0.45; showInfo(null); });
+renderer.domElement.addEventListener('wheel', () => { dragHold = 0.3; }, { passive: true });
 addEventListener('pointerup', () => { dragging = false; });
 addEventListener('pointercancel', () => { dragging = false; });
 let hoverT = 0;
@@ -462,7 +505,7 @@ let speed = 1;
 let simNow = Date.now();
 const simNowFn = () => simNow;
 const timer = new THREE.Timer();
-let tickerT = 0, escT = 0;
+let tickerT = 0, escT = 0, peopleAcc = 0, frameNo = 0;
 // dynamic resolution — the scene is fill-bound on Retina, so when the frame
 // rate sags the pixel ratio steps down (and back up with headroom) to keep
 // motion smooth instead of locking at a slow full-res
@@ -475,9 +518,19 @@ function tick() {
   const sdt = dt * speed;          // sim-time delta this frame
   simNow += sdt * 1000;
   escT += sdt;
+  frameNo++;
 
   fpsAvg += (1 / Math.max(dt, 0.001) - fpsAvg) * 0.05;
-  if ((prT += dt) > 1.5) {
+  // while the view is being dragged the averaged governor reacts too late —
+  // drop straight to the lowest step for the drag plus a short damping tail
+  if (dragging) dragHold = 0.45; else if (dragHold > 0) dragHold -= dt;
+  const dragActive = dragging || dragHold > 0;
+  if (dragActive) {
+    if (prStep !== PR_STEPS.length - 1) {
+      prStep = PR_STEPS.length - 1;
+      renderer.setPixelRatio(PR_CAP * PR_STEPS[prStep]);
+    }
+  } else if ((prT += dt) > 1.5) {
     prT = 0;
     if (fpsAvg < 30 && prStep < PR_STEPS.length - 1) renderer.setPixelRatio(PR_CAP * PR_STEPS[++prStep]);
     else if (fpsAvg > 55 && prStep > 0) renderer.setPixelRatio(PR_CAP * PR_STEPS[--prStep]);
@@ -486,8 +539,9 @@ function tick() {
   liftSim.update(sdt, rig);   // before rig.update — door barriers + carry feed collision
   rig.update(dt);
   updatePick(dt);
-  updateLabels();
-  cullSigns();
+  cullLevels();
+  // label/sign sweeps can lag a beat mid-drag — the next idle frame refreshes
+  if (!dragActive) { updateLabels(); cullSigns(); }
 
   // sim
   escSteps.update(escT);
@@ -509,9 +563,19 @@ function tick() {
   for (const ev of events) {
     passengers.onTrainEvent(ev, audio);
   }
-  if (peopleOn) passengers.update(sdt, escT, trainSim, audio,
-    rig.mode === 'walk' ? camera.position : rig.orbit.target,
-    rig.mode === 'walk' ? 150 : Math.max(250, rig.orbit.getDistance()));
+  // the crowd pass is ~10 ms at busy views — tick it on a reduced cadence
+  // while dragging (and when fps already sags) so camera motion stays fluid;
+  // the accumulated dt keeps everyone's total movement correct
+  const cadence = dragActive ? 3 : fpsAvg < 30 ? 2 : 1;
+  if (peopleOn) {
+    peopleAcc += sdt;
+    if (frameNo % cadence === 0) {
+      passengers.update(peopleAcc, escT, trainSim, audio,
+        rig.mode === 'walk' ? camera.position : rig.orbit.target,
+        rig.mode === 'walk' ? 150 : Math.max(250, rig.orbit.getDistance()));
+      peopleAcc = 0;
+    }
+  }
   updateGates(sdt);
 
   // gate / lift / boarding prompt + ticker + clock refresh
@@ -551,6 +615,8 @@ function tick() {
     updateClock(simNow, speed);
   }
 
+  // scene traversal is frozen — refresh only the roots that actually moved
+  for (const o of dynRoots) o.updateMatrixWorld();
   renderer.render(scene, camera);
   labelRenderer.render(labelScene, camera);
   requestAnimationFrame(tick);
