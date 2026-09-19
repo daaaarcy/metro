@@ -71,7 +71,7 @@ export const CEN = {
     { id: 'E',  x: -10, side: -1, zh: '遮打大廈・遮打道',        en: 'Chater House · Chater Road' },
     { id: 'F',  x: 8,   side: 1,  zh: '聖佐治大廈・文華東方酒店', en: "St George's Bldg · Mandarin Oriental" },
     { id: 'G',  x: 24,  side: 1,  zh: '置地廣場・中環大廈・東亞銀行大廈', en: 'The Landmark · The Central Building · Bank of East Asia Building' },
-    { id: 'H',  x: 40,  side: -1, zh: '歷山大廈',                en: 'Alexandra House' },
+    { id: 'H',  x: 40,  side: -1, zh: '歷山大廈・德輔道中',      en: 'Alexandra House · Des Voeux Rd Central' },
     { id: 'K',  x: 52,  side: 1,  zh: '皇后像廣場・大會堂・展城館',  en: 'Statue Sq · City Hall · City Gallery' },
     { id: 'L',  x: 62,  side: -1, zh: '中國建設銀行大廈',        en: 'CCB Tower' },
     { id: 'J1', x: 72,  side: 1,  zh: '終審法院',                en: 'Court of Final Appeal' },
