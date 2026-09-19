@@ -479,8 +479,10 @@ class Consist {
     scene.add(this.train);
 
     // stagger the consist along the route — two consists must not start
-    // berthed at the same face (they'd render inside each other)
-    this.i = (route.startIdx ?? idx) % this.stops.length;
+    // berthed at the same face (they'd render inside each other). Spread
+    // evenly over the whole loop or the fleet bunches on one half of the
+    // line and the other direction sees no trains at all.
+    this.i = route.startIdx ?? Math.floor(idx * this.stops.length / total) % this.stops.length;
     this.leg = this.legs[this.i];     // current leg — valid before first _beginRun
     this.ds = null;                   // door set when berthed (null mid-run)
     this.bx = { cx: 0, cz: 0, rot: 0 }; // live frame for the player constraint
@@ -838,7 +840,7 @@ export const ROUTES = [
   // upstairs), PRE mirrors it (the KTL dives between the levels in the
   // tunnel between them). MEF/LAK split crosswise too — TWL pairs with
   // the (unbuilt) TCL faces on the stacked islands.
-  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 2,
+  { line: 'TWL', travel: 75, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 10,
     stops: [{ uid: 'TSW:P', num: 2 },
             { uid: 'TWH:L2', num: 2 },
             { uid: 'KWH:U1', num: 2 },
@@ -876,7 +878,7 @@ export const ROUTES = [
   // and the Kowloon Tong interchange (KTL island below the EAL trench),
   // along the corridor to Choi Hung, onto the Kwun Tong Rd viaduct, and
   // out to the Tiu Keng Leng terminus — 'off' legs wrap both reversals.
-  { line: 'KTL', consists: 2,
+  { line: 'KTL', consists: 7,
     legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
@@ -926,7 +928,7 @@ export const ROUTES = [
   // At NOP the eastbound face (P1) sits on the lower island and the
   // westbound face (P2) on the upper island — the cross-platform pair is
   // split by direction.
-  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 4,
+  { line: 'ISL', travel: 80, legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'], consists: 12,
     stops: [{ uid: 'KET:L2', num: 1 }, { uid: 'HKU:L2', num: 1 },
             { uid: 'SYP:L2', num: 1 },
             { uid: 'SHW:L2', num: 1 }, { uid: 'CEN:L2', num: 3 },
@@ -950,7 +952,7 @@ export const ROUTES = [
   // the new town — Tseung Kwan O, Hang Hau, and the Po Lam terminus.
   // Both faces use each terminus' west portal (NOP off-map wrap, POL
   // dead-end reversal).
-  { line: 'TKO', travel: 75, consists: 2,
+  { line: 'TKO', travel: 75, consists: 5,
     legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'off',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
@@ -972,7 +974,7 @@ export const ROUTES = [
   // LOHAS Park shuttle: TKL face 3 departs east into the branch, wraps
   // at the LHP terminus, returns to face 4, then reverses off-map back
   // onto face 3 — mirroring the real TKL<->LHP shuttle working.
-  { line: 'TKO', travel: 75, consists: 1,
+  { line: 'TKO', travel: 75, consists: 2,
     legs: ['tunnel', 'off', 'tunnel', 'off'],
     stops: [{ uid: 'TKL:L1', num: 3 },
             { uid: 'LHP:P', num: 1 },
@@ -987,7 +989,7 @@ export const ROUTES = [
   // Territories — Sha Tin, Fo Tan, University, Tai Po Market, Tai Wo,
   // Fanling, Sheung Shui — to the Lo Wu boundary terminus. The consist
   // wraps at LOW's west portal and at ADM's off-map reversal.
-  { line: 'EAL', consists: 2,
+  { line: 'EAL', consists: 6,
     legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'tunnel', 'off',
@@ -1026,7 +1028,7 @@ export const ROUTES = [
   // southbound face, wraps at the LMC terminus, returns to the
   // northbound face and reverses off-map onto face 2 — the real
   // SHU↔LMC shuttle working.
-  { line: 'EAL', consists: 1,
+  { line: 'EAL', consists: 2,
     legs: ['tunnel', 'off', 'tunnel', 'off'],
     stops: [{ uid: 'SHU:P', num: 2 },
             { uid: 'LMC:P', num: 1 },
@@ -1036,7 +1038,7 @@ export const ROUTES = [
   // hills to Ocean Park, along the viaduct to Wong Chuk Hang, under the
   // Aberdeen Channel to Lei Tung, and out to the South Horizons terminus.
   // 'off' wraps at SOH (scissors reversal) and back at ADM:L6.
-  { line: 'SIL', travel: 70, consists: 2,
+  { line: 'SIL', travel: 70, consists: 3,
     legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'],
     stops: [{ uid: 'ADM:L6', num: 5 },
@@ -1054,7 +1056,7 @@ export const ROUTES = [
   // the long West Kowloon leg up to Lai King's stacked islands, west to
   // Tsing Yi and Sunny Bay on the Lantau shore, ending at Tung Chung.
   // legs[i] runs after stops[i]; 'off' wraps at TUC and at HOK.
-  { line: 'TCL', travel: 80, consists: 2,
+  { line: 'TCL', travel: 80, consists: 5,
     legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'off',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
@@ -1076,7 +1078,7 @@ export const ROUTES = [
   // Airport Express: HOK terminus -> Kowloon -> Tsing Yi -> Airport ->
   // the AsiaWorld-Expo terminus, then the run back. HOK's single side
   // platform self-wraps off-map between workings.
-  { line: 'AEX', travel: 80, consists: 1,
+  { line: 'AEX', travel: 80, consists: 3,
     legs: ['tunnel', 'tunnel', 'tunnel', 'tunnel', 'off',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'off'],
     stops: [{ uid: 'HOK:L2', num: 1 },
@@ -1092,7 +1094,7 @@ export const ROUTES = [
   // Disneyland Resort Line: the Sunny Bay shuttle — face 3 departs east
   // to the resort terminus, wraps, returns to face 4, and reverses
   // off-map back onto face 3.
-  { line: 'DRL', travel: 60, consists: 1,
+  { line: 'DRL', travel: 60, consists: 2,
     legs: ['tunnel', 'off', 'tunnel', 'off'],
     stops: [{ uid: 'SUN:L1', num: 3 },
             { uid: 'DIS:P',  num: 1 },
@@ -1103,7 +1105,7 @@ export const ROUTES = [
   // (NAC→AUS→ETS→HUH→HOM), Kai Tak, Diamond Hill, over the saddle to
   // Tai Wai, then the Ma On Shan arm to Wu Kai Sha. Both termini wrap
   // off-map between faces.
-  { line: 'TML', consists: 3,
+  { line: 'TML', consists: 11,
     legs: ['off',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
            'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel', 'tunnel',
@@ -1210,13 +1212,33 @@ export class TrainSim {
       }
     }
     this.services = [];
+    // hand the feed the platform directory so it can synthesize late-night
+    // service once the real timetable winds down (off-hours / dead feed).
+    // Synthetic spacing = the interval the fleet can actually serve: a
+    // consist passes a given face once per loop, so spacing = loop time /
+    // consists — promising less would put unreachable times on the boards.
+    const plats = new Map();
     for (const rd of ROUTES) {
       const route = resolveRoute(rd, doorSets);
+      const loopT = route.legs.reduce((s, l) => s + l.travel, 0)
+                  + route.stops.reduce((s, st) => s + st.dwell, 0);
+      const hw = Math.max(60, loopT / rd.consists);
+      for (const st of route.stops) {
+        const key = `${st.stn}:${st.plat}`;
+        const cur = plats.get(key);
+        if (!cur || hw < cur.hw) plats.set(key, { stn: st.stn, plat: st.plat, line: rd.line, hw });
+      }
       for (let i = 0; i < rd.consists; i++) {
         this.services.push(new Consist(scene, route, i, rd.consists));
       }
     }
+    for (const ds of doorSets) {
+      const stn = ds.level.split(':')[0];
+      const key = `${stn}:${ds.face.num}`;
+      if (!plats.has(key)) plats.set(key, { stn, plat: ds.face.num, line: ds.face.line, hw: 0 });
+    }
     this.tt = new Timetable();
+    this.tt.setPlatforms([...plats.values()]);
   }
 
   update(dt, audio, simNow, speed = 1) {

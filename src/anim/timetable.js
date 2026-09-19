@@ -4,6 +4,8 @@
 //   plat   — MTR platform number, matches our PLATFORMS faces (1-8)
 //   time   — arrival time; for terminus services it's the DEPARTURE (timeType:'D')
 // Falls back silently to the synthetic headways whenever the API is unreachable.
+import { TRAIN_SPEC } from '../station-data.js';
+
 const API = 'https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php';
 // (line, station) pairs the live feed can serve — the API only knows real
 // stations, and each returns UP/DOWN arrays keyed by platform number
@@ -79,6 +81,10 @@ export class Timetable {
     this.timer = 2;     // first fetch shortly after load
   }
 
+  // the platforms the sim actually serves — TrainSim hands these over once,
+  // so the feed can top up entries when real service winds down overnight
+  setPlatforms(list) { this._plats = list; this._topUp(); }
+
   update(dt) {
     this.timer -= dt;
     if (this.timer <= 0) { this.timer = POLL_S; this.refresh(); }
@@ -105,7 +111,41 @@ export class Timetable {
       out[k] = out[k].filter(t => t > now - 20000).sort((a, b) => a - b);
       if (!out[k].length) delete out[k];
     }
-    if (Object.keys(out).length) { this.byPlat = out; this.live = true; }
+    this._live = out;
+    this._topUp();
+  }
+
+  // after the last real train the feed returns nothing — keep the service
+  // running by topping every platform up to ~4 upcoming slots on the line's
+  // own headway. Synthetic slots form a rolling per-platform stream merged
+  // over whatever live entries remain, so claims and boards keep working
+  // all night; dense live service suppresses the padding entirely.
+  _topUp() {
+    if (!this._plats?.length) return;
+    const now = Date.now();
+    const synth = this._synth ??= {};
+    const merged = {};
+    for (const { stn, plat, line, hw: fleetHw } of this._plats) {
+      const key = `${stn}:${plat}`;
+      // never promise tighter spacing than the fleet can physically serve —
+      // slots that pass unclaimed are trains that never arrive
+      const hw = Math.max(TRAIN_SPEC[line]?.headway ?? 90, fleetHw ?? 0) * 1000;
+      const liveArr = this._live?.[key] ?? [];
+      const liveUp = liveArr.filter(t => t < now + 4 * hw).length;
+      const want = Math.max(0, 4 - liveUp);
+      const s = synth[key] ??= [];
+      while (s.length && s[0] <= now - 20000) s.shift();
+      s.length = Math.min(s.length, want);
+      let t = s[s.length - 1] ?? 0;
+      // when the well is dry seed just behind now so the first train lands
+      // soon instead of a whole headway out
+      if (t < now + hw * 0.2) t = now - hw * (0.3 + Math.random() * 0.6);
+      while (s.length < want) { t += hw; s.push(t); }
+      const all = [...liveArr, ...s].sort((a, b) => a - b);
+      if (all.length) merged[key] = all;
+    }
+    this.byPlat = merged;
+    if (Object.keys(merged).length) this.live = true;
   }
 
   // next scheduled event (arrival, or departure for termini) for a platform,
