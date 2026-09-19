@@ -563,6 +563,12 @@ function tick() {
   for (const ev of events) {
     passengers.onTrainEvent(ev, audio);
   }
+  // a berthed consist follows its level's visibility; a moving one always
+  // shows — without this a train that left a culled level stays invisible
+  // when it berths at a visible platform (applyLevelVis only runs on toggles)
+  for (const s of trainSim.services) {
+    s.train.visible = !s.ds || (levelUserOn[s.ds.level] !== false && !levelFar.has(s.ds.level));
+  }
   // the crowd pass is ~10 ms at busy views — tick it on a reduced cadence
   // while dragging (and when fps already sags) so camera motion stays fluid;
   // the accumulated dt keeps everyone's total movement correct

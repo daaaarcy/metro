@@ -492,6 +492,8 @@ class Consist {
     this.hasRider = false;              // set from the main loop each frame
     this.open = 0;
     this.nextAt = null;
+    this._arrAt = null;               // claimed arrival epoch at the next stop
+    this.legDur = 1;                  // active leg duration (schedule-stretched)
     this.events = [];
     this._m4 = new THREE.Matrix4();
 
@@ -509,7 +511,9 @@ class Consist {
   _berth(stop, snap = false) {
     this.ds = stop.ds;
     stop.ds.openSvc = this;               // this consist owns the bays now
+    this._bseq = (this._bseq ?? 0) + 1;   // berth serial — schedule once per stop
     this.stop = stop;
+    this._arrAt = null;               // berthed — the claimed epoch is spent
     this.bx = stop.bx;
     this.zc = stop.zc;
     this.doorSide = stop.doorSide;
@@ -592,7 +596,14 @@ class Consist {
     this.ds = null;
     this.state = leg.via === 'tunnel' ? 'run' : 'offOut';
     this.leg = leg;
-    this.t = leg.via === 'tunnel' ? leg.travel : DEP_T;
+    // land on the claimed arrival epoch if there is one — stretch or compress
+    // the leg within sane bounds; otherwise the fixed travel time
+    let dur = leg.travel;
+    if (leg.via === 'tunnel' && this._arrAt != null) {
+      dur = THREE.MathUtils.clamp((this._arrAt - Date.now()) / 1000, leg.travel * 0.6, leg.travel * 4);
+    } else this._arrAt = null;
+    this.legDur = dur;
+    this.t = leg.via === 'tunnel' ? dur : DEP_T;
     this.s = 0;
     this.events.push({ type: 'depart', face: this.stop.face, level: this.stop.uid, service: this });
     audio?.announceDepart(this.stop.face, this.stop.pos());
@@ -602,6 +613,7 @@ class Consist {
     this.t -= dt;
     switch (this.state) {
       case 'dwell': {
+        if (this._schedSeq !== this._bseq) { this._schedSeq = this._bseq; this._schedule(tt, simNow, speed); }
         // re-claim the door set if its owner moved on without releasing it —
         // an openSvc pointing at a consist that is no longer berthed here
         // would leave every bay sealed despite our open doors
@@ -621,9 +633,10 @@ class Consist {
       }
       case 'run': {   // visible inter-station tunnel leg
         this.setDoors(false, dt);
+        if (this._arrAt != null) this.t = Math.max(this._arrAt - Date.now(), 0) / 1000;
         const leg = this.leg;
         const A = leg.A, B = leg.B;
-        const p = 1 - Math.max(this.t, 0) / leg.travel;
+        const p = 1 - Math.max(this.t, 0) / this.legDur;
         // trapezoidal speed: accelerate 0->V over TA, cruise, brake V->0
         // over the last (1-TB). The old profile ran it backwards — full
         // speed at the platform, a stall mid-tunnel, then accelerating
@@ -703,11 +716,13 @@ class Consist {
         break;
       }
       case 'offWait': {
+        if (this._arrAt != null) this.t = Math.max((this._arrAt - Date.now()) / 1000 - ARR_T, 0);
         if (this.t <= 0) { this.state = 'offIn'; this.t = ARR_T; this.train.visible = true; this._ann = false; }
         break;
       }
       case 'offIn': {    // re-enter the next stop's portal to the berth
         this.setDoors(false, dt);
+        if (this._arrAt != null) this.t = Math.max(this._arrAt - Date.now(), 0) / 1000;
         const leg = this.leg, B = leg.B;
         const p = 1 - Math.max(this.t, 0) / ARR_T;
         const inX = B.portalX(leg.inEnd, this.trainLen / 2);
@@ -744,16 +759,43 @@ class Consist {
     this._pw.x = this.train.position.x; this._pw.z = this.train.position.z;
   }
 
+  // just berthed: claim the next live arrival at the NEXT platform and, when
+  // the slot is further out than the dwell + run need, hold this dwell open
+  // for it (doors stay open; the chime still fires just before leaving).
+  // _beginRun then stretches the leg itself to land on whatever remains —
+  // so the consist berths on the feed's epoch and the platform boards agree.
+  // Off-map legs claim their re-entry slot in _offWait instead.
+  _schedule(tt, simNow, speed) {
+    this.nextAt = null;
+    this._arrAt = null;
+    if (speed !== 1 || !tt?.live) return;
+    const leg = this.legs[this.i];
+    if (!leg || leg.via !== 'tunnel') return;
+    const B = leg.B;
+    const now = Date.now();   // feed epochs are wall time, not sim time
+    const minArr = now + (this.t + leg.travel * 0.6) * 1000;
+    const sched = tt.claim(B.stn, B.plat, Math.max(this._consumed ?? 0, minArr));
+    if (sched == null) return;
+    this._consumed = sched;
+    this.nextAt = sched;
+    this._arrAt = sched;   // wall epoch the next berth should land on —
+    // while set, the run/wait/roll-in countdown tracks Date.now() so
+    // sim-time drift (the 50 ms frame cap) can't push the berth late
+    const hold = (sched - now) / 1000 - leg.travel;
+    if (hold > this.t) this.t = Math.min(hold, 300);
+  }
+
   // how long to hide off-map: live schedule when the feed's up at 1x speed,
   // otherwise a synthetic layover inside the headway
   _offWait(tt, simNow, speed) {
     const B = this.leg.B;
     if (speed === 1 && tt?.live) {
-      const sched = tt.next(B.stn, B.plat, this._consumed ?? 0);
+      const sched = tt.claim(B.stn, B.plat, this._consumed ?? 0);
       if (sched != null) {
         this._consumed = sched;
-        const wait = Math.max((sched - simNow()) / 1000 - ARR_T, 4);
+        const wait = Math.max((sched - Date.now()) / 1000 - ARR_T, 4);
         this.nextAt = sched;
+        this._arrAt = sched;         // offWait/offIn countdowns wall-track it
         return wait;
       }
     }

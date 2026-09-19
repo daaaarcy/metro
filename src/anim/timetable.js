@@ -115,4 +115,17 @@ export class Timetable {
     const min = Math.max(Date.now() - 20000, after);
     return (this.byPlat[`${stn}:${plat}`] || []).find(t => t > min) ?? null;
   }
+
+  // like next(), but advances a per-platform watermark so the following
+  // consist claims the slot after — arrivals get handed out in order.
+  // Entries drop out of byPlat on refresh once they pass, so a watermark
+  // can only ever sit below the remaining times.
+  claim(stn, plat, after = 0) {
+    const key = `${stn}:${plat}`;
+    const min = Math.max(Date.now() - 20000, after, this._claimed?.[key] ?? 0);
+    const t = (this.byPlat[key] || []).find(t => t > min);
+    if (t == null) return null;
+    (this._claimed ??= {})[key] = t;
+    return t;
+  }
 }
