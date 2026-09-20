@@ -4,7 +4,7 @@
 // Middle Rd malls, the harbourfront promenade and the subway link west
 // to Tsim Sha Tsui on the TWL. Livery: purple.
 // Exits: A TST East / Avenue of Stars, B Middle Rd, C subway to TST,
-// D Chatham Rd.
+// D Chatham Rd, E K11 / Victoria Dockside (harbourfront).
 
 import { twlIsland } from './template.js';
 
@@ -24,6 +24,7 @@ export const ETS = twlIsland({
     { id: 'B', x:  10, side: -1, zh: '中間道・麼地道',   en: 'Middle Rd · Mody Rd' },
     { id: 'C', x:  60, side: 1,  zh: '尖沙咀站・隧道',   en: 'Tsim Sha Tsui (subway)' },
     { id: 'D', x: -20, side: 1,  zh: '漆咸道・科學館',   en: 'Chatham Rd · Science Museum' },
+    { id: 'E', x: -70, side: 1,  zh: 'K11購物中心・維港文化匯', en: 'K11 Shopping Centre · Victoria Dockside' },
   ],
 
   people: { G: 18, L1: 44, L2: 48 },
