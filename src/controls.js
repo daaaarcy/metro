@@ -37,6 +37,9 @@ export class CameraRig {
     this.feetY = camera.position.y - EYE;
     this._last = null;
     this._fly = null;
+    // last flat floor the player stood on — out-of-world falls recover here
+    // instead of a fixed global point stations away
+    this._sx = -20; this._sz = 0; this._sy = -7;
 
     // static collision world (built once by initColliders)
     this.solidAABBs = [];
@@ -392,7 +395,9 @@ export class CameraRig {
   // nearest platform edge of that trough. Skipped while aboard a consist.
   rescueTracks(px, pz) {
     const rt = this._rt;
-    if (this._aboard || this.feetY > -1) { rt[0] = px; rt[1] = pz; return rt; }
+    // no feetY gate — elevated/at-grade platforms have track beds above y=−1;
+    // the per-level band check below already excludes anyone standing on a slab
+    if (this._aboard) { rt[0] = px; rt[1] = pz; return rt; }
     for (const t of this._trackLvls) {
       if (this.feetY > t.ly - 0.6 || this.feetY < t.ly - 4) continue;
       const lp = worldToBox(t.bx, px, pz, this._wlp);
@@ -488,12 +493,28 @@ export class CameraRig {
     let mx = this._vx * dt, mz = this._vz * dt;
 
     // escalator carry: standing on a moving ramp drags you along
-    const fl0 = this.floorAt(this.camera.position.x, this.camera.position.z, this.feetY + STEP_MAX);
-    if (fl0.ramp && fl0.ramp.carry && Math.abs(this.feetY - fl0.y) < 0.3) {
-      const run = fl0.ramp.run;
-      const dir = run.going === 'down' ? 1 : -1;
-      mx += run.dx * dir * 0.55 * dt;
-      mz += run.dz * dir * 0.55 * dt;
+    const cx = this.camera.position.x, cz = this.camera.position.z;
+    const fl0 = this.floorAt(cx, cz, this.feetY + STEP_MAX);
+    let esc = fl0.ramp && fl0.ramp.carry && Math.abs(this.feetY - fl0.y) < 0.3 ? fl0.ramp.run : null;
+    if (!esc) {
+      // boarding assist at the low mouth — the ramp tip is flush but climbs past
+      // STEP_MAX within ~0.7 m, so a long frame or slightly-early approach can
+      // skip the reachable band and walk you under the ramp. While moving toward
+      // the high end at the mouth, step onto a ramp looming just overhead.
+      const fm = this.floorAt(cx, cz, this.feetY + 0.9);
+      const r = fm.ramp;
+      if (r && r.carry && fm.y - this.feetY > 0.05 && fm.y - this.feetY <= 0.9) {
+        const rn = r.run;
+        const t = ((cx - rn.x1) * rn.dx + (cz - rn.z1) * rn.dz) / rn.len;
+        const lowT = rn.y1 < rn.y2 ? 0 : 1;
+        const towardHigh = (this._vx * rn.dx + this._vz * rn.dz) * (lowT ? -1 : 1);
+        if (Math.abs(t - lowT) < 0.18 && towardHigh > 0.5) { esc = rn; this.feetY = fm.y; }
+      }
+    }
+    if (esc) {
+      const dir = esc.going === 'down' ? 1 : -1;
+      mx += esc.dx * dir * 0.55 * dt;
+      mz += esc.dz * dir * 0.55 * dt;
     }
 
     let px = this.camera.position.x + mx;
@@ -510,13 +531,14 @@ export class CameraRig {
     const floorY = Math.max(fl.y, tc[2]);
     if (floorY > -Infinity && this.feetY <= floorY + 0.08 && this.vy <= 0) {
       this.feetY = floorY; this.vy = 0;
+      if (!fl.ramp && !this._aboard && !this._inLift) { this._sx = px; this._sz = pz; this._sy = floorY; }
     } else {
       this.vy -= GRAVITY * dt;
       this.feetY += this.vy * dt;
       if (floorY > -Infinity && this.feetY < floorY) { this.feetY = floorY; this.vy = 0; }
-      if (this.feetY < -60) {                    // fell out of the world — back to concourse
-        this.feetY = -7; this.vy = 0;
-        this.camera.position.set(-20, -7 + EYE, 0);
+      if (this.feetY < -60) {                    // fell out of the world — back to last solid ground
+        this.feetY = this._sy; this.vy = 0;
+        this.camera.position.set(this._sx, this._sy + EYE, this._sz);
       }
     }
     this.camera.position.y = this.feetY + EYE;
