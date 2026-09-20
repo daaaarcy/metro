@@ -503,7 +503,7 @@ export class CameraRig {
       // the high end at the mouth, step onto a ramp looming just overhead.
       const fm = this.floorAt(cx, cz, this.feetY + 0.9);
       const r = fm.ramp;
-      if (r && r.carry && fm.y - this.feetY > 0.05 && fm.y - this.feetY <= 0.9) {
+      if (r && r.carry && r.run.going === 'up' && fm.y - this.feetY > 0.05 && fm.y - this.feetY <= 0.9) {
         const rn = r.run;
         const t = ((cx - rn.x1) * rn.dx + (cz - rn.z1) * rn.dz) / rn.len;
         const lowT = rn.y1 < rn.y2 ? 0 : 1;
