@@ -39,9 +39,10 @@ export const SWH = {
     { id: 'A', x: 60,  side: 1,  zh: '太安街・愛秩序灣',   en: 'Tai On St · Aldrich Bay' },
     { id: 'B', x: -60, side: -1, zh: '筲箕灣道・海灣華庭', en: 'Shau Kei Wan Rd' },
     { id: 'C', x: 60,  side: -1, zh: '海晏街・阿公岩道',   en: 'Hoi An St · A Kung Ngam Rd' },
+    { id: 'D', x: -60, side: 1,  zh: '嘉亨灣巴士總站',      en: 'Grand Promenade Bus Terminus' },
   ],
   exitZ: 9.5,
-  exitLetters: ['A', 'B', 'C'],
+  exitLetters: ['A', 'B', 'C', 'D'],
 
   lifts: [
     { frame: 'swhConc', x: 0,   z: 0,   levels: ['L1', 'L2'] },        // paid lift
