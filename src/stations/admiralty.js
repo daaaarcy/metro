@@ -90,10 +90,11 @@ export const ADM = {
     { id: 'E1', x: 42,  side: -1, zh: '樂禮街',           en: 'Rodney Street' },
     { id: 'E2', x: 55,  side: -1, zh: '中信大廈',          en: 'CITIC Tower' },
     { id: 'F',  x: 66,  side: 1,  zh: '太古廣場',          en: 'Pacific Place' },
+    { id: 'J1', x: -70, side: 1,  zh: '中銀大廈',          en: 'Bank of China Tower' },
   ],
   // shaft spans |z| exitZ±6.3 — landings must clear the shop row (±17.6)
   exitZ: 8.5,
-  exitLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+  exitLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J'],
 
   lifts: [
     { frame: 'main', x: 12, z: -2.5, levels: ['L1', 'L2', 'L3'] },
