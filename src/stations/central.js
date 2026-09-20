@@ -77,10 +77,11 @@ export const CEN = {
     { id: 'J1', x: 72,  side: 1,  zh: '終審法院',                en: 'Court of Final Appeal' },
     { id: 'J3', x: 82,  side: -1, zh: '友邦金融中心・美國銀行中心', en: 'AIA Central · Bank of America Tower' },
     { id: 'J2', x: 88,  side: 1,  zh: '遮打花園・中銀大廈・山頂纜車', en: 'Chater Garden · BOC Tower · Peak Tram' },
+    { id: 'M',  x: 38,  side: 1,  zh: '中銀大廈・德忌笠街',  en: "Bank of China Tower · D'Aguilar St" },
   ],
   // shaft spans |z| exitZ±6.3 — landings must clear the shop row (±19.6)
   exitZ: 10.5,
-  exitLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L'],
+  exitLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M'],
 
   lifts: [
     { frame: 'cenConc', x: -50, z: 2, levels: ['L1', 'L2', 'L3', 'L4'] },
