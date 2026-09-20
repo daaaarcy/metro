@@ -362,7 +362,6 @@ const SITES = [
       [-1132, -84, 28, 24, 66, 'glass'],    // Cheung Kong Center
       [-985, -82, 28, 20, 46, 'office'],    // AIA Central
       [-928, -72, 24, 18, 40, 'office'],    // CCB side
-      [-962, -76, 30, 12, 12, 'heritage'],  // City Hall
       [-1050, 82, 30, 20, 42, 'office'],    // Landmark-ish
       [-1015, 84, 26, 20, 38, 'hotel'],     // Prince's/Mandarin
       [-985, 82, 24, 18, 34, 'hotel'],
@@ -382,6 +381,7 @@ const SITES = [
       [-1325, -92, 28, 24, 52, 'office'],   // Exchange Square I
       [-1295, -94, 28, 24, 52, 'office'],   // Exchange Square II
       [-1305, -108, 26, 22, 48, 'office'],  // Exchange Square III
+      [-1240, -95, 30, 12, 12, 'heritage'], // City Hall
       [-1420, 94, 28, 24, 50, 'office'],    // Jardine House (south)
       [-1390, 92, 26, 20, 32, 'office'],    // Chater House
       [-1520, 92, 30, 20, 40, 'office'],    // Landmark-ish west
@@ -2087,7 +2087,7 @@ const NAMES = [
   ['CEN', -1070, 68, -82, '滙豐總行 HSBC'],
   ['CEN', -1040, 112, 92, '中銀大廈 Bank of China'],
   ['CEN', -1275, 56, -84, '怡和大廈 Jardine House'],
-  ['CEN', -962, 18, -76, '大會堂 City Hall'],
+  ['HOK', -1240, 18, -95, '大會堂 City Hall'],
   ['CEN', -932, 17, 86, '終審法院 Court of Final Appeal'],
   ['HOK', -1445, 134, -100, '國際金融中心 IFC'],
   ['HOK', -1400, 28, -104, '摩天輪 Observation Wheel'],
