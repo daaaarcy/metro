@@ -2087,6 +2087,7 @@ const NAMES = [
   ['CEN', -1070, 68, -82, '滙豐總行 HSBC'],
   ['CEN', -1040, 112, 92, '中銀大廈 Bank of China'],
   ['CEN', -1275, 56, -84, '怡和大廈 Jardine House'],
+  ['CEN', -962, 18, -76, '大會堂 City Hall'],
   ['CEN', -932, 17, 86, '終審法院 Court of Final Appeal'],
   ['HOK', -1445, 134, -100, '國際金融中心 IFC'],
   ['HOK', -1400, 28, -104, '摩天輪 Observation Wheel'],
