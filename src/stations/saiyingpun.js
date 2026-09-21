@@ -17,6 +17,7 @@ export const SYP = islIsland({
   // Exits per Wikipedia: A1 Queen's Rd W / A2 Des Voeux Rd W (north side),
   // B1 First St, B2 Second St (south corridors), B3 Ki Ling Lane and
   // C Bonham Rd (the Mid-Levels lift towers — street lifts beside them).
+  // D Water St and E1 Sutherland St fill the east half of the north fan.
   exits: [
     { id: 'A1', x: -88, side: -1, zh: '皇后大道西・東華醫院',   en: "Queen's Rd West · Tung Wah Hospital" },
     { id: 'A2', x: -60, side: -1, zh: '德輔道西・中山紀念公園', en: 'Des Voeux Rd W · Sun Yat Sen Park' },
@@ -25,6 +26,7 @@ export const SYP = islIsland({
     { id: 'B3', x: 78,  side: 1,  zh: '奇靈里・第三街',         en: 'Ki Ling Lane · Third Street' },
     { id: 'C',  x: -52, side: 1,  zh: '般咸道',                en: 'Bonham Road' },
     { id: 'D',  x: 20,  side: -1, zh: '水街・西營盤郵局・西區警署', en: 'Water St · Sai Ying Pun Post Office · Western Police Station' },
+    { id: 'E1', x: 60,  side: -1, zh: '修打蘭街',             en: 'Sutherland St' },
   ],
 
   lifts: [
