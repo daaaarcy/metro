@@ -3,7 +3,7 @@
 // Wikipedia. TML viaduct stop in the Kam Tin valley — weekend market and
 // village edge, Pat Sin Leng foothills. Livery: maroon.
 // Exits: A Kam Tin market, B Kam Sheung Rd villages, C Pat Sin hills,
-// D Au Tau Valley / Kam Sheung Market.
+// D Au Tau Valley / Kam Sheung Market, E Park YOHO / YOHO Mall.
 
 import { twlViaduct } from './template.js';
 
@@ -23,6 +23,7 @@ export const KSR = twlViaduct({
     { id: 'B', x:  20, side: -1, door: true, box: 'ksrConc', zh: '錦田鄉村・八鄉',   en: 'Kam Tin Villages' },
     { id: 'C', x:  55, side: 1,  door: true, box: 'ksrConc', zh: '大刀屻・林村',     en: 'Pat Sin Foothills' },
     { id: 'D', x: -70, side: -1, door: true, box: 'ksrConc', zh: '凹頭谷・錦上市集',  en: 'Au Tau Valley · Kam Sheung Market' },
+    { id: 'E', x: -40, side: 1,  door: true, box: 'ksrConc', zh: '峻巒・形點商場',   en: 'YOHO Park · YOHO Mall' },
   ],
 
   people: { G: 10, GC: 26, U1: 30 },
