@@ -5,7 +5,8 @@
 // A1, A2 and C1 are MTR's first lift-only exits — express lift towers up
 // the hill; here each gets a rideable street lift beside its pavilion.
 // Exits per Wikipedia: A1 Pok Fu Lam Rd / A2 HKU Main Campus, B1 Whitty
-// St / B2 Hill Rd (north side), C1 The Belcher's / C2 Belcher's St.
+// St / B2 Hill Rd (north side), C1 The Belcher's / C2 Belcher's St,
+// D The Belcher's / Lady Ho Tung Hall / West Gate (south-west).
 // Built on the islIsland() recipe.
 
 import { islIsland } from './template.js';
@@ -25,6 +26,7 @@ export const HKU = islIsland({
     { id: 'B2', x: 10,  side: -1, zh: '山道・香港商業中心',     en: 'Hill Rd · Hong Kong Plaza' },
     { id: 'C1', x: -16, side: 1,  zh: '寶翠園・百周年校園',     en: 'The Belcher’s · Centennial Campus' },
     { id: 'C2', x: -92, side: -1, zh: '卑路乍街・西寶城',       en: 'Belcher’s St · The Westwood' },
+    { id: 'D',  x: -78, side: 1,  zh: '寶翠園・何東夫人堂・西閘', en: 'The Belchers · Lady Ho Tung Hall · West Gate' },
   ],
 
   lifts: [
