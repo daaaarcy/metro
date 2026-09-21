@@ -27,6 +27,7 @@ export const SYP = islIsland({
     { id: 'C',  x: -52, side: 1,  zh: '般咸道',                en: 'Bonham Road' },
     { id: 'D',  x: 20,  side: -1, zh: '水街・西營盤郵局・西區警署', en: 'Water St · Sai Ying Pun Post Office · Western Police Station' },
     { id: 'E1', x: 60,  side: -1, zh: '修打蘭街',             en: 'Sutherland St' },
+    { id: 'E2', x: 58,  side: 1,  zh: '西邊街・東邊街',        en: 'Western St · Eastern St' },
   ],
 
   lifts: [
