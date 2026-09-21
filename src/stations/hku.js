@@ -27,6 +27,7 @@ export const HKU = islIsland({
     { id: 'C1', x: -16, side: 1,  zh: '寶翠園・百周年校園',     en: 'The Belcher’s · Centennial Campus' },
     { id: 'C2', x: -92, side: -1, zh: '卑路乍街・西寶城',       en: 'Belcher’s St · The Westwood' },
     { id: 'D',  x: -78, side: 1,  zh: '寶翠園・何東夫人堂・西閘', en: 'The Belchers · Lady Ho Tung Hall · West Gate' },
+    { id: 'E',  x: 44,  side: -1, zh: '香港大學・寶翠灣公園',     en: 'University of HK · Belchers Bay Park' },
   ],
 
   lifts: [
