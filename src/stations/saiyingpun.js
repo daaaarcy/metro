@@ -24,6 +24,7 @@ export const SYP = islIsland({
     { id: 'B2', x: 14,  side: 1,  zh: '第二街・西營盤街市',     en: 'Second St · Sai Ying Pun Market' },
     { id: 'B3', x: 78,  side: 1,  zh: '奇靈里・第三街',         en: 'Ki Ling Lane · Third Street' },
     { id: 'C',  x: -52, side: 1,  zh: '般咸道',                en: 'Bonham Road' },
+    { id: 'D',  x: 20,  side: -1, zh: '水街・西營盤郵局・西區警署', en: 'Water St · Sai Ying Pun Post Office · Western Police Station' },
   ],
 
   lifts: [
