@@ -4,7 +4,7 @@
 // underground island between Admiralty and the harbour dive. The real
 // station stacks two side platforms; the schematic uses the standard
 // island form. Livery: sea green.
-// Exits (per Wikipedia, condensed): A HKCEC / Convention Ave, B1 Expo
+// Exits (per Wikipedia, condensed): A Public Transport Interchange, B1 Expo
 // Drive, B2 Wan Chai Ferry Pier, C Harbour Rd / Great Eagle Centre.
 
 import { twlIsland } from './template.js';
@@ -23,7 +23,7 @@ export const EXC = twlIsland({
   ],
 
   exits: [
-    { id: 'A',  x: -50, side: -1, zh: '會議道・會展中心',   en: 'Convention Ave · HKCEC' },
+    { id: 'A',  x: -50, side: -1, zh: '公共運輸交匯處',      en: 'Public Transport Interchange' },
     { id: 'B1', x:  10, side: -1, zh: '博覽道・渡輪碼頭',   en: 'Expo Drive · Ferry Pier' },
     { id: 'B2', x:  60, side: -1, zh: '港灣道・海港中心',   en: 'Harbour Rd · Harbour Centre' },
     { id: 'C',  x: -20, side: 1,  zh: '告士打道・入境大樓', en: 'Gloucester Rd · Immigration Tower' },
