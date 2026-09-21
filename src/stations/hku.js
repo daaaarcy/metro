@@ -29,6 +29,7 @@ export const HKU = islIsland({
     { id: 'D',  x: -78, side: 1,  zh: '寶翠園・何東夫人堂・西閘', en: 'The Belchers · Lady Ho Tung Hall · West Gate' },
     { id: 'E',  x: 44,  side: -1, zh: '香港大學・寶翠灣公園',     en: 'University of HK · Belchers Bay Park' },
     { id: 'F1', x: -30, side: 1,  zh: '富林苑・蒲菲路',          en: 'Fulham Garden · Pokfield Rd' },
+    { id: 'F2', x: -80, side: -1, zh: '堅尼地城海旁東',          en: 'Kennedy Town Praya Rd East' },
   ],
 
   lifts: [
