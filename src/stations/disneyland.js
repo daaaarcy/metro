@@ -4,7 +4,8 @@
 // Victorian-park fantasy shed with one platform; condensed to the
 // side-platform + gallery terminus form. Both faces use the west
 // portal, overrun east toward the resort entrance. Livery: pink-green.
-// Exits (per Wikipedia, condensed): A Disneyland Resort / park entrance.
+// Exits (condensed): A Disneyland park entrance, B Inspiration Lake / hotels,
+// C Magic Rd, D Disneyland International Piers / Disneyland Hotel.
 
 import { atGradeSide } from './template.js';
 
@@ -23,6 +24,8 @@ export const DIS = atGradeSide({
   exits: [
     { id: 'A', x: -40, side: -1, zh: '迪士尼樂園・正門', en: 'Disneyland Park Entrance' },
     { id: 'B', x:  40, side: 1,  zh: '迪欣湖・酒店',     en: 'Inspiration Lake · Hotels' },
+    { id: 'C', x:  40, side: -1, zh: '神奇道',          en: 'Magic Rd' },
+    { id: 'D', x: -40, side: 1,  zh: '迪士尼國際碼頭・迪士尼酒店', en: 'Disneyland International Piers · Disneyland Hotel' },
   ],
 
   people: { U1: 34, G: 14, P: 40 },
