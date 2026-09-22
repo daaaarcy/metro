@@ -14,6 +14,7 @@ import { buildColliders } from './colliders.js';
 import { Weather } from './weather.js';
 import { mergeStation } from './merge.js';
 import { buildCity } from './builders/city.js';
+import { BusSim } from './bus/buses.js';
 import { GATES, ESC_RUNS } from './registry.js';
 
 // ---------- renderer ----------
@@ -66,6 +67,10 @@ scene.add(root);
 const city = buildCity();
 scene.add(city.group);
 labels.push(...city.labels);
+// Citybus network — fleet, kerbside stops + live ETAs on the island corridor.
+// Its shelter panels register solids, so it must exist before buildColliders.
+const busSim = new BusSim(scene);
+busSim.root.updateMatrixWorld(true);
 root.updateMatrixWorld(true);
 // one collision world shared by the player rig and the pedestrians
 const colliders = buildColliders();
@@ -222,6 +227,7 @@ function updateTitle() {
   if (stn === titleStn) return;
   titleStn = stn;
   const s = STATIONS[stn];
+  if (!s) { titleStn = ''; return; }   // non-station box uid — retry next tick
   titleZh.textContent = `${s.zh}站`;
   titleEn.textContent = `${s.en} Station`;
   document.title = `${s.zh}站 ${s.en} Station — 3D Layout`;
@@ -280,6 +286,7 @@ scene.updateMatrixWorld(true);
 scene.matrixWorldAutoUpdate = false;
 const dynRoots = [
   sun,
+  busSim.root,
   ...trainSim.services.map(s => s.train),
   ...liftSim.cars.flatMap(c => [c.mesh, ...c.doors.map(d => d.dg)]),
 ];
@@ -358,7 +365,7 @@ rig.onLiftTap = () => liftSim.interact(rig);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
 window.__lifts = liftSim;
 window.__escRuns = ESC_RUNS; window.__weather = weather; window.__renderer = renderer;
-window.__scene = scene; window.__gates = GATES;
+window.__scene = scene; window.__gates = GATES; window.__buses = busSim;
 const HOME_POS = new THREE.Vector3(105, 55, 118);
 const HOME_TARGET = new THREE.Vector3(5, -16, 12);
 // orbit "home" frames all three stations — Admiralty near field, Central and
@@ -564,6 +571,7 @@ function tick() {
   for (const ev of events) {
     passengers.onTrainEvent(ev, audio);
   }
+  busSim.update(sdt);
   // a berthed consist follows its level's visibility; a moving one always
   // shows — without this a train that left a culled level stays invisible
   // when it berths at a visible platform (applyLevelVis only runs on toggles)

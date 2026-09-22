@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { solid } from '../registry.js';
 import { LEVELS } from '../station-data.js';
+import { CONNECTORS as BUS_CONNECTORS } from '../bus/bus-data.js';
 
 // ---- facade materials: canvas window grids, lit cells glow via emissiveMap.
 // One tile = 16 bays of ~3.4 m => ~54 m of facade per repeat; windows light
@@ -2309,6 +2310,10 @@ export function buildCity() {
       put(new THREE.ConeGeometry(9, 14, 4), FACADE.glass, x, h + 7, z, Math.PI / 4);
     }
   }
+
+  // bus corridor: stitch the island E-W road bands across the gaps between
+  // sites (staircase strips + terminus aprons + the EXC detour links)
+  for (const [x0, z0, x1, z1] of BUS_CONNECTORS) road(x0, z0, x1, z1);
 
   // ---- the recognisable skyline icons
   hsbc(-1070, -82);            // HSBC HQ — stilts + roof masts
