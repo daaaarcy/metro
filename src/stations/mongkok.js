@@ -74,6 +74,7 @@ export const MOK = {
     { id: 'D3', x:  50, side: 1,  zh: '通菜街',             en: 'Tung Choi Street' },
     { id: 'E1', x:  66, side: 1,  zh: '朗豪坊・大廣場',      en: 'Grand Plaza' },
     { id: 'E2', x:  82, side: 1,  zh: '招商永隆銀行中心',    en: 'CMB Wing Lung Bank Centre' },
+    { id: 'E3', x:  74, side: 1,  zh: '奶路臣街・國榮樓',    en: 'Nelson St · Kwok Wing Building' },
   ],
   exitZ: 9.5,
   exitLetters: ['A', 'B', 'C', 'D', 'E'],
