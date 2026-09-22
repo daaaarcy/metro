@@ -5,7 +5,8 @@
 // the bay shore; condensed to TCL sides at grade with the DRL shuttle
 // faces on an island spliced at L1. Livery: grey-green.
 // Exits (per Wikipedia, condensed): A Sunny Bay promenade, B Yam O
-// waterfront, C Lantau Link bus interchange / toll plaza.
+// waterfront, C Lantau Link bus interchange / toll plaza,
+// D Sunny Bay car park / Sunny Bay Rd.
 
 import { atGradeSide } from './template.js';
 
@@ -24,6 +25,7 @@ const sun = atGradeSide({
     { id: 'A', x: -40, side: -1, zh: '欣澳海濱',       en: 'Sunny Bay Promenade' },
     { id: 'B', x:  40, side: 1,  zh: '陰澳・大蠔灣',   en: 'Yam O · Tai Ho Wan' },
     { id: 'C', x:  40, side: -1, zh: '青嶼幹線巴士轉乘站・收費廣場', en: 'Lantau Link Bus Interchange · Lantau Toll Plaza' },
+    { id: 'D', x: -40, side: 1,  zh: '欣澳停車場・欣澳道',          en: 'Sunny Bay Car Park · Sunny Bay Rd' },
   ],
 
   people: { U1: 28, G: 10, P: 30 },
