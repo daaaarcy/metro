@@ -7,7 +7,8 @@
 // Exits (per Wikipedia, condensed): A1/A2 Heung Yip Rd / industrial side,
 // B Nam Long Shan Rd / Wong Chuk Hang Rd south, C1 Nina Hotel Island
 // South / Yip Hing St (south-east, toward the Aberdeen Tunnel approach),
-// C2 Wong Chuk Hang Rd / Victory Factory Bldg / Yan's Tower (south-west).
+// C2 Wong Chuk Hang Rd / Victory Factory Bldg / Yan's Tower (south-west),
+// D THE SOUTHSIDE mall / MTR WCH Depot (south-east, depot podium side).
 
 import { twlViaduct } from './template.js';
 
@@ -28,6 +29,7 @@ export const WCH = twlViaduct({
     { id: 'B',  x:   0, side: 1,  door: true, box: 'wchConc', zh: '南朗山道・黃竹坑道',   en: 'Nam Long Shan Rd · Wong Chuk Hang Rd' },
     { id: 'C1', x:  60, side: 1,  door: true, box: 'wchConc', zh: '如心南灣海景酒店・業興街', en: 'Nina Hotel Island South · Yip Hing St' },
     { id: 'C2', x: -40, side: 1,  door: true, box: 'wchConc', zh: '黃竹坑道・勝利工廠大廈・恩平中心', en: 'Wong Chuk Hang Rd · Victory Factory Bldg · Yan\'s Tower' },
+    { id: 'D',  x:  40, side: 1,  door: true, box: 'wchConc', zh: 'THE SOUTHSIDE・港鐵黃竹坑車廠', en: 'THE SOUTHSIDE · MTR Wong Chuk Hang Depot' },
   ],
 
   kioskXs:  [-34, 8, 48],
