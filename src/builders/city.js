@@ -121,13 +121,13 @@ function cyl(x, z, r, h, kind = 'hotel') {
   m.position.set(x, h / 2, z);
   solid(m);
 }
-function road(x0, z0, x1, z1) {
+function road(x0, z0, x1, z1, lift = 0) {
   const w = x1 - x0, d = z1 - z0;
   const geo = new THREE.PlaneGeometry(w, d);
   geo.rotateX(-Math.PI / 2);
   const uv = geo.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / 12, uv.getY(i) * d / 12);
-  put(geo, ROAD_M, (x0 + x1) / 2, 0.02, (z0 + z1) / 2);
+  put(geo, ROAD_M, (x0 + x1) / 2, 0.02 + lift, (z0 + z1) / 2);
 }
 function park(x0, z0, x1, z1, nTrees = 14) {
   const w = x1 - x0, d = z1 - z0;
@@ -2312,8 +2312,9 @@ export function buildCity() {
   }
 
   // bus corridor: stitch the island E-W road bands across the gaps between
-  // sites (staircase strips + terminus aprons + the EXC detour links)
-  for (const [x0, z0, x1, z1] of BUS_CONNECTORS) road(x0, z0, x1, z1);
+  // sites (staircase strips + terminus aprons + the EXC detour links) — a
+  // 25 mm lip keeps them from z-fighting the site roads they butt into
+  for (const [x0, z0, x1, z1] of BUS_CONNECTORS) road(x0, z0, x1, z1, 0.025);
 
   // ---- the recognisable skyline icons
   hsbc(-1070, -82);            // HSBC HQ — stilts + roof masts
