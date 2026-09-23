@@ -5,7 +5,8 @@
 // sits east of the dig; Nam Long Shan Rd drops south into the industrial
 // blocks. Livery: mustard yellow.
 // Exits (per Wikipedia, condensed): A1/A2 Heung Yip Rd / industrial side,
-// B Nam Long Shan Rd / Wong Chuk Hang Rd south.
+// B Nam Long Shan Rd / Wong Chuk Hang Rd south, C1 Nina Hotel Island
+// South / Yip Hing St (south-east, toward the Aberdeen Tunnel approach).
 
 import { twlViaduct } from './template.js';
 
@@ -24,6 +25,7 @@ export const WCH = twlViaduct({
     { id: 'A1', x: -50, side: -1, door: true, box: 'wchConc', zh: '香葉道・工業區',      en: 'Heung Yip Rd · Industrial Area' },
     { id: 'A2', x:  50, side: -1, door: true, box: 'wchConc', zh: '香葉道・巴士總站',     en: 'Heung Yip Rd · Bus Terminus' },
     { id: 'B',  x:   0, side: 1,  door: true, box: 'wchConc', zh: '南朗山道・黃竹坑道',   en: 'Nam Long Shan Rd · Wong Chuk Hang Rd' },
+    { id: 'C1', x:  60, side: 1,  door: true, box: 'wchConc', zh: '如心南灣海景酒店・業興街', en: 'Nina Hotel Island South · Yip Hing St' },
   ],
 
   kioskXs:  [-34, 8, 48],
