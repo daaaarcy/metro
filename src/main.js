@@ -3,7 +3,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 import { buildStation, computeOpenings } from './station.js';
 import { LEVELS, BOXES, STATIONS, worldToBox, boxToWorld, groundBoxes, levelById } from './station-data.js';
 import { CameraRig } from './controls.js';
-import { buildUI, showInfo, showPrompt, updateTicker, updateClock } from './ui.js';
+import { buildUI, showInfo, showPrompt, showBusStop, updateTicker, updateClock } from './ui.js';
 import { EscalatorSteps } from './anim/escalators.js';
 import { TrainSim } from './anim/trains.js';
 import { Passengers } from './anim/passengers.js';
@@ -13,7 +13,8 @@ import { StationAudio } from './audio.js';
 import { buildColliders } from './colliders.js';
 import { Weather } from './weather.js';
 import { mergeStation } from './merge.js';
-import { buildCity } from './builders/city.js';
+import { buildCity, CITY_ROADS, CITY_WATER } from './builders/city.js';
+import { rectSubtract } from './builders/structure.js';
 import { BusSim } from './bus/buses.js';
 import { GATES, ESC_RUNS } from './registry.js';
 
@@ -131,6 +132,27 @@ ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.05;
 ground.receiveShadow = true;
 scene.add(ground);
+
+// the disc is visual-only — pave the collision world with flat street-floor
+// records: the whole disc minus the station digs and the water, plus every
+// paved road rect (so harbour-crossing links keep a deck over the sea).
+// floorAt() consults these only when no walkable mesh claims the point, so
+// station slabs and stairwell mouths always win.
+{
+  const digRects = groundBoxes().map(b => {
+    const pts = [[-b.len / 2, -b.wid / 2], [b.len / 2, -b.wid / 2],
+                 [b.len / 2, b.wid / 2], [-b.len / 2, b.wid / 2]]
+      .map(([x, z]) => boxToWorld(b, x, z));
+    const xs = pts.map(p => p.x), zs = pts.map(p => p.z);
+    return { x0: Math.min(...xs), x1: Math.max(...xs),
+             z0: Math.min(...zs), z1: Math.max(...zs) };
+  });
+  const world = { x0: gcx - gr, z0: gcz - gr, x1: gcx + gr, z1: gcz + gr };
+  const cuts = digRects.concat(CITY_WATER.map(([x0, z0, x1, z1]) => ({ x0, z0, x1, z1 })));
+  colliders.streetRects = rectSubtract(world, cuts)
+    .concat(CITY_ROADS.map(([x0, z0, x1, z1]) => ({ x0, z0, x1, z1 })))
+    .map(r => ({ ...r, top: 0 }));
+}
 
 // ---------- simulation ----------
 const escSteps = new EscalatorSteps();
@@ -592,6 +614,17 @@ function tick() {
     }
   }
   updateGates(sdt);
+
+  // citybus stop chip — nearest stop kerb within 10 m at street level
+  if (rig.mode === 'walk' && !rig._aboard && !liftSim.inCar && Math.abs(rig.feetY) < 2.5) {
+    let near = null, best = 100;
+    for (const z of busSim.zones) {
+      const dx = z.kerb[0] - camera.position.x, dz = z.kerb[1] - camera.position.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 < best) { best = d2; near = z; }
+    }
+    showBusStop(near);
+  } else showBusStop(null);
 
   // gate / lift / boarding prompt + ticker + clock refresh
   if (rig.mode === 'walk') {

@@ -9,6 +9,12 @@ import { solid } from '../registry.js';
 import { LEVELS } from '../station-data.js';
 import { CONNECTORS as BUS_CONNECTORS } from '../bus/bus-data.js';
 
+// street-surface records for the collision world — every paved rect is
+// walkable ground; every water rect is carved back out (you can't stroll the
+// harbour or the nullahs — road/connector bridges re-pave their crossings)
+export const CITY_ROADS = [];
+export const CITY_WATER = [];
+
 // ---- facade materials: canvas window grids, lit cells glow via emissiveMap.
 // One tile = 16 bays of ~3.4 m => ~54 m of facade per repeat; windows light
 // up per-FLOOR (with jitter) like a real office block, not per-pixel noise.
@@ -122,6 +128,7 @@ function cyl(x, z, r, h, kind = 'hotel') {
   solid(m);
 }
 function road(x0, z0, x1, z1, lift = 0) {
+  CITY_ROADS.push([x0, z0, x1, z1]);
   const w = x1 - x0, d = z1 - z0;
   const geo = new THREE.PlaneGeometry(w, d);
   geo.rotateX(-Math.PI / 2);
@@ -2301,6 +2308,7 @@ export function buildCity() {
     for (const [x0, z0, x1, z1] of s.quays || []) block((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, 0.35, QUAY_M, false);
     for (const [x0, z0, x1, z1] of s.piers || []) block((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, 1.0, QUAY_M, false);
     for (const [x0, z0, x1, z1] of s.water || []) {
+      CITY_WATER.push([x0, z0, x1, z1]);
       const w = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
       w.rotateX(-Math.PI / 2);
       put(w, WATER_M, (x0 + x1) / 2, 0.03, (z0 + z1) / 2);
@@ -2341,6 +2349,7 @@ export function buildCity() {
   const sea = new THREE.PlaneGeometry(seaW, SHORE - KSHORE);
   sea.rotateX(-Math.PI / 2);
   put(sea, WATER_M, seaCx, 0.03, (SHORE + KSHORE) / 2);
+  CITY_WATER.push([seaX0, KSHORE, seaX1, SHORE]);
   block(seaCx, SHORE + 0.6, seaW, 1.2, 1.4, QUAY_M, false);          // island seawall
   block(seaCx, SHORE + 4, seaW, 7, 0.1, QUAY_M, false);              // island promenade
   block(seaCx, KSHORE - 0.6, seaW, 1.2, 1.4, QUAY_M, false);         // Kowloon seawall

@@ -255,6 +255,24 @@ export function showPrompt(html) {
   el.classList.add('show');
 }
 
+// Citybus stop chip in the masthead — logo + bilingual name + route chips,
+// shown while the player stands at a stop's kerb
+let _busstopId = undefined;
+export function showBusStop(zone) {
+  const id = zone?.id ?? null;
+  if (id === _busstopId) return;      // same stop (or none) — skip DOM churn
+  _busstopId = id;
+  const el = document.getElementById('busstop');
+  if (!zone) { el.classList.remove('show'); return; }
+  el.querySelector('.bs-name').innerHTML =
+    `<span class="zh">${zone.zh}</span><span class="en">${zone.en}</span>`;
+  const routes = zone.routes ?? [];
+  el.querySelector('.bs-routes').innerHTML =
+    routes.slice(0, 5).map(r => `<span class="bs-route">${r}</span>`).join('') +
+    (routes.length > 5 ? `<span class="bs-route more">+${routes.length - 5}</span>` : '');
+  el.classList.add('show');
+}
+
 // Hong Kong sim clock — renders the sim-time epoch in Asia/Hong_Kong so the
 // station clock always reads HKT regardless of the browser's timezone, and
 // fast-forwards under speed multipliers

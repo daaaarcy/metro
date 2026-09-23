@@ -90,6 +90,7 @@ export class CameraRig {
     this.fgrid = col.fgrid;
     this.grid = col.grid;
     this.colliders = col;
+    this.streetRects = col.streetRects || null;
     // dynamic barriers bucketed by floor height — the player only ever meets
     // the ones on the level they're standing on (same trick as the peds)
     this._gatesByY = new Map();
@@ -169,6 +170,15 @@ export class CameraRig {
             }
           }
         }
+      }
+    }
+    // street fallback — the city ground is a visual plane, not a walkable
+    // mesh, so flat rect records pave everything outside the digs and water.
+    // Only consulted when no walkable mesh claims the spot, so station slabs,
+    // stairwell mouths and ramps always win.
+    if (best === -Infinity && this.streetRects) {
+      for (const r of this.streetRects) {
+        if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1 && r.top <= maxY) { best = r.top; break; }
       }
     }
     const fl = this._fl; fl.y = best; fl.ramp = onRamp;

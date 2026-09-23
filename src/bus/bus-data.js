@@ -467,7 +467,7 @@ const ZONE_NAMES = {
   CHW: ['海星天主堂', 'Star of the Sea Church', '高威閣', 'Koway Court'],
 };
 for (const c of CORRIDOR) {
-  const cx = (c.x0 + c.x1) / 2, [ze, zw, ee, ew] = ZONE_NAMES[c.stn];
+  const cx = (c.x0 + c.x1) / 2, [ze, ee, zw, ew] = ZONE_NAMES[c.stn];
   ZONES[c.stn + '_E'] = { halt: [cx - 20, laneS(c)], kerb: [cx - 20, kerbS(c)], nv: [0, -1], qv: [-1, 0], zh: ze, en: ee };
   ZONES[c.stn + '_W'] = { halt: [cx + 20, laneN(c)], kerb: [cx + 20, kerbN(c)], nv: [0, 1], qv: [1, 0], zh: zw, en: ew };
 }
