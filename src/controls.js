@@ -68,7 +68,7 @@ export class CameraRig {
     window.addEventListener('keydown', e => {
       if (e.target instanceof HTMLInputElement) return;   // typing in the search box
       this.keys.add(e.code);
-      if (e.code === 'KeyE' && this.mode === 'walk') {
+      if (e.code === 'KeyE' && !e.repeat && this.mode === 'walk') {
         if (this.nearGate) {
           openGate(this.nearGate, this.audio);
           this.onGateTap?.(this.nearGate);

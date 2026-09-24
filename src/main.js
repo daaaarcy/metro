@@ -149,8 +149,14 @@ scene.add(ground);
   });
   const world = { x0: gcx - gr, z0: gcz - gr, x1: gcx + gr, z1: gcz + gr };
   const cuts = digRects.concat(CITY_WATER.map(([x0, z0, x1, z1]) => ({ x0, z0, x1, z1 })));
+  // corridor kerbs often sit over a station dig — pave a kerb apron per stop
+  // (and each terminus apron) or the player drops into the pit mid-boarding.
+  const stopPaves = busSim.zones.map(z => z.area
+    ? { x0: z.area[0] - 4, z0: z.area[1] - 4, x1: z.area[2] + 4, z1: z.area[3] + 4 }
+    : { x0: z.kerb[0] - 10, z0: z.kerb[1] - 10, x1: z.kerb[0] + 10, z1: z.kerb[1] + 10 });
   colliders.streetRects = rectSubtract(world, cuts)
     .concat(CITY_ROADS.map(([x0, z0, x1, z1]) => ({ x0, z0, x1, z1 })))
+    .concat(stopPaves)
     .map(r => ({ ...r, top: 0 }));
 }
 

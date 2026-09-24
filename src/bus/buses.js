@@ -379,6 +379,7 @@ export class BusSim {
       p.at(b.s, out);
       b.g.position.set(out.x, 0.02, out.z);
       b.g.rotation.y = Math.atan2(-out.dz, out.dx);
+      b.dx = out.dx; b.dz = out.dz;   // heading, for the boarding proximity check
       // doors open for the dwell — the leaf pair slides apart along the body
       b.open = THREE.MathUtils.clamp(b.open + (b.state === 'dwell' ? dt : -dt) / 0.5, 0, 1);
       b.doorL.position.x = -b.open * 0.42;
@@ -442,11 +443,17 @@ export class BusSim {
         b.g.updateMatrixWorld();
         rig.camera.position.copy(b.g.localToWorld(this._seat.set(1.8, 2.24, -0.82)));
         rig.feetY = 1.12; rig._vx = rig._vz = 0; rig.vy = 0;
-      } else if (rig.mode === 'walk' && !rig._aboard && !rig._inLift && Math.abs(rig.feetY) < 2) {
+      } else if (rig.mode === 'walk' && !rig._aboard && !rig._inLift && !rig._fly && Math.abs(rig.feetY) < 2) {
         const p = rig.camera.position;
         for (const b of this.buses) {
-          if (b.state !== 'dwell' || !b.stop) continue;
-          if (Math.hypot(b.stop.door.x - p.x, b.stop.door.z - p.z) < 3.2) { this.near = b; break; }
+          // doors open + barely moving — dwell, plus the short pull-away
+          // window while the leaves are still closing. Alongside the bus on
+          // the door side boards; the offside and open road do not.
+          if (b.open < 0.05 || b.v > 2) continue;
+          const rx = p.x - b.g.position.x, rz = p.z - b.g.position.z;
+          const along = rx * b.dx + rz * b.dz;          // metres forward of centre
+          const side = rx * -b.dz + rz * b.dx;          // +Z offside, −Z kerbside
+          if (along > -4.8 && along < 5.8 && side < -0.9 && side > -4.4) { this.near = b; break; }
         }
       }
       rig.nearBus = this.near;
