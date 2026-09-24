@@ -191,6 +191,24 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
       look: new THREE.Vector3(kx + nx * 0.5, 1.35, kz + nz * 0.5),
     };
   };
+  // numeric routes first (2, 5B, 5X, … 973), lettered prefixes last (A10, N8X);
+  // ★-favourites pin to the top and persist
+  const cmpId = (a, b) => {
+    const p = id => { const m = /^(\D*)(\d+)(.*)$/.exec(id); return [m[1] ? 1 : 0, m[1], +m[2], m[3]]; };
+    const [ag, ap, an, as] = p(a), [bg, bp, bn, bs] = p(b);
+    return ag - bg || ap.localeCompare(bp) || an - bn || as.localeCompare(bs);
+  };
+  const FAV_KEY = 'adm-bus-fav';
+  let savedFav = null;
+  try { savedFav = JSON.parse(localStorage.getItem(FAV_KEY) || 'null'); } catch { /* bad JSON */ }
+  const busFavs = new Set(savedFav ?? []);
+  const saveFavs = () => {
+    try { localStorage.setItem(FAV_KEY, JSON.stringify([...busFavs])); } catch { /* private mode */ }
+  };
+  const resort = () => [...busList.children]
+    .sort((a, b) => (busFavs.has(b.dataset.rid) ? 1 : 0) - (busFavs.has(a.dataset.rid) ? 1 : 0)
+      || cmpId(a.dataset.rid, b.dataset.rid))
+    .forEach(g => busList.appendChild(g));
   for (const r of resolveRoutes()) {
     const grp = document.createElement('div');
     grp.className = 'lvl-group';
@@ -198,7 +216,13 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     grp.dataset.hay = `${r.id} ${r.destA.join(' ')} ${r.destB.join(' ')}`.toLowerCase();
     const head = document.createElement('div');
     head.className = 'lvl-stn';
-    head.innerHTML = `<span class="lvl-chev">▾</span><span class="bus-chip">${r.id}</span><span class="zh">${r.destA[0]} ↔ ${r.destB[0]}</span> <span class="en">${r.destA[1]} ↔ ${r.destB[1]}</span>`;
+    head.innerHTML = `<span class="lvl-chev">▾</span><span class="bus-chip">${r.id}</span><span class="zh">${r.destA[0]} ↔ ${r.destB[0]}</span> <span class="en">${r.destA[1]} ↔ ${r.destB[1]}</span><span class="bus-fav${busFavs.has(r.id) ? ' on' : ''}">★</span>`;
+    head.querySelector('.bus-fav').addEventListener('click', e => {
+      e.stopPropagation();   // don't fold the group
+      busFavs.has(r.id) ? busFavs.delete(r.id) : busFavs.add(r.id);
+      e.currentTarget.classList.toggle('on', busFavs.has(r.id));
+      saveFavs(); resort();
+    });
     const rowsEl = document.createElement('div');
     rowsEl.className = 'lvl-rows';
     grp.append(head, rowsEl);
@@ -218,6 +242,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
       row.querySelector('.go').addEventListener('click', () => onGoto(s.zone, busVp(z)));
     }
   }
+  resort();
 
   // metro/bus toggle — one search box filters whichever list is showing
   const navBtns = document.querySelectorAll('#nav-mode button');

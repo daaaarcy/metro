@@ -82,6 +82,9 @@ img.mtr-badge {
   background: #c8102e; color: #fff; font-weight: 800; font-size: 9px;
   border-radius: 3px; padding: 1.5px 5px; margin-right: 1px;
 }
+.bus-fav { margin-left: auto; font-size: 11px; color: #3a4450; padding: 0 2px; }
+.bus-fav:hover { color: #8a94a0; }
+.bus-fav.on { color: #ffc82e; }
 .lvl-id.bus-dir { opacity: 0.45; font-size: 9px; width: 12px; }
 
 .btn-row { display: flex; flex-wrap: wrap; gap: 4px; }
