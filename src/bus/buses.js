@@ -95,8 +95,19 @@ function destTex(routeId, zh) {
   ctx.fillText(zh, 78, 26);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
+// rear plate shows the fleet number alone, like the real bus
+function numTex(routeId) {
+  const c = document.createElement('canvas'); c.width = 96; c.height = 48;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, 96, 48);
+  ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 30px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(routeId, 48, 26);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
 
 // forward = +X, doors on local -Z (left side in HK traffic)
+const DOORS_X = [3.1, 1.0];                        // front + rear doorway centres
 function busMesh() {
   const parts = [
     part(new THREE.BoxGeometry(BUS_L, 2.6, BUS_W), YEL, 0, 1.75, 0),                    // body shell
@@ -106,9 +117,11 @@ function busMesh() {
     part(new THREE.BoxGeometry(0.5, 0.5, BUS_W - 0.2), DARK, -BUS_L / 2 + 0.1, 0.55, 0),
     part(new THREE.BoxGeometry(BUS_L + 0.06, 0.14, BUS_W + 0.06), BLU, 0, 0.9, 0),      // blue pinstripe
     part(new THREE.BoxGeometry(BUS_L - 0.3, 0.28, BUS_W - 0.15), YEL, 0, 3.18, 0),      // roof cap
-    part(new THREE.BoxGeometry(0.95, 1.9, 0.06), GLASS, 3.1, 1.5, -BUS_W / 2 - 0.02),   // front door glass
-    part(new THREE.BoxGeometry(0.95, 1.9, 0.06), GLASS, 1.0, 1.5, -BUS_W / 2 - 0.02),   // rear door glass
-    part(new THREE.BoxGeometry(0.9, 0.65, 0.05), DARK, BUS_L / 2 - 0.02, 2.78, 0),      // dest recess
+    // dark doorway interiors — just proud of the body face so the opening
+    // reads as a void once the leaves slide apart
+    part(new THREE.BoxGeometry(0.9, 1.9, 0.14), DARK, DOORS_X[0], 1.46, -BUS_W / 2 + 0.03),
+    part(new THREE.BoxGeometry(0.9, 1.9, 0.14), DARK, DOORS_X[1], 1.46, -BUS_W / 2 + 0.03),
+    part(new THREE.BoxGeometry(0.06, 0.66, 2.0), DARK, BUS_L / 2 + 0.01, 2.62, 0),      // front dest recess
     part(new THREE.BoxGeometry(0.12, 0.4, 0.3), SILVER, BUS_L / 2 - 0.05, 2.1, -BUS_W / 2 - 0.1), // mirrors
     part(new THREE.BoxGeometry(0.12, 0.4, 0.3), SILVER, BUS_L / 2 - 0.05, 2.1, BUS_W / 2 + 0.1),
   ];
@@ -116,7 +129,18 @@ function busMesh() {
     parts.push(part(new THREE.CylinderGeometry(0.46, 0.46, 0.3, 10), DARK, wx, 0.46, wz, Math.PI / 2));
   const mesh = new THREE.Mesh(mergeGeometries(parts, false), busMat);
   mesh.castShadow = true;
-  return mesh;
+
+  // plug doors: a leaf pair per doorway, sliding apart along the body. The
+  // four leaves merge into two meshes by slide direction — two draw calls.
+  const leaf = (x, edge) => [
+    part(new THREE.BoxGeometry(0.46, 1.9, 0.07), GLASS, x, 1.46, -BUS_W / 2 - 0.1),
+    part(new THREE.BoxGeometry(0.05, 1.9, 0.075), YEL, x + edge * 0.215, 1.46, -BUS_W / 2 - 0.1),
+  ];
+  const doorL = new THREE.Mesh(mergeGeometries([
+    ...leaf(DOORS_X[0] - 0.245, 1), ...leaf(DOORS_X[1] - 0.245, 1)], false), busMat);
+  const doorR = new THREE.Mesh(mergeGeometries([
+    ...leaf(DOORS_X[0] + 0.245, -1), ...leaf(DOORS_X[1] + 0.245, -1)], false), busMat);
+  return { mesh, doorL, doorR };
 }
 
 // ---- the sim ------------------------------------------------------------------
@@ -132,29 +156,41 @@ export class BusSim {
     this.buses = [];
     for (const r of this.routes) {
       r.path = buildPath(r.pts);
-      r.destA_tex = destTex(r.id, r.destA[0]);
-      r.destB_tex = destTex(r.id, r.destB[0]);
-      // arc-position each stop on this route's loop + a kerbside door point
+      // shared per-leg sign materials — the whole fleet swaps blinds together
+      r.destA_mat = new THREE.MeshBasicMaterial({ map: destTex(r.id, r.destA[0]) });
+      r.destB_mat = new THREE.MeshBasicMaterial({ map: destTex(r.id, r.destB[0]) });
+      r.num_mat = new THREE.MeshBasicMaterial({ map: numTex(r.id) });
+      // arc-position each stop on this route's loop + the front door's
+      // kerbside point (fwd along the lane, then out to the door side)
       const tmp = {};
       for (const st of r.stops) {
         const { s } = r.path.find(st.halt[0], st.halt[1], tmp);
         st.s = s;
         st.zoneObj = this.zoneById[st.zone];
         r.path.at(s, tmp);
-        st.door = { x: tmp.x + tmp.dx * 2.8, z: tmp.z + tmp.dz * 2.8 };
+        st.door = { x: tmp.x + tmp.dx * 2.8 + tmp.dz * 1.35, z: tmp.z + tmp.dz * 2.8 - tmp.dx * 1.35 };
       }
       r.stopsByS = [...r.stops].sort((a, b) => a.s - b.s);
       for (let i = 0; i < r.fleet; i++) {
         const g = new THREE.Group();
-        g.add(busMesh());
-        const dest = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.42),
-          new THREE.MeshBasicMaterial({ map: r.destA_tex }));
-        dest.position.set(BUS_L / 2 + 0.045, 2.78, 0);
-        dest.rotation.y = Math.PI / 2;
-        g.add(dest);
+        const bm = busMesh();
+        g.add(bm.mesh, bm.doorL, bm.doorR);
+        // destination blinds — front face + kerb side over the front door +
+        // a number plate on the back; both blinds share the leg material
+        const signF = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.5), r.destA_mat);
+        signF.position.set(BUS_L / 2 + 0.05, 2.62, 0);
+        signF.rotation.y = Math.PI / 2;
+        const signS = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.44), r.destA_mat);
+        signS.position.set(2.05, 2.5, -BUS_W / 2 - 0.05);
+        signS.rotation.y = Math.PI;
+        const signR = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.42), r.num_mat);
+        signR.position.set(-BUS_L / 2 - 0.045, 2.5, 0.7);
+        signR.rotation.y = -Math.PI / 2;
+        g.add(signF, signS, signR);
         this.root.add(g);
         this.buses.push({
-          g, dest, route: r, destFor: null,
+          g, signs: [signF, signS], doorL: bm.doorL, doorR: bm.doorR, open: 0,
+          route: r, destFor: null,
           s: (r.path.L * i / r.fleet + Math.random() * 300) % r.path.L,
           v: 5 + Math.random() * 4, state: 'drive', dwellT: 0, stop: null,
           pax: 4 + Math.floor(Math.random() * 18),
@@ -164,6 +200,9 @@ export class BusSim {
 
     this.figRoot = new THREE.Group();
     this.root.add(this.figRoot);
+    this.near = null;          // dwelling bus whose front door is in reach
+    this.aboard = null;        // bus carrying the player
+    this._seat = new THREE.Vector3(3.05, 2.24, -0.55);   // front window seat, door side
     scene.add(this.root);
   }
 
@@ -184,7 +223,24 @@ export class BusSim {
     return { mesh: m, mode: 'walk', tx: x, tz: z, speed: 1.3 + Math.random() * 0.3 };
   }
 
-  update(dt) {
+  // E at the kerb: board a dwelling bus; aboard at a dwell: step off
+  interact(rig) {
+    if (this.aboard) {
+      const b = this.aboard;
+      if (b.state === 'dwell' && b.stop) {
+        const t = b.stop.zoneObj.kerbside();
+        rig.camera.position.x = t.x;
+        rig.camera.position.z = t.z;
+        rig.feetY = 0; rig._vx = rig._vz = 0;
+        this.aboard = null;
+      }
+      return;
+    }
+    const b = this.near;
+    if (b) { this.aboard = b; b.dwellT = Math.max(b.dwellT, 3); }   // hold the doors
+  }
+
+  update(dt, rig) {
     this.times.update(dt);
     const out = this._out ??= {}, prj = this._prj ??= {};
 
@@ -246,12 +302,17 @@ export class BusSim {
       p.at(b.s, out);
       b.g.position.set(out.x, 0.02, out.z);
       b.g.rotation.y = Math.atan2(-out.dz, out.dx);
+      // doors open for the dwell — the leaf pair slides apart along the body
+      b.open = THREE.MathUtils.clamp(b.open + (b.state === 'dwell' ? dt : -dt) / 0.5, 0, 1);
+      b.doorL.position.x = -b.open * 0.42;
+      b.doorR.position.x = b.open * 0.42;
       // destination blind follows the leg of the next stop
       const { stop } = this.nextStop(b);
       const leg = stop?.leg ?? 'A';
       if (leg !== b.destFor) {
         b.destFor = leg;
-        b.dest.material.map = leg === 'A' ? b.route.destA_tex : b.route.destB_tex;
+        const m = leg === 'A' ? b.route.destA_mat : b.route.destB_mat;
+        for (const sgn of b.signs) sgn.material = m;
       }
     }
 
@@ -290,6 +351,29 @@ export class BusSim {
           }
         }
       }
+    }
+
+    // ---- player boarding ---------------------------------------------------
+    // near = a dwelling bus whose front door is in reach at street level;
+    // aboard = carrying the camera in a front seat until they alight
+    this.near = null;
+    if (rig) {
+      // teleporting or leaving walk mode drops the ride, wherever it went
+      if (this.aboard && (rig.mode !== 'walk' || rig._fly)) this.aboard = null;
+      if (this.aboard) {
+        const b = this.aboard;
+        b.g.updateMatrixWorld();
+        rig.camera.position.copy(b.g.localToWorld(this._seat.set(3.05, 2.24, -0.55)));
+        rig.feetY = 1.12; rig._vx = rig._vz = 0; rig.vy = 0;
+      } else if (rig.mode === 'walk' && !rig._aboard && !rig._inLift && Math.abs(rig.feetY) < 2) {
+        const p = rig.camera.position;
+        for (const b of this.buses) {
+          if (b.state !== 'dwell' || !b.stop) continue;
+          if (Math.hypot(b.stop.door.x - p.x, b.stop.door.z - p.z) < 3.2) { this.near = b; break; }
+        }
+      }
+      rig.nearBus = this.near;
+      rig.aboardBus = this.aboard;
     }
   }
 }

@@ -21,6 +21,8 @@ export class CameraRig {
     this.onGateTap = null;
     this.nearGate = null;
     this.nearLift = null;        // set by LiftSim — landing the player could call
+    this.nearBus = null;         // set by BusSim — dwelling bus at the kerb
+    this.aboardBus = null;       // bus currently carrying the player
     this._inLift = null;         // lift car the player is riding
     this.onLiftTap = null;
     this.trains = null;            // TrainSim — injected by main for boarding
@@ -71,6 +73,7 @@ export class CameraRig {
           openGate(this.nearGate, this.audio);
           this.onGateTap?.(this.nearGate);
         } else if (this.nearLift || this._inLift) this.onLiftTap?.();
+        else if (this.nearBus || this.aboardBus) this.onBusTap?.();
       }
     });
     window.addEventListener('keyup', e => {

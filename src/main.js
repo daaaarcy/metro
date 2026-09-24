@@ -384,6 +384,7 @@ rig.trains = trainSim;              // lets the player board dwelling trains
 rig.audio = audio;
 rig.initColliders(colliders);
 rig.onLiftTap = () => liftSim.interact(rig);
+rig.onBusTap = () => busSim.interact(rig);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
 window.__lifts = liftSim;
 window.__escRuns = ESC_RUNS; window.__weather = weather; window.__renderer = renderer;
@@ -593,7 +594,7 @@ function tick() {
   for (const ev of events) {
     passengers.onTrainEvent(ev, audio);
   }
-  busSim.update(sdt);
+  busSim.update(sdt, rig);
   // a berthed consist follows its level's visibility; a moving one always
   // shows — without this a train that left a culled level stays invisible
   // when it berths at a visible platform (applyLevelVis only runs on toggles)
@@ -616,7 +617,7 @@ function tick() {
   updateGates(sdt);
 
   // citybus stop chip — nearest stop kerb within 10 m at street level
-  if (rig.mode === 'walk' && !rig._aboard && !liftSim.inCar && Math.abs(rig.feetY) < 2.5) {
+  if (rig.mode === 'walk' && !rig._aboard && !rig.aboardBus && !liftSim.inCar && Math.abs(rig.feetY) < 2.5) {
     let near = null, best = 100;
     for (const z of busSim.zones) {
       const dx = z.kerb[0] - camera.position.x, dz = z.kerb[1] - camera.position.z;
@@ -641,6 +642,15 @@ function tick() {
       showPrompt(c.state === 'travel'
         ? `<span class="zh">往 ${lv.id} ${lv.zh}</span><span class="en">To ${lv.id} ${lv.en}</span>`
         : `<span class="zh">按 <b>E</b> 往 ${lv.id} ${lv.zh} · 再按轉層</span><span class="en"><b>E</b> — ${lv.id} ${lv.en} · press again to change floor</span>`);
+    } else if (rig.aboardBus) {
+      const b = rig.aboardBus;
+      const zn = (b.state === 'dwell' ? b.stop?.zoneObj : busSim.nextStop(b).stop?.zoneObj);
+      showPrompt(b.state === 'dwell'
+        ? `<span class="zh">${zn?.zh ?? ''} — 按 <b>E</b> 落車</span><span class="en">${zn?.en ?? ''} — <b>E</b> to alight</span>`
+        : `<span class="zh">乘搭 ${b.route.id} — 下一站 ${zn?.zh ?? ''}</span><span class="en">On ${b.route.id} — next stop ${zn?.en ?? ''}</span>`);
+    } else if (rig.nearBus) {
+      const b = rig.nearBus, dest = b.route[b.destFor === 'B' ? 'destB' : 'destA'];
+      showPrompt(`<span class="zh">按 <b>E</b> 上車 ${b.route.id} 往${dest[0]}</span><span class="en"><b>E</b> — board ${b.route.id} to ${dest[1]}</span>`);
     } else if (rig.nearLift) {
       const here = rig.nearLift.car.state === 'dwell' && rig.nearLift.car.idx === rig.nearLift.idx;
       showPrompt(here
