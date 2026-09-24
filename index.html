@@ -35,7 +35,7 @@
 
     <aside id="panel">
       <button id="panel-close" title="Hide panel (H)">×</button>
-      <section>
+      <section id="view-sec">
         <h2><span class="en">View</span><span class="zh">視角</span></h2>
         <div class="btn-row" id="mode-buttons">
           <button data-mode="orbit"><span class="en">Orbit</span> <span class="zh">環視</span></button>
@@ -43,7 +43,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="clip-sec">
         <h2><span class="en">Section</span><span class="zh">剖面</span></h2>
         <div class="btn-row" id="clip-buttons">
           <button data-clip="none" class="active"><span class="en">Full</span> <span class="zh">全貌</span></button>
@@ -55,14 +55,19 @@
         <p class="sec-hint"><span class="en">Pick a cut, then drag the slider to sweep through the station.</span><span class="zh">選擇切面，再拉動滑桿逐層檢視車站內部。</span></p>
       </section>
 
-      <section>
-        <h2><span class="en">Levels</span><span class="zh">樓層</span></h2>
+      <section id="nav-sec">
+        <h2><span class="en">Navigate</span><span class="zh">導航</span></h2>
+        <div class="btn-row" id="nav-mode">
+          <button data-nav="mtr" class="active"><span class="en">Metro</span> <span class="zh">港鐵</span></button>
+          <button data-nav="bus"><span class="en">Bus</span> <span class="zh">巴士</span></button>
+        </div>
         <input type="search" id="stn-search" autocomplete="off" spellcheck="false"
                data-ph-en="Search stations…" data-ph-zh="搜尋車站…" placeholder="Search stations…" />
         <div id="level-list"></div>
+        <div id="bus-list"></div>
       </section>
 
-      <section>
+      <section id="legend-sec">
         <h2><span class="en">Lines</span><span class="zh">路綫</span></h2>
         <div id="legend"></div>
       </section>

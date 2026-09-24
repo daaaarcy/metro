@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { LEVELS, LINES, STATIONS, BOXES, PLATFORMS, boxToWorld, SIDE_TRACK_Z, BED_HALF } from './station-data.js';
+import { resolveRoutes, zonesWithRoutes } from './bus/bus-data.js';
 import { buildMiniMap } from './mtr-map.js';
 
 // Per-level interior viewpoints (world space) — a standing-height spot near
@@ -137,6 +138,14 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   const saveOpen = () => {
     try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openSet])); } catch { /* private mode */ }
   };
+  const bindGroup = (grp, key, set, save) => {
+    const apply = () => grp.classList.toggle('closed', !set.has(key));
+    grp.querySelector('.lvl-stn').addEventListener('click', () => {
+      set.has(key) ? set.delete(key) : set.add(key);
+      save(); apply();
+    });
+    apply();
+  };
   const sorted = Object.entries(STATIONS).sort((a, b) => a[1].en.localeCompare(b[1].en));
   for (const [sid, stn] of sorted) {
     const grp = document.createElement('div');
@@ -149,12 +158,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     rowsEl.className = 'lvl-rows';
     grp.append(head, rowsEl);
     list.appendChild(grp);
-    const apply = () => grp.classList.toggle('closed', !openSet.has(sid));
-    head.addEventListener('click', () => {
-      openSet.has(sid) ? openSet.delete(sid) : openSet.add(sid);
-      saveOpen(); apply();
-    });
-    apply();
+    bindGroup(grp, sid, openSet, saveOpen);
     for (const lvl of LEVELS.filter(l => l.station === sid)) {
       const row = document.createElement('div');
       row.className = 'lvl-row';
@@ -167,10 +171,74 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     }
   }
 
-  // search — match on code, English or Chinese name; matches force-open so
-  // their level rows are visible, clearing restores the saved open state
-  search.addEventListener('input', () => {
+  // bus navigator — same group behaviour, one group per Citybus route with
+  // its stops in calling order. 'go' lands the player on the pavement beside
+  // the flag, facing the road. Groups start closed (26 routes is a wall of
+  // text); open state persists separately from the metro list.
+  const busList = document.getElementById('bus-list');
+  const zoneById = Object.fromEntries(zonesWithRoutes().map(z => [z.id, z]));
+  const BUS_OPEN_KEY = 'adm-bus-open';
+  let savedBus = null;
+  try { savedBus = JSON.parse(localStorage.getItem(BUS_OPEN_KEY) || 'null'); } catch { /* bad JSON */ }
+  const busOpen = new Set(savedBus ?? []);   // default: all closed
+  const saveBus = () => {
+    try { localStorage.setItem(BUS_OPEN_KEY, JSON.stringify([...busOpen])); } catch { /* private mode */ }
+  };
+  const busVp = z => {
+    const [kx, kz] = z.kerb, [nx, nz] = z.nv;
+    return {
+      pos: new THREE.Vector3(kx + nx * 3, 1.62, kz + nz * 3),
+      look: new THREE.Vector3(kx + nx * 0.5, 1.35, kz + nz * 0.5),
+    };
+  };
+  for (const r of resolveRoutes()) {
+    const grp = document.createElement('div');
+    grp.className = 'lvl-group';
+    grp.dataset.rid = r.id;
+    grp.dataset.hay = `${r.id} ${r.destA.join(' ')} ${r.destB.join(' ')}`.toLowerCase();
+    const head = document.createElement('div');
+    head.className = 'lvl-stn';
+    head.innerHTML = `<span class="lvl-chev">▾</span><span class="bus-chip">${r.id}</span><span class="zh">${r.destA[0]} ↔ ${r.destB[0]}</span> <span class="en">${r.destA[1]} ↔ ${r.destB[1]}</span>`;
+    const rowsEl = document.createElement('div');
+    rowsEl.className = 'lvl-rows';
+    grp.append(head, rowsEl);
+    busList.appendChild(grp);
+    bindGroup(grp, r.id, busOpen, saveBus);
+    for (const s of r.stops) {
+      const z = zoneById[s.zone];
+      if (!z) continue;
+      const row = document.createElement('div');
+      row.className = 'lvl-row';
+      row.dataset.hay = `${z.zh} ${z.en}`.toLowerCase();
+      row.innerHTML = `
+        <span class="lvl-id bus-dir">${s.leg === 'A' ? '▸' : '◂'}</span>
+        <span class="lvl-name"><span class="zh">${z.zh}</span> <span class="en">${z.en}</span></span>
+        <button class="go">go</button>`;
+      rowsEl.appendChild(row);
+      row.querySelector('.go').addEventListener('click', () => onGoto(s.zone, busVp(z)));
+    }
+  }
+
+  // metro/bus toggle — one search box filters whichever list is showing
+  const navBtns = document.querySelectorAll('#nav-mode button');
+  let navMode = 'mtr';
+  try { navMode = localStorage.getItem('adm-nav') || 'mtr'; } catch { /* private mode */ }
+  const applySearch = () => {
     const q = search.value.trim().toLowerCase();
+    if (navMode === 'bus') {
+      for (const grp of busList.children) {
+        const gMatch = !q || grp.dataset.hay.includes(q);
+        let any = gMatch;
+        for (const row of grp.querySelectorAll('.lvl-row')) {
+          const m = gMatch || row.dataset.hay.includes(q);
+          row.style.display = q && !m ? 'none' : '';
+          any ||= m;
+        }
+        grp.style.display = any ? '' : 'none';
+        grp.classList.toggle('closed', q ? !any : !busOpen.has(grp.dataset.rid));
+      }
+      return;
+    }
     for (const grp of list.children) {
       const sid = grp.dataset.sid, stn = STATIONS[sid];
       const match = !q || sid.toLowerCase().includes(q)
@@ -178,7 +246,21 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
       grp.style.display = match ? '' : 'none';
       grp.classList.toggle('closed', q ? !match : !openSet.has(sid));
     }
-  });
+  };
+  const setNav = m => {
+    navMode = m;
+    navBtns.forEach(x => x.classList.toggle('active', x.dataset.nav === m));
+    list.style.display = m === 'mtr' ? '' : 'none';
+    busList.style.display = m === 'bus' ? '' : 'none';
+    search.dataset.phEn = m === 'bus' ? 'Search routes or stops…' : 'Search stations…';
+    search.dataset.phZh = m === 'bus' ? '搜尋路綫或巴士站…' : '搜尋車站…';
+    search.placeholder = document.documentElement.dataset.lang === 'zh' ? search.dataset.phZh : search.dataset.phEn;
+    applySearch();
+    try { localStorage.setItem('adm-nav', m); } catch { /* private mode */ }
+  };
+  navBtns.forEach(b => b.addEventListener('click', () => setNav(b.dataset.nav)));
+  setNav(navMode);
+  search.addEventListener('input', applySearch);
 
   // station mini-map — expandable MTR schematic; lit (built) stations
   // navigate straight to that station's concourse. Grey stops are inert.
@@ -222,6 +304,33 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     speedBtns.forEach(x => x.classList.toggle('active', x === b));
     onSpeed(parseFloat(b.dataset.speed));
   }));
+
+  // collapsible sections — the h2 folds everything beneath it into a
+  // .sec-body wrapper; closed state persists. Sections that are reference
+  // material (section cuts, line legend) start folded.
+  const SEC_KEY = 'adm-sec-closed';
+  let savedSecs = null;
+  try { savedSecs = JSON.parse(localStorage.getItem(SEC_KEY) || 'null'); } catch { /* bad JSON */ }
+  const secClosed = new Set(savedSecs ?? ['clip-sec', 'legend-sec']);
+  const saveSecs = () => {
+    try { localStorage.setItem(SEC_KEY, JSON.stringify([...secClosed])); } catch { /* private mode */ }
+  };
+  document.querySelectorAll('#panel > section[id]').forEach(sec => {
+    const h2 = sec.querySelector('h2');
+    if (!h2) return;
+    const body = document.createElement('div');
+    body.className = 'sec-body';
+    while (h2.nextSibling) body.appendChild(h2.nextSibling);
+    sec.appendChild(body);
+    h2.classList.add('sec-head');
+    h2.insertAdjacentHTML('beforeend', '<span class="sec-chev">▾</span>');
+    const apply = () => sec.classList.toggle('closed', secClosed.has(sec.id));
+    h2.addEventListener('click', () => {
+      secClosed.has(sec.id) ? secClosed.delete(sec.id) : secClosed.add(sec.id);
+      saveSecs(); apply();
+    });
+    apply();
+  });
 
   // panel collapse — the × button, the ☰ chip, or the H key
   const panel = document.getElementById('panel');
