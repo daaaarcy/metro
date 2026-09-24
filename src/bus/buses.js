@@ -70,7 +70,8 @@ function buildPath(pts) {
 
 // ---- Citybus livery: yellow body, dark band, red skirt + blue pinstripe ------
 const YEL = 0xf6b500, GLASS = 0x101c26, RED = 0xc8102e, BLU = 0x1e5aa8,
-      DARK = 0x171c22, SILVER = 0x9aa4ac;
+      DARK = 0x171c22, SILVER = 0x9aa4ac, SEAT = 0x37477c, TRIM = 0xdde2e8,
+      FLOORC = 0x2a2f36, UNIFORM = 0x1f3a5f, SKIN = 0xd9a679, HAIR = 0x201a15;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _v = new THREE.Vector3();
 function part(geo, color, x, y, z, rx = 0, ry = 0, rz = 0) {
   const g = geo.clone();
@@ -84,6 +85,8 @@ function part(geo, color, x, y, z, rx = 0, ry = 0, rz = 0) {
   return g;
 }
 const busMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.15 });
+const glassMat = new THREE.MeshStandardMaterial({ color: 0x2a4055, transparent: true, opacity: 0.42, roughness: 0.1, metalness: 0.6, depthWrite: false });
+const cabinLightMat = new THREE.MeshBasicMaterial({ color: 0xffe9b0 });  // interior light strip — unlit so it glows at night
 
 function destTex(routeId, zh) {
   const c = document.createElement('canvas'); c.width = 192; c.height = 48;
@@ -106,29 +109,96 @@ function numTex(routeId) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
-// forward = +X, doors on local -Z (left side in HK traffic)
+// forward = +X, doors on local -Z (left side in HK traffic); driver sits
+// right (+Z) like every HK bus. The body is a hollow shell — lower wall
+// panels with real gaps at the doorways, a glass band at window height and
+// a roof — so the interior reads through the glazing and open doors.
 const DOORS_X = [3.1, 1.0];                        // front + rear doorway centres
 function busMesh() {
+  const B = THREE.BoxGeometry;
   const parts = [
-    part(new THREE.BoxGeometry(BUS_L, 2.6, BUS_W), YEL, 0, 1.75, 0),                    // body shell
-    part(new THREE.BoxGeometry(BUS_L + 0.06, 1.0, BUS_W + 0.06), GLASS, -0.1, 2.35, 0), // window band
-    part(new THREE.BoxGeometry(BUS_L + 0.06, 0.42, BUS_W + 0.05), RED, 0, 0.62, 0),     // red skirt
-    part(new THREE.BoxGeometry(0.5, 0.5, BUS_W - 0.2), DARK, BUS_L / 2 - 0.1, 0.55, 0), // bumpers
-    part(new THREE.BoxGeometry(0.5, 0.5, BUS_W - 0.2), DARK, -BUS_L / 2 + 0.1, 0.55, 0),
-    part(new THREE.BoxGeometry(BUS_L + 0.06, 0.14, BUS_W + 0.06), BLU, 0, 0.9, 0),      // blue pinstripe
-    part(new THREE.BoxGeometry(BUS_L - 0.3, 0.28, BUS_W - 0.15), YEL, 0, 3.18, 0),      // roof cap
-    // dark doorway interiors — just proud of the body face so the opening
-    // reads as a void once the leaves slide apart
-    part(new THREE.BoxGeometry(0.9, 1.9, 0.14), DARK, DOORS_X[0], 1.46, -BUS_W / 2 + 0.03),
-    part(new THREE.BoxGeometry(0.9, 1.9, 0.14), DARK, DOORS_X[1], 1.46, -BUS_W / 2 + 0.03),
-    part(new THREE.BoxGeometry(0.06, 0.66, 2.0), DARK, BUS_L / 2 + 0.01, 2.62, 0),      // front dest recess
-    part(new THREE.BoxGeometry(0.12, 0.4, 0.3), SILVER, BUS_L / 2 - 0.05, 2.1, -BUS_W / 2 - 0.1), // mirrors
-    part(new THREE.BoxGeometry(0.12, 0.4, 0.3), SILVER, BUS_L / 2 - 0.05, 2.1, BUS_W / 2 + 0.1),
+    // ---- shell: lower walls, door-side segments, ends, roof ---------------
+    part(new B(BUS_L, 1.4, 0.1), YEL, 0, 1.15, BUS_W / 2 - 0.05),          // +Z wall
+    part(new B(5.95, 1.4, 0.1), YEL, -2.475, 1.15, -BUS_W / 2 + 0.05),     // -Z rear of rear door
+    part(new B(1.2, 1.4, 0.1), YEL, 2.05, 1.15, -BUS_W / 2 + 0.05),        // -Z between doors
+    part(new B(1.85, 1.4, 0.1), YEL, 4.475, 1.15, -BUS_W / 2 + 0.05),      // -Z front of front door
+    part(new B(0.1, 1.4, BUS_W), YEL, BUS_L / 2 - 0.05, 1.15, 0),          // front wall
+    part(new B(0.1, 1.4, BUS_W), YEL, -BUS_L / 2 + 0.05, 1.15, 0),         // rear wall
+    part(new B(BUS_L, 0.28, BUS_W), YEL, 0, 2.96, 0),                      // roof
+    part(new B(BUS_L + 0.06, 0.42, BUS_W + 0.05), RED, 0, 0.62, 0),        // red skirt
+    part(new B(0.5, 0.5, BUS_W - 0.2), DARK, BUS_L / 2 - 0.1, 0.55, 0),    // bumpers
+    part(new B(0.5, 0.5, BUS_W - 0.2), DARK, -BUS_L / 2 + 0.1, 0.55, 0),
+    part(new B(BUS_L + 0.06, 0.14, BUS_W + 0.06), BLU, 0, 0.9, 0),         // blue pinstripe
+    part(new B(BUS_L - 0.3, 0.28, BUS_W - 0.15), YEL, 0, 3.18, 0),         // roof cap
+    // glazing mullions — corner posts, a windscreen centre divider and
+    // spaced pillars along each flank, so the band reads as framed glass
+    part(new B(0.1, 1.0, 0.1), YEL, BUS_L / 2 - 0.05, 2.35, 0),           // windscreen divider
+    part(new B(0.06, 0.66, 2.0), DARK, BUS_L / 2 - 0.04, 2.62, 0),         // blind recess inside the windscreen
+    part(new B(0.12, 0.4, 0.3), SILVER, BUS_L / 2 - 0.05, 2.1, -BUS_W / 2 - 0.1), // mirrors
+    part(new B(0.12, 0.4, 0.3), SILVER, BUS_L / 2 - 0.05, 2.1, BUS_W / 2 + 0.1),
+    // ---- interior ---------------------------------------------------------
+    part(new B(BUS_L - 0.2, 0.08, BUS_W - 0.2), FLOORC, 0, 1.06, 0),       // floor
+    part(new B(BUS_L - 0.3, 0.06, BUS_W - 0.3), TRIM, 0, 2.82, 0),         // ceiling
+    part(new B(BUS_L - 0.3, 0.8, 0.04), TRIM, 0, 1.48, BUS_W / 2 - 0.12),  // liners below the sills
+    part(new B(5.9, 0.8, 0.04), TRIM, -2.45, 1.48, -BUS_W / 2 + 0.12),     // -Z liners split at the door gaps
+    part(new B(1.1, 0.8, 0.04), TRIM, 2.05, 1.48, -BUS_W / 2 + 0.12),
+    part(new B(1.7, 0.8, 0.04), TRIM, 4.45, 1.48, -BUS_W / 2 + 0.12),
+    part(new B(0.04, 0.8, BUS_W - 0.3), TRIM, BUS_L / 2 - 0.14, 1.48, 0),  // front + rear liners
+    part(new B(0.04, 0.8, BUS_W - 0.3), TRIM, -BUS_L / 2 + 0.14, 1.48, 0),
+    part(new B(0.9, 0.1, 0.5), FLOORC, DOORS_X[0], 0.72, -BUS_W / 2 + 0.2), // step treads in the doorways
+    part(new B(0.9, 0.1, 0.5), FLOORC, DOORS_X[0], 0.94, -BUS_W / 2 + 0.12),
+    part(new B(0.9, 0.1, 0.5), FLOORC, DOORS_X[1], 0.72, -BUS_W / 2 + 0.2),
+    part(new B(0.9, 0.1, 0.5), FLOORC, DOORS_X[1], 0.94, -BUS_W / 2 + 0.12),
+    // cab — dash, wheel, partition, Octopus farebox by the front door
+    part(new B(0.4, 0.3, 1.15), DARK, 4.72, 1.72, 0.55),
+    part(new B(0.14, 0.1, 0.34), DARK, 4.62, 1.94, 0.62),
+    part(new B(0.34, 0.07, 0.07), DARK, 4.55, 1.72, 0.62, 0, 0, -0.5),
+    part(new B(0.06, 1.15, 0.45), DARK, 3.68, 1.72, 0.98),                 // cab partition — driver stays in view
+    part(new B(0.26, 0.52, 0.26), YEL, 3.72, 1.36, -0.52),                 // farebox
+    part(new B(0.2, 0.06, 0.2), DARK, 3.72, 1.66, -0.52, 0.35, 0, 0),
+    // the driver — seated, hands on the wheel
+    part(new B(0.46, 0.16, 0.5), DARK, 3.95, 1.32, 0.62),                  // driver seat
+    part(new B(0.14, 0.56, 0.5), DARK, 3.72, 1.62, 0.62),
+    part(new B(0.42, 0.24, 0.38), UNIFORM, 4.12, 1.34, 0.62),              // legs
+    part(new B(0.3, 0.52, 0.4), UNIFORM, 3.98, 1.78, 0.62),                // torso
+    part(new B(0.4, 0.09, 0.09), UNIFORM, 4.28, 1.9, 0.5, 0, 0, -0.35),    // arms to the wheel
+    part(new B(0.4, 0.09, 0.09), UNIFORM, 4.28, 1.9, 0.74, 0, 0, -0.35),
+    part(new B(0.22, 0.24, 0.22), SKIN, 3.95, 2.18, 0.62),                 // head
+    part(new B(0.24, 0.09, 0.24), HAIR, 3.97, 2.32, 0.62),
   ];
+  // steering wheel — torus facing the driver
+  parts.push(part(new THREE.TorusGeometry(0.19, 0.028, 6, 14), DARK, 4.42, 1.86, 0.62, 0.5, Math.PI / 2, 0));
+  // corner posts + spaced mullions framing the glass band
+  for (const x of [-BUS_L / 2 + 0.05, BUS_L / 2 - 0.05])
+    for (const z of [-BUS_W / 2 + 0.05, BUS_W / 2 - 0.05])
+      parts.push(part(new B(0.12, 1.0, 0.12), YEL, x, 2.35, z));
+  for (const x of [-4.4, -3.2, -2.0, -0.8, 0.4, 1.6, 2.8, 4.0])
+    for (const z of [-BUS_W / 2 + 0.02, BUS_W / 2 - 0.02])
+      parts.push(part(new B(0.09, 1.0, 0.09), YEL, x, 2.35, z));
+  // seats — one bench shell per side per row; -Z skips the two door gaps
+  const seat = (x, z) => [
+    part(new B(0.62, 0.13, 0.62), SEAT, x, 1.24, z),
+    part(new B(0.13, 0.62, 0.62), SEAT, x - 0.27, 1.55, z),
+  ];
+  for (const x of [-4.6, -3.8, -3.0, -2.2, -1.4, -0.6, 0.2, 1.8]) parts.push(...seat(x, -0.82));
+  for (const x of [-4.6, -3.8, -3.0, -2.2, -1.4, -0.6, 0.2, 1.0, 1.8, 2.6]) parts.push(...seat(x, 0.82));
+  // stanchion poles + overhead grab rails — Citybus yellow
+  for (const [x, z] of [[0.5, -1.05], [1.5, -1.05], [2.6, -1.05], [3.6, -1.05], [-1.0, 0.45], [-2.6, 0.45], [-4.0, 0.45], [1.2, 0.45], [2.2, 0.45]])
+    parts.push(part(new B(0.05, 1.3, 0.05), YEL, x, 1.75, z));
+  parts.push(part(new B(7.4, 0.05, 0.05), YEL, -1.4, 2.38, 0.5), part(new B(7.4, 0.05, 0.05), YEL, -1.4, 2.38, -0.5));
   for (const wx of [3.6, -3.2]) for (const wz of [-1.15, 1.15])
     parts.push(part(new THREE.CylinderGeometry(0.46, 0.46, 0.3, 10), DARK, wx, 0.46, wz, Math.PI / 2));
   const mesh = new THREE.Mesh(mergeGeometries(parts, false), busMat);
   mesh.castShadow = true;
+  // wraparound glazing — one transparent shell over the window line, so the
+  // cabin, seats and driver read through the glass
+  const glass = new THREE.Mesh(
+    mergeGeometries([
+      part(new B(BUS_L + 0.06, 0.98, 0.05), GLASS, -0.1, 2.35, BUS_W / 2 + 0.005),
+      part(new B(BUS_L + 0.06, 0.98, 0.05), GLASS, -0.1, 2.35, -BUS_W / 2 - 0.005),
+      part(new B(0.05, 0.98, BUS_W + 0.06), GLASS, BUS_L / 2 + 0.005, 2.35, 0),
+      part(new B(0.05, 0.98, BUS_W + 0.06), GLASS, -BUS_L / 2 - 0.005, 2.35, 0),
+    ], false), glassMat);
 
   // plug doors: a leaf pair per doorway, sliding apart along the body. The
   // four leaves merge into two meshes by slide direction — two draw calls.
@@ -140,7 +210,7 @@ function busMesh() {
     ...leaf(DOORS_X[0] - 0.245, 1), ...leaf(DOORS_X[1] - 0.245, 1)], false), busMat);
   const doorR = new THREE.Mesh(mergeGeometries([
     ...leaf(DOORS_X[0] + 0.245, -1), ...leaf(DOORS_X[1] + 0.245, -1)], false), busMat);
-  return { mesh, doorL, doorR };
+  return { mesh, glass, doorL, doorR };
 }
 
 // ---- the sim ------------------------------------------------------------------
@@ -174,11 +244,11 @@ export class BusSim {
       for (let i = 0; i < r.fleet; i++) {
         const g = new THREE.Group();
         const bm = busMesh();
-        g.add(bm.mesh, bm.doorL, bm.doorR);
+        g.add(bm.mesh, bm.glass, bm.doorL, bm.doorR);
         // destination blinds — front face + kerb side over the front door +
         // a number plate on the back; both blinds share the leg material
         const signF = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.5), r.destA_mat);
-        signF.position.set(BUS_L / 2 + 0.05, 2.62, 0);
+        signF.position.set(BUS_L / 2 - 0.02, 2.62, 0);   // behind the windscreen
         signF.rotation.y = Math.PI / 2;
         const signS = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.44), r.destA_mat);
         signS.position.set(2.05, 2.5, -BUS_W / 2 - 0.05);
@@ -186,7 +256,11 @@ export class BusSim {
         const signR = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.42), r.num_mat);
         signR.position.set(-BUS_L / 2 - 0.045, 2.5, 0.7);
         signR.rotation.y = -Math.PI / 2;
-        g.add(signF, signS, signR);
+        // warm cabin light strip down the ceiling
+        const glow = new THREE.Mesh(new THREE.PlaneGeometry(BUS_L - 2, 0.5), cabinLightMat);
+        glow.position.set(-0.4, 2.79, 0);
+        glow.rotation.x = Math.PI / 2;   // faces down into the cabin
+        g.add(signF, signS, signR, glow);
         this.root.add(g);
         this.buses.push({
           g, signs: [signF, signS], doorL: bm.doorL, doorR: bm.doorR, open: 0,
@@ -202,7 +276,7 @@ export class BusSim {
     this.root.add(this.figRoot);
     this.near = null;          // dwelling bus whose front door is in reach
     this.aboard = null;        // bus carrying the player
-    this._seat = new THREE.Vector3(3.05, 2.24, -0.55);   // front window seat, door side
+    this._seat = new THREE.Vector3(1.8, 2.24, -0.82);    // window seat just aft of the rear door
     scene.add(this.root);
   }
 
@@ -237,7 +311,10 @@ export class BusSim {
       return;
     }
     const b = this.near;
-    if (b) { this.aboard = b; b.dwellT = Math.max(b.dwellT, 3); }   // hold the doors
+    if (b) {
+      this.aboard = b; b.dwellT = Math.max(b.dwellT, 3);   // hold the doors
+      rig.yaw = -b.g.rotation.y - Math.PI / 2; rig.pitch = -0.06;   // face forward
+    }
   }
 
   update(dt, rig) {
@@ -363,7 +440,7 @@ export class BusSim {
       if (this.aboard) {
         const b = this.aboard;
         b.g.updateMatrixWorld();
-        rig.camera.position.copy(b.g.localToWorld(this._seat.set(3.05, 2.24, -0.55)));
+        rig.camera.position.copy(b.g.localToWorld(this._seat.set(1.8, 2.24, -0.82)));
         rig.feetY = 1.12; rig._vx = rig._vz = 0; rig.vy = 0;
       } else if (rig.mode === 'walk' && !rig._aboard && !rig._inLift && Math.abs(rig.feetY) < 2) {
         const p = rig.camera.position;
