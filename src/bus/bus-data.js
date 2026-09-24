@@ -495,9 +495,10 @@ Object.assign(ZONES, {
   DWB_N: { halt: [STN_NB, 652], kerb: [848, 652], nv: [-1, 0], qv: [0, 1],  zh: '深水灣', en: 'Deep Water Bay' },
   RPB_S: { halt: [STN_SB, 742], kerb: [872, 742], nv: [1, 0],  qv: [0, -1], zh: '淺水灣海灘', en: 'Repulse Bay Beach' },
   RPB_N: { halt: [STN_NB, 748], kerb: [848, 748], nv: [-1, 0], qv: [0, 1],  zh: '淺水灣海灘', en: 'Repulse Bay Beach' },
-  STY_T: { halt: [1060, 888],   kerb: [1060, 898], nv: [0, 1], qv: [1, 0],  zh: '赤柱村', en: 'Stanley Village' },
-  WAF_T: { halt: [-190, 722],   kerb: [-190, 712], nv: [0, -1], qv: [1, 0], zh: '華富邨', en: 'Wah Fu Estate' },
-  CYB_T: { halt: [-168, 748],   kerb: [-168, 758], nv: [0, 1],  qv: [-1, 0], zh: '數碼港', en: 'Cyberport' },
+  // area = the terminus apron rect — anywhere on it counts as "at the stop"
+  STY_T: { halt: [1060, 888],   kerb: [1060, 898], nv: [0, 1], qv: [1, 0],  zh: '赤柱村', en: 'Stanley Village', area: [844, 858, 1130, 905] },
+  WAF_T: { halt: [-190, 722],   kerb: [-190, 712], nv: [0, -1], qv: [1, 0], zh: '華富邨', en: 'Wah Fu Estate', area: [-252, 712, -150, 766] },
+  CYB_T: { halt: [-168, 748],   kerb: [-168, 758], nv: [0, 1],  qv: [-1, 0], zh: '數碼港', en: 'Cyberport', area: [-252, 712, -150, 766] },
   ABD_E: { halt: [0, ABD_EB],   kerb: [0, 738],  nv: [0, -1], qv: [-1, 0], zh: '香港仔海濱公園', en: 'Aberdeen Promenade' },
   ABD_W: { halt: [10, ABD_WB],  kerb: [10, 754], nv: [0, 1],  qv: [1, 0],  zh: '香港仔魚類批發市場', en: 'Aberdeen Wholesale Fish Market' },
 });
@@ -509,10 +510,10 @@ Object.assign(ZONES, {
   KOWW: { halt: [-1520, KLN_WB], kerb: [-1520, -923], nv: [0, 1],  qv: [-1, 0], zh: '西九文化區', en: 'West Kowloon Cultural District' },
   TST_E: { halt: [500, TST_EB], kerb: [500, -832], nv: [0, -1], qv: [1, 0],  zh: '尖東站', en: 'East Tsim Sha Tsui Station' },
   TST_W: { halt: [480, TST_WB], kerb: [480, -810], nv: [0, 1],  qv: [-1, 0], zh: '尖沙咀（麼地道）', en: 'Tsim Sha Tsui (Mody Rd)' },
-  TST_T: { halt: [622, -809],   kerb: [622, -795], nv: [0, 1],  qv: [1, 0],  zh: '尖沙咀（麼地道）', en: 'Tsim Sha Tsui (Mody Rd)' },
+  TST_T: { halt: [622, -809],   kerb: [622, -795], nv: [0, 1],  qv: [1, 0],  zh: '尖沙咀（麼地道）', en: 'Tsim Sha Tsui (Mody Rd)', area: [552, -845, 650, -790] },
   LTLE: { halt: [-2350, KLN_EB], kerb: [-2350, -939], nv: [0, -1], qv: [1, 0], zh: '青嶼幹線巴士轉乘站', en: 'Lantau Link BBI' },
   LTLW: { halt: [-2380, KLN_WB], kerb: [-2380, -923], nv: [0, 1],  qv: [-1, 0], zh: '青嶼幹線巴士轉乘站', en: 'Lantau Link BBI' },
-  AIR_T: { halt: [-2800, AIR_SWB], kerb: [-2800, -1544], nv: [0, 1], qv: [-1, 0], zh: '機場（地面運輸中心）', en: 'Airport (GTC)' },
+  AIR_T: { halt: [-2800, AIR_SWB], kerb: [-2800, -1544], nv: [0, 1], qv: [-1, 0], zh: '機場（地面運輸中心）', en: 'Airport (GTC)', area: [-2940, -1565, -2660, -1440] },
 });
 {
   // east-Kowloon chain kerbs: WB stops on the s roads, EB on the n roads

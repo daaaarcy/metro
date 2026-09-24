@@ -233,17 +233,33 @@ function levelBoxAt(p) {
 // In the link corridor or in free space, the nearest station centre wins.
 const titleZh = document.querySelector('#masthead h1 .zh');
 const titleEn = document.querySelector('#masthead h1 .en');
-const STN_CX = Object.fromEntries(Object.values(STATIONS)
-  .map(s => [s.id, BOXES[Object.keys(s.boxes)[0]].cx]));
+const STN_C = Object.fromEntries(Object.values(STATIONS)
+  .map(s => [s.id, BOXES[Object.keys(s.boxes)[0]]]));
 let titleStn = '';
+let nearStop = null;   // set each tick by the bus-stop chip block below
 function updateTitle() {
+  // standing at a bus stop: the masthead names the stop, not the nearest
+  // station — the station fallback is hopeless off-network (Stanley → ST)
+  if (nearStop) {
+    const key = 'bus:' + nearStop.id;
+    if (titleStn !== key) {
+      titleStn = key;
+      const term = nearStop.id.endsWith('_T');
+      const zh = `${nearStop.zh}巴士${term ? '總' : ''}站`, en = `${nearStop.en} ${term ? 'Bus Terminus' : 'Bus Stop'}`;
+      titleZh.textContent = zh;
+      titleEn.textContent = en;
+      document.title = `${zh} ${en} — 3D Layout`;
+    }
+    return;
+  }
   const pt = rig.mode === 'walk' ? camera.position : rig.orbit.target;
   const uid = levelBoxAt(pt);
   let stn = uid ? uid.split(':')[0] : null;
   if (!stn) {
     let bd = Infinity;
-    for (const [id, cx] of Object.entries(STN_CX)) {
-      const d = Math.abs(pt.x - cx); if (d < bd) { bd = d; stn = id; }
+    for (const [id, b] of Object.entries(STN_C)) {
+      const dx = pt.x - b.cx, dz = pt.z - b.cz, d = dx * dx + dz * dz;
+      if (d < bd) { bd = d; stn = id; }
     }
   }
   if (stn === titleStn) return;
@@ -616,16 +632,23 @@ function tick() {
   }
   updateGates(sdt);
 
-  // citybus stop chip — nearest stop kerb within 10 m at street level
+  // citybus stop chip — nearest stop kerb within 16 m at street level, or
+  // anywhere inside a terminus zone's apron rect (its `area`). Apron
+  // membership outranks kerb distance but still resolves nearest-kerb when
+  // two termini share an apron (Wah Fu + Cyberport).
   if (rig.mode === 'walk' && !rig._aboard && !rig.aboardBus && !liftSim.inCar && Math.abs(rig.feetY) < 2.5) {
-    let near = null, best = 100;
+    let near = null, best = Infinity;
+    const px = camera.position.x, pz = camera.position.z;
     for (const z of busSim.zones) {
-      const dx = z.kerb[0] - camera.position.x, dz = z.kerb[1] - camera.position.z;
-      const d2 = dx * dx + dz * dz;
-      if (d2 < best) { best = d2; near = z; }
+      const dx = z.kerb[0] - px, dz = z.kerb[1] - pz, d2 = dx * dx + dz * dz;
+      const inside = z.area && px >= z.area[0] && px <= z.area[2] && pz >= z.area[1] && pz <= z.area[3];
+      if (!inside && d2 > 256) continue;
+      const score = inside ? d2 * 1e-4 : d2;
+      if (score < best) { best = score; near = z; }
     }
-    showBusStop(near);
-  } else showBusStop(null);
+    nearStop = near;
+  } else nearStop = null;
+  showBusStop(nearStop);
 
   // gate / lift / boarding prompt + ticker + clock refresh
   if (rig.mode === 'walk') {
