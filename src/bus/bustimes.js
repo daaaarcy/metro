@@ -13,11 +13,12 @@ const HEADWAYS = {};         // route -> ms headway for the synthetic fallback
 for (const r of ROUTES) HEADWAYS[r.id] = (r.headway || 15) * 60 * 1000;
 
 export class BusTimes {
-  // zones: resolved furniture zones — each has stopIds: [{route, stopId}]
+  // zones: resolved furniture zones — each has stopIds: [{route, stopId}].
+  // Lite generated stops carry no ETA board — they're left out of the watch list.
   constructor(zones) {
     this.zones = zones;
     this.pairs = [];
-    for (const z of zones) for (const s of z.stopIds) this.pairs.push(s);
+    for (const z of zones) { if (z.lite) continue; for (const s of z.stopIds) this.pairs.push(s); }
     this.byKey = {};         // 'route|stopId' -> [{t, live}]
     this.live = false;
     this.cursor = 0;

@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { solid } from '../registry.js';
 import { LEVELS } from '../station-data.js';
-import { CONNECTORS as BUS_CONNECTORS } from '../bus/bus-data.js';
+import { CONNECTORS as BUS_CONNECTORS, GEN_SEGS } from '../bus/bus-data.js';
 
 // street-surface records for the collision world — every paved rect is
 // walkable ground; every water rect is carved back out (you can't stroll the
@@ -2323,6 +2323,28 @@ export function buildCity() {
   // sites (staircase strips + terminus aprons + the EXC detour links) — a
   // 25 mm lip keeps them from z-fighting the site roads they butt into
   for (const [x0, z0, x1, z1] of BUS_CONNECTORS) road(x0, z0, x1, z1, 0.025);
+
+  // generated Citybus network: pave a tiled strip under every route segment
+  // the hand-built network doesn't already cover. 8 m grid cells decide
+  // coverage; 13 m tiles overlap their neighbours, so four staggered lifts
+  // keep any overlap from z-fighting.
+  {
+    const cov = new Set();
+    const key = (x, z) => Math.round(x / 8) + ',' + Math.round(z / 8);
+    for (const [x0, z0, x1, z1] of CITY_ROADS)
+      for (let x = x0; x <= x1; x += 7) for (let z = z0; z <= z1; z += 7) cov.add(key(x, z));
+    let li = 0;
+    for (const [a, b] of GEN_SEGS) {
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(len / 8));
+      for (let k = 0; k <= n; k++) {
+        const x = a[0] + (b[0] - a[0]) * k / n, z = a[1] + (b[1] - a[1]) * k / n;
+        const kk = key(x, z);
+        if (cov.has(kk)) continue;
+        cov.add(kk);
+        road(x - 6.5, z - 6.5, x + 6.5, z + 6.5, 0.03 + (li++ % 4) * 0.006);
+      }
+    }
+  }
 
   // ---- the recognisable skyline icons
   hsbc(-1070, -82);            // HSBC HQ — stilts + roof masts

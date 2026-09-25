@@ -94,6 +94,19 @@ export class CameraRig {
     this.grid = col.grid;
     this.colliders = col;
     this.streetRects = col.streetRects || null;
+    // thousands of generated road tiles — bucket them or the fallback scan
+    // walks every rect on each grid miss
+    if (this.streetRects) {
+      this._srGrid = new Map();
+      this.streetRects.forEach((r, i) => {
+        for (let cx = Math.floor(r.x0 / 64); cx <= Math.floor(r.x1 / 64); cx++)
+          for (let cz = Math.floor(r.z0 / 64); cz <= Math.floor(r.z1 / 64); cz++) {
+            const k = cx * 4096 + cz;
+            let a = this._srGrid.get(k); if (!a) this._srGrid.set(k, a = []);
+            a.push(r);
+          }
+      });
+    }
     // dynamic barriers bucketed by floor height — the player only ever meets
     // the ones on the level they're standing on (same trick as the peds)
     this._gatesByY = new Map();
@@ -180,7 +193,8 @@ export class CameraRig {
     // Only consulted when no walkable mesh claims the spot, so station slabs,
     // stairwell mouths and ramps always win.
     if (best === -Infinity && this.streetRects) {
-      for (const r of this.streetRects) {
+      const cell = this._srGrid?.get(Math.floor(x / 64) * 4096 + Math.floor(z / 64));
+      if (cell) for (const r of cell) {
         if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1 && r.top <= maxY) { best = r.top; break; }
       }
     }

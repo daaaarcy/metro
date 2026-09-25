@@ -213,7 +213,11 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     const grp = document.createElement('div');
     grp.className = 'lvl-group';
     grp.dataset.rid = r.id;
-    grp.dataset.hay = `${r.id} ${r.destA.join(' ')} ${r.destB.join(' ')}`.toLowerCase();
+    // ~400 routes × ~40 stops — rows build lazily on first expand/search-hit,
+    // but stop names still go in the group haystack so search finds them
+    const hay = [`${r.id} ${r.destA.join(' ')} ${r.destB.join(' ')}`];
+    for (const s of r.stops) { const z = zoneById[s.zone]; if (z) hay.push(z.zh, z.en); }
+    grp.dataset.hay = hay.join(' ').toLowerCase();
     const head = document.createElement('div');
     head.className = 'lvl-stn';
     head.innerHTML = `<span class="lvl-chev">▾</span><span class="bus-chip">${r.id}</span><span class="zh">${r.destA[0]} ↔ ${r.destB[0]}</span> <span class="en">${r.destA[1]} ↔ ${r.destB[1]}</span><span class="bus-fav${busFavs.has(r.id) ? ' on' : ''}">★</span>`;
@@ -227,20 +231,26 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     rowsEl.className = 'lvl-rows';
     grp.append(head, rowsEl);
     busList.appendChild(grp);
+    grp._build = () => {
+      if (grp._built) return;
+      grp._built = 1;
+      for (const s of r.stops) {
+        const z = zoneById[s.zone];
+        if (!z) continue;
+        const row = document.createElement('div');
+        row.className = 'lvl-row';
+        row.dataset.hay = `${z.zh} ${z.en}`.toLowerCase();
+        row.innerHTML = `
+          <span class="lvl-id bus-dir">${s.leg === 'A' ? '▸' : '◂'}</span>
+          <span class="lvl-name"><span class="zh">${z.zh}</span> <span class="en">${z.en}</span></span>
+          <button class="go">go</button>`;
+        rowsEl.appendChild(row);
+        row.querySelector('.go').addEventListener('click', () => onGoto(s.zone, busVp(z)));
+      }
+    };
+    head.addEventListener('click', grp._build);   // populate before the fold toggles
     bindGroup(grp, r.id, busOpen, saveBus);
-    for (const s of r.stops) {
-      const z = zoneById[s.zone];
-      if (!z) continue;
-      const row = document.createElement('div');
-      row.className = 'lvl-row';
-      row.dataset.hay = `${z.zh} ${z.en}`.toLowerCase();
-      row.innerHTML = `
-        <span class="lvl-id bus-dir">${s.leg === 'A' ? '▸' : '◂'}</span>
-        <span class="lvl-name"><span class="zh">${z.zh}</span> <span class="en">${z.en}</span></span>
-        <button class="go">go</button>`;
-      rowsEl.appendChild(row);
-      row.querySelector('.go').addEventListener('click', () => onGoto(s.zone, busVp(z)));
-    }
+    if (busOpen.has(r.id)) grp._build();          // restoring an open group
   }
   resort();
 
@@ -253,6 +263,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
     if (navMode === 'bus') {
       for (const grp of busList.children) {
         const gMatch = !q || grp.dataset.hay.includes(q);
+        if (gMatch && q) grp._build?.();
         let any = gMatch;
         for (const row of grp.querySelectorAll('.lvl-row')) {
           const m = gMatch || row.dataset.hay.includes(q);

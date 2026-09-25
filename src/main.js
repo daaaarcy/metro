@@ -14,6 +14,7 @@ import { buildColliders } from './colliders.js';
 import { Weather } from './weather.js';
 import { mergeStation } from './merge.js';
 import { buildCity, CITY_ROADS, CITY_WATER } from './builders/city.js';
+import { GEN_BOUNDS } from './bus/bus-data.js';
 import { rectSubtract } from './builders/structure.js';
 import { BusSim } from './bus/buses.js';
 import { GATES, ESC_RUNS } from './registry.js';
@@ -112,8 +113,8 @@ const holes = groundBoxes().map(b => {
   return [Math.min(...xs) - pad, Math.max(...xs) + pad,
           Math.min(...zs) - pad, Math.max(...zs) + pad];
 });
-const gx0 = Math.min(...holes.map(h => h[0])), gx1 = Math.max(...holes.map(h => h[1]));
-const gz0 = Math.min(...holes.map(h => h[2])), gz1 = Math.max(...holes.map(h => h[3]));
+const gx0 = Math.min(...holes.map(h => h[0]), GEN_BOUNDS[0]), gx1 = Math.max(...holes.map(h => h[1]), GEN_BOUNDS[2]);
+const gz0 = Math.min(...holes.map(h => h[2]), GEN_BOUNDS[1]), gz1 = Math.max(...holes.map(h => h[3]), GEN_BOUNDS[3]);
 const gcx = (gx0 + gx1) / 2, gcz = (gz0 + gz1) / 2;
 const gr = Math.hypot(Math.max(gx1 - gcx, gcx - gx0), Math.max(gz1 - gcz, gcz - gz0)) + 500;
 const groundShape = new THREE.Shape();

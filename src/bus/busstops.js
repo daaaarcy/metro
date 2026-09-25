@@ -4,6 +4,7 @@
 // merging every route's feed (redrawn on each BusTimes refresh). nv points from
 // the kerb toward the furniture side; qv is the queue direction along the kerb.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { makeSign } from '../builders/signage.js';
 import { solid } from '../registry.js';
 import { zonesWithRoutes } from './bus-data.js';
@@ -57,9 +58,41 @@ function etaBoard() {
   return { tex, draw };
 }
 
+// lite generated stops share one instanced flag: pole + blank plate
+function flagGeo() {
+  const pole = new THREE.CylinderGeometry(0.05, 0.06, 2.6, 6);
+  pole.translate(0, 1.3, 0);
+  const plate = new THREE.BoxGeometry(0.7, 0.42, 0.05);
+  plate.translate(0, 2.35, 0);
+  return mergeGeometries([pole, plate]);
+}
+
 export function buildBusStops(times) {
   const root = new THREE.Group();
-  const stops = zonesWithRoutes().map(z => {
+  const zones = zonesWithRoutes();
+  // lite stops: instanced flag at each kerb, minimal crowd anchors
+  const lite = zones.filter(z => z.lite);
+  if (lite.length) {
+    const flags = new THREE.InstancedMesh(flagGeo(), POLE_M, lite.length);
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3();
+    lite.forEach((z, i) => {
+      p.set(z.kerb[0] + z.nv[0] * 1.1, 0, z.kerb[1] + z.nv[1] * 1.1);
+      e.set(0, Math.atan2(z.nv[0], z.nv[1]), 0);
+      flags.setMatrixAt(i, m.compose(p, q.setFromEuler(e), s));
+    });
+    root.add(flags);
+  }
+  const liteStops = lite.map(z => ({
+    ...z, fx: z.kerb[0], fz: z.kerb[1],
+    queue: [],
+    entry: { x: z.kerb[0] + z.nv[0] * 5, z: z.kerb[1] + z.nv[1] * 5 },
+    kerbside: () => ({
+      x: z.kerb[0] + z.qv[0] * (Math.random() - 0.5) * 10 + z.nv[0] * (1.8 + Math.random() * 2),
+      z: z.kerb[1] + z.qv[1] * (Math.random() - 0.5) * 10 + z.nv[1] * (1.8 + Math.random() * 2),
+    }),
+    figures: [], spawnT: Infinity, boardT: 0, etaDraw: () => {},
+  }));
+  const stops = zones.filter(z => !z.lite).map(z => {
     const [hx, hz] = z.halt, [kx, kz] = z.kerb, [nx, nz] = z.nv, [qx, qz] = z.qv;
     // furniture line just off the kerb; u along kerb (qv), v toward furniture (nv)
     const fx = kx + nx * 1.2, fz = kz + nz * 1.2;
@@ -131,5 +164,5 @@ export function buildBusStops(times) {
   });
 
   times.onchange = () => { for (const s of stops) s.etaDraw(); };
-  return { root, stops };
+  return { root, stops: [...stops, ...liteStops] };
 }

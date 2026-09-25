@@ -11,6 +11,9 @@
 //     Tunnel; a bridge over the Aberdeen Channel (x 375..435) ties in the
 //     Lei Tung estate drives and South Horizons.
 
+import { API_STOPS, API_ROUTES } from './generated.js';
+import { makeWarp, inHK } from './geo.js';
+
 const LANE_IN = 2.5;
 const ROAD_H = 16;
 
@@ -793,6 +796,77 @@ export function resolveRoutes() {
     stops: Object.entries(r.stops).flatMap(([leg, list]) =>
       list.map(([zone, stopId]) => ({ zone, stopId, leg, ...ZONES[zone] }))),
   }));
+}
+
+// ---- generated network -----------------------------------------------------
+// Every remaining CTB route straight from the data.gov.hk API: the path runs
+// through the route's real stop sequence, each stop's lat/long warped into the
+// schematic world by the hand-placed kerbs above (see geo.js). Stop zones are
+// lite records — a flag pole, no shelter/ETA board. GEN_SEGS feeds the city
+// builder, which tiles a road strip under every path segment it doesn't
+// already cover.
+export const GEN_SEGS = [];          // [[ax,az,bx,bz], ...] paved by city.js
+export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
+{
+  // anchors pin real stop coordinates to the hand-placed kerbs
+  const anchors = [];
+  for (const r of ROUTES)
+    for (const list of Object.values(r.stops))
+      for (const [zid, sid] of list) {
+        const z = ZONES[zid], s = API_STOPS[sid];
+        if (z && s && inHK(s.la, s.lo)) anchors.push({ la: s.la, lo: s.lo, x: z.kerb[0], z: z.kerb[1] });
+      }
+  const toWorld = makeWarp(anchors);
+  const wpos = new Map();            // stopId -> [x,z]
+  const wp = id => {
+    if (!wpos.has(id)) {
+      const s = API_STOPS[id];
+      wpos.set(id, s && inHK(s.la, s.lo) ? toWorld(s.la, s.lo) : null);
+    }
+    return wpos.get(id);
+  };
+  const dedupe = pts => pts.filter((p, k) => !k || Math.hypot(p[0] - pts[k - 1][0], p[1] - pts[k - 1][1]) > 7);
+  // a one-way sequence returns down a parallel lane offset to the left
+  const backtrack = seq => seq.slice(1, -1).reverse().map((p, k, a) => {
+    const q = a[k - 1] || seq[seq.length - 1], r = a[k + 1] || seq[0];
+    const dx = r[0] - q[0], dz = r[1] - q[1], l = Math.hypot(dx, dz) || 1;
+    return [p[0] + dz / l * 7, p[1] - dx / l * 7];
+  });
+  const handIds = new Set(ROUTES.map(r => r.id));
+  for (const r of API_ROUTES) {
+    if (handIds.has(r.id)) continue;
+    const o = dedupe(r.o.map(wp).filter(Boolean));
+    const i = dedupe(r.i.map(wp).filter(Boolean));
+    const fwd = o.length ? o : i;
+    const back = o.length && i.length ? i : backtrack(fwd);
+    const pts = dedupe([...fwd, ...back]);
+    if (pts.length < 4) continue;
+    const zoneOf = id => {
+      const zid = 'G' + id;
+      if (!ZONES[zid]) {
+        const s = API_STOPS[id], p = wp(id);
+        ZONES[zid] = { halt: [...p], kerb: [...p], nv: [0, 1], qv: [1, 0],
+                       zh: s.zh, en: s.en, lite: true };
+      }
+      return zid;
+    };
+    const mkStops = seq => seq.filter(id => wp(id)).map(id => [zoneOf(id), id]);
+    const stops = { A: mkStops(r.o.length ? r.o : r.i), B: mkStops(r.i.length ? r.i : r.o) };
+    let len = 0;
+    for (let k = 1; k <= pts.length; k++) {
+      const a = pts[k - 1], b = pts[k % pts.length];
+      len += Math.hypot(b[0] - a[0], b[1] - a[1]);
+      GEN_SEGS.push([a, b]);
+      GEN_BOUNDS[0] = Math.min(GEN_BOUNDS[0], a[0]); GEN_BOUNDS[1] = Math.min(GEN_BOUNDS[1], a[1]);
+      GEN_BOUNDS[2] = Math.max(GEN_BOUNDS[2], a[0]); GEN_BOUNDS[3] = Math.max(GEN_BOUNDS[3], a[1]);
+    }
+    ROUTES.push({
+      // thin fleets — ~370 generated routes all drawing buses would saturate
+      // the shared corridor lanes into gridlock
+      id: r.id, fleet: len > 14000 ? 2 : 1, headway: 15,
+      destA: r.dB, destB: r.dA, legs: () => pts, stops,
+    });
+  }
 }
 
 // furniture zones with the set of routes serving each

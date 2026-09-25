@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { personFigure } from '../builders/people.js';
-import { resolveRoutes, zonesWithRoutes } from './bus-data.js';
+import { resolveRoutes, zonesWithRoutes, ZONES } from './bus-data.js';
 import { BusTimes } from './bustimes.js';
 import { buildBusStops } from './busstops.js';
 
@@ -65,6 +65,22 @@ function buildPath(pts) {
       out.s = bs; out.d = best;
       return out;
     },
+    // same, but only over segments inside [s, s+46] of arc — the
+    // following-gap check only ever needs the window just ahead
+    findNear(s, x, z, out = {}) {
+      let lo = 0, hi = n;
+      while (lo < hi - 1) { const m = (lo + hi) >> 1; (cum[m] <= s ? lo = m : hi = m); }
+      let best = 1e9, bs = s;
+      for (let k = lo; k < n && cum[k] - s <= 46; k++) {
+        const a = pts[k], b = pts[(k + 1) % n];
+        const dx = b[0] - a[0], dz = b[1] - a[1], l2 = dx * dx + dz * dz;
+        const t = l2 ? Math.min(Math.max(((x - a[0]) * dx + (z - a[1]) * dz) / l2, 0), 1) : 0;
+        const px = a[0] + dx * t, pz = a[1] + dz * t, d = Math.hypot(px - x, pz - z);
+        if (d < best) { best = d; bs = cum[k] + Math.sqrt(l2) * t; }
+      }
+      out.s = bs; out.d = best;
+      return out;
+    },
   };
 }
 
@@ -88,33 +104,12 @@ const busMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0
 const glassMat = new THREE.MeshStandardMaterial({ color: 0x2a4055, transparent: true, opacity: 0.42, roughness: 0.1, metalness: 0.6, depthWrite: false });
 const cabinLightMat = new THREE.MeshBasicMaterial({ color: 0xffe9b0 });  // interior light strip — unlit so it glows at night
 
-function destTex(routeId, zh) {
-  const c = document.createElement('canvas'); c.width = 192; c.height = 48;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, 192, 48);
-  ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(routeId, 10, 26);
-  ctx.font = 'bold 20px "PingFang HK","PingFang SC",sans-serif';
-  ctx.fillText(zh, 78, 26);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-// rear plate shows the fleet number alone, like the real bus
-function numTex(routeId) {
-  const c = document.createElement('canvas'); c.width = 96; c.height = 48;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, 96, 48);
-  ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 30px monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(routeId, 48, 26);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-
 // forward = +X, doors on local -Z (left side in HK traffic); driver sits
 // right (+Z) like every HK bus. The body is a hollow shell — lower wall
 // panels with real gaps at the doorways, a glass band at window height and
 // a roof — so the interior reads through the glazing and open doors.
 const DOORS_X = [3.1, 1.0];                        // front + rear doorway centres
-function busMesh() {
+function busGeos() {
   const B = THREE.BoxGeometry;
   const parts = [
     // ---- shell: lower walls, door-side segments, ends, roof ---------------
@@ -188,89 +183,177 @@ function busMesh() {
   parts.push(part(new B(7.4, 0.05, 0.05), YEL, -1.4, 2.38, 0.5), part(new B(7.4, 0.05, 0.05), YEL, -1.4, 2.38, -0.5));
   for (const wx of [3.6, -3.2]) for (const wz of [-1.15, 1.15])
     parts.push(part(new THREE.CylinderGeometry(0.46, 0.46, 0.3, 10), DARK, wx, 0.46, wz, Math.PI / 2));
-  const mesh = new THREE.Mesh(mergeGeometries(parts, false), busMat);
-  mesh.castShadow = true;
+  const shell = mergeGeometries(parts, false);
   // wraparound glazing — one transparent shell over the window line, so the
   // cabin, seats and driver read through the glass
-  const glass = new THREE.Mesh(
-    mergeGeometries([
-      part(new B(BUS_L + 0.06, 0.98, 0.05), GLASS, -0.1, 2.35, BUS_W / 2 + 0.005),
-      part(new B(BUS_L + 0.06, 0.98, 0.05), GLASS, -0.1, 2.35, -BUS_W / 2 - 0.005),
-      part(new B(0.05, 0.98, BUS_W + 0.06), GLASS, BUS_L / 2 + 0.005, 2.35, 0),
-      part(new B(0.05, 0.98, BUS_W + 0.06), GLASS, -BUS_L / 2 - 0.005, 2.35, 0),
-    ], false), glassMat);
+  const glass = mergeGeometries([
+    part(new B(BUS_L + 0.06, 0.98, 0.05), GLASS, -0.1, 2.35, BUS_W / 2 + 0.005),
+    part(new B(BUS_L + 0.06, 0.98, 0.05), GLASS, -0.1, 2.35, -BUS_W / 2 - 0.005),
+    part(new B(0.05, 0.98, BUS_W + 0.06), GLASS, BUS_L / 2 + 0.005, 2.35, 0),
+    part(new B(0.05, 0.98, BUS_W + 0.06), GLASS, -BUS_L / 2 - 0.005, 2.35, 0),
+  ], false);
+  glass.deleteAttribute('color');
 
   // plug doors: a leaf pair per doorway, sliding apart along the body. The
-  // four leaves merge into two meshes by slide direction — two draw calls.
+  // four leaves merge into two geometries by slide direction.
   const leaf = (x, edge) => [
     part(new THREE.BoxGeometry(0.46, 1.9, 0.07), GLASS, x, 1.46, -BUS_W / 2 - 0.1),
     part(new THREE.BoxGeometry(0.05, 1.9, 0.075), YEL, x + edge * 0.215, 1.46, -BUS_W / 2 - 0.1),
   ];
-  const doorL = new THREE.Mesh(mergeGeometries([
-    ...leaf(DOORS_X[0] - 0.245, 1), ...leaf(DOORS_X[1] - 0.245, 1)], false), busMat);
-  const doorR = new THREE.Mesh(mergeGeometries([
-    ...leaf(DOORS_X[0] + 0.245, -1), ...leaf(DOORS_X[1] + 0.245, -1)], false), busMat);
-  return { mesh, glass, doorL, doorR };
+  const doorL = mergeGeometries([
+    ...leaf(DOORS_X[0] - 0.245, 1), ...leaf(DOORS_X[1] - 0.245, 1)], false);
+  const doorR = mergeGeometries([
+    ...leaf(DOORS_X[0] + 0.245, -1), ...leaf(DOORS_X[1] + 0.245, -1)], false);
+  // cabin light strip down the ceiling (unlit material — glows at night)
+  const glow = new THREE.PlaneGeometry(BUS_L - 2, 0.5);
+  glow.rotateX(Math.PI / 2); glow.translate(-0.4, 2.79, 0);
+  // sign planes — instanced; a per-instance uvOff attribute picks the cell.
+  // The front blind sits between the recess face (x≈5.39) and the windscreen
+  // (x≈5.405) — any deeper and the recess swallows it.
+  const signF = new THREE.PlaneGeometry(1.7, 0.5);
+  signF.rotateY(Math.PI / 2); signF.translate(BUS_L / 2 - 0.006, 2.62, 0);
+  const signS = new THREE.PlaneGeometry(1.6, 0.44);
+  signS.rotateY(Math.PI); signS.translate(2.05, 2.5, -BUS_W / 2 - 0.05);
+  const signR = new THREE.PlaneGeometry(0.9, 0.42);
+  signR.rotateY(-Math.PI / 2); signR.translate(-BUS_L / 2 - 0.045, 2.5, 0.7);
+  return { shell, glass, doorL, doorR, glow, signF, signS, signR };
+}
+
+// canvas atlases hold every route's two destination blinds + rear number
+// plate; sign instances pick their cell via the uvOff instanced attribute.
+// Two atlases: wide cells for bilingual dest blinds, small cells for the
+// rear fleet-number plate.
+const DEST_W = 384, DEST_H = 64, DEST_COLS = 10;                 // 10 cols x N rows
+const NUM_W = 128, NUM_H = 64, NUM_COLS = 16;
+function atlasTex(W, H) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  return { c, ctx: c.getContext('2d'), tex };
+}
+function uvMat(tex, cw, ch, W, H) {
+  const mat = new THREE.MeshBasicMaterial({ map: tex });
+  mat.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute vec2 uvOff;\n' + sh.vertexShader.replace(
+      '#include <uv_vertex>',
+      `#include <uv_vertex>\n#ifdef USE_MAP\n\tvMapUv = vMapUv * vec2(${cw / W}, ${ch / H}) + uvOff;\n#endif`);
+  };
+  return mat;
+}
+function buildSignAtlases(routes) {
+  const dRows = Math.ceil(routes.length * 2 / DEST_COLS);
+  const dW = DEST_COLS * DEST_W, dH = dRows * DEST_H;
+  const dest = atlasTex(dW, dH);
+  const num = atlasTex(NUM_COLS * NUM_W, Math.ceil(routes.length / NUM_COLS) * NUM_H);
+  dest.ctx.textBaseline = num.ctx.textBaseline = 'middle';
+  routes.forEach((r, ri) => {
+    for (const [k, zh] of [[0, r.destA[0]], [1, r.destB[0]]]) {
+      const i = ri * 2 + k, x = (i % DEST_COLS) * DEST_W, y = (i / DEST_COLS | 0) * DEST_H;
+      const ctx = dest.ctx;
+      ctx.save(); ctx.translate(x, y); ctx.beginPath(); ctx.rect(0, 0, DEST_W, DEST_H); ctx.clip();
+      ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, DEST_W, DEST_H);
+      ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 42px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(r.id, 10, 36);
+      ctx.font = 'bold 30px "PingFang HK","PingFang SC",sans-serif';
+      ctx.fillText(zh, 108, 36, DEST_W - 118);
+      ctx.restore();
+      const u = x / dW, v = 1 - (y + DEST_H) / dH;
+      (k ? r._uvB = [u, v] : r._uvA = [u, v]);
+    }
+    const nx = (ri % NUM_COLS) * NUM_W, ny = (ri / NUM_COLS | 0) * NUM_H, ctx = num.ctx;
+    ctx.fillStyle = '#0d1117'; ctx.fillRect(nx, ny, NUM_W, NUM_H);
+    ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 46px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(r.id, nx + NUM_W / 2, ny + 36);
+    r._uvN = [nx / (NUM_COLS * NUM_W), 1 - (ny + NUM_H) / num.c.height];
+  });
+  dest.tex.needsUpdate = num.tex.needsUpdate = true;
+  return {
+    dest: uvMat(dest.tex, DEST_W, DEST_H, dW, dH),
+    num: uvMat(num.tex, NUM_W, NUM_H, NUM_COLS * NUM_W, num.c.height),
+  };
 }
 
 // ---- the sim ------------------------------------------------------------------
 export class BusSim {
   constructor(scene) {
     this.root = new THREE.Group();
-    const { root: stopRoot, stops: zones } = buildBusStops((this.times = new BusTimes(zonesWithRoutes())));
-    this.root.add(stopRoot);
-    this.zones = zones;
-    this.zoneById = Object.fromEntries(zones.map(z => [z.id, z]));
-
     this.routes = resolveRoutes();
-    this.buses = [];
+    const tmp = {};
+    // paths first — lite generated zones get their kerb/nv/qv orientation off
+    // the lane tangent before stop furniture is placed
+    const zoneById = ZONES;
     for (const r of this.routes) {
       r.path = buildPath(r.pts);
-      // shared per-leg sign materials — the whole fleet swaps blinds together
-      r.destA_mat = new THREE.MeshBasicMaterial({ map: destTex(r.id, r.destA[0]) });
-      r.destB_mat = new THREE.MeshBasicMaterial({ map: destTex(r.id, r.destB[0]) });
-      r.num_mat = new THREE.MeshBasicMaterial({ map: numTex(r.id) });
-      // arc-position each stop on this route's loop + the front door's
-      // kerbside point (fwd along the lane, then out to the door side)
-      const tmp = {};
       for (const st of r.stops) {
         const { s } = r.path.find(st.halt[0], st.halt[1], tmp);
         st.s = s;
-        st.zoneObj = this.zoneById[st.zone];
         r.path.at(s, tmp);
         st.door = { x: tmp.x + tmp.dx * 2.8 + tmp.dz * 1.35, z: tmp.z + tmp.dz * 2.8 - tmp.dx * 1.35 };
       }
       r.stopsByS = [...r.stops].sort((a, b) => a.s - b.s);
+    }
+    // lite zones sit ON the path vertex (the warped pole point) — move halt to
+    // the lane point and kerb to the door-side edge, tangent-aligned
+    for (const r of this.routes)
+      for (const st of r.stops) {
+        const z = zoneById[st.zone];
+        if (!z?.lite || z._ori) continue;
+        z._ori = 1;
+        r.path.at(st.s, tmp);
+        z.halt = [tmp.x, tmp.z];
+        z.nv = [tmp.dz, -tmp.dx];                    // toward the kerb side
+        z.qv = [tmp.dx, tmp.dz];                     // along the kerb
+        z.kerb = [tmp.x + tmp.dz * 2.8, tmp.z - tmp.dx * 2.8];
+      }
+    const { root: stopRoot, stops: zones } = buildBusStops((this.times = new BusTimes(zonesWithRoutes())));
+    this.root.add(stopRoot);
+    this.zones = zones;
+    this.zoneById = Object.fromEntries(zones.map(z => [z.id, z]));
+    for (const r of this.routes)
+      for (const st of r.stops) st.zoneObj = this.zoneById[st.zone];
+
+    // ---- instanced fleet: eight draws cover every bus in the world --------
+    const n = this.routes.reduce((s, r) => s + r.fleet, 0);
+    const G = busGeos();
+    const atlas = buildSignAtlases(this.routes);
+    const im = this._im = {
+      shell: new THREE.InstancedMesh(G.shell, busMat, n),
+      glass: new THREE.InstancedMesh(G.glass, glassMat, n),
+      doorL: new THREE.InstancedMesh(G.doorL, busMat, n),
+      doorR: new THREE.InstancedMesh(G.doorR, busMat, n),
+      glow: new THREE.InstancedMesh(G.glow, cabinLightMat, n),
+      signF: new THREE.InstancedMesh(G.signF, atlas.dest, n),
+      signS: new THREE.InstancedMesh(G.signS, atlas.dest, n),
+      signR: new THREE.InstancedMesh(G.signR, atlas.num, n),
+    };
+    // instanced meshes draw every instance every pass — a cast shadow would
+    // render the whole fleet twice, so buses don't cast; ground shading reads
+    // fine at schematic scale
+    for (const k in im) { im[k].frustumCulled = false; this.root.add(im[k]); }
+    // per-instance blind cells — front+side swap destinations with the leg
+    const uvF = new Float32Array(n * 2), uvS = new Float32Array(n * 2), uvR = new Float32Array(n * 2);
+    this._uvF = new THREE.InstancedBufferAttribute(uvF, 2);
+    this._uvS = new THREE.InstancedBufferAttribute(uvS, 2);
+    this._uvR = new THREE.InstancedBufferAttribute(uvR, 2);
+    G.signF.setAttribute('uvOff', this._uvF);
+    G.signS.setAttribute('uvOff', this._uvS);
+    G.signR.setAttribute('uvOff', this._uvR);
+
+    this.buses = [];
+    for (const r of this.routes)
       for (let i = 0; i < r.fleet; i++) {
-        const g = new THREE.Group();
-        const bm = busMesh();
-        g.add(bm.mesh, bm.glass, bm.doorL, bm.doorR);
-        // destination blinds — front face + kerb side over the front door +
-        // a number plate on the back; both blinds share the leg material
-        const signF = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.5), r.destA_mat);
-        signF.position.set(BUS_L / 2 - 0.02, 2.62, 0);   // behind the windscreen
-        signF.rotation.y = Math.PI / 2;
-        const signS = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.44), r.destA_mat);
-        signS.position.set(2.05, 2.5, -BUS_W / 2 - 0.05);
-        signS.rotation.y = Math.PI;
-        const signR = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.42), r.num_mat);
-        signR.position.set(-BUS_L / 2 - 0.045, 2.5, 0.7);
-        signR.rotation.y = -Math.PI / 2;
-        // warm cabin light strip down the ceiling
-        const glow = new THREE.Mesh(new THREE.PlaneGeometry(BUS_L - 2, 0.5), cabinLightMat);
-        glow.position.set(-0.4, 2.79, 0);
-        glow.rotation.x = Math.PI / 2;   // faces down into the cabin
-        g.add(signF, signS, signR, glow);
-        this.root.add(g);
-        this.buses.push({
-          g, signs: [signF, signS], doorL: bm.doorL, doorR: bm.doorR, open: 0,
-          route: r, destFor: null,
+        const g = new THREE.Object3D();
+        const b = {
+          g, i: this.buses.length, route: r, destFor: null, open: 0,
           s: (r.path.L * i / r.fleet + Math.random() * 300) % r.path.L,
           v: 5 + Math.random() * 4, state: 'drive', dwellT: 0, stop: null,
           pax: 4 + Math.floor(Math.random() * 18),
-        });
+        };
+        r.path.at(b.s, tmp);
+        g.position.set(tmp.x, 0.02, tmp.z);
+        g.rotation.y = Math.atan2(-tmp.dz, tmp.dx);
+        this._uvR.setXY(b.i, r._uvN[0], r._uvN[1]);
+        this.buses.push(b);
       }
-    }
 
     this.figRoot = new THREE.Group();
     this.root.add(this.figRoot);
@@ -284,7 +367,8 @@ export class BusSim {
     const p = b.route.path;
     let best = null, bd = Infinity;
     for (const st of b.route.stopsByS) {
-      const d = (st.s - b.s + p.L) % p.L;
+      if (st === b.lastStop) continue;   // just served — or a bus that pulled
+      const d = (st.s - b.s + p.L) % p.L; // up a hair short would re-dwell forever
       if (d < bd) { bd = d; best = st; }
     }
     return { stop: best, d: bd };
@@ -321,9 +405,22 @@ export class BusSim {
     this.times.update(dt);
     const out = this._out ??= {}, prj = this._prj ??= {};
 
+    // ---- spatial hash for the following-gap check (was O(n²)) --------------
+    // 48 m cells hold last-frame positions; a bus scans its 3x3 neighbourhood.
+    // Buckets persist across frames — clearing by length avoids alloc churn.
+    const grid = this._grid ??= new Map();
+    for (const a of grid.values()) a.length = 0;
+    for (const o of this.buses) {
+      const k = ((o.g.position.x + 40000) / 48 | 0) * 8192 + ((o.g.position.z + 40000) / 48 | 0);
+      let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(o);
+    }
+
     // ---- buses -------------------------------------------------------------
+    const im = this._im, uvF = this._uvF, uvS = this._uvS;
+    let uvDirty = false;
     for (const b of this.buses) {
       const p = b.route.path;
+      const ns = this.nextStop(b);          // shared by the drive logic + blind leg
       if (b.state === 'dwell') {
         b.dwellT -= dt;
         const z = b.stop?.zoneObj;
@@ -350,19 +447,30 @@ export class BusSim {
         }
         if (b.dwellT <= 0) { b.state = 'drive'; b.stop = null; }
       } else {
-        const { stop, d } = this.nextStop(b);
+        const { stop, d } = ns;
         // hold a following gap to whatever is ahead on this road — any route
         p.at(b.s, out);
         let lead = Infinity;
-        for (const o of this.buses) {
-          if (o === b) continue;
-          if (Math.abs(o.g.position.x - out.x) > 32 || Math.abs(o.g.position.z - out.z) > 32) continue;
-          const { s: os, d: od } = p.find(o.g.position.x, o.g.position.z, prj);
-          if (od < 7) {
-            const gap = (os - b.s + p.L) % p.L;
-            if (gap < lead) lead = gap;
+        const gx = (out.x + 40000) / 48 | 0, gz = (out.z + 40000) / 48 | 0;
+        for (let cx = gx - 1; cx <= gx + 1; cx++) for (let cz = gz - 1; cz <= gz + 1; cz++) {
+          const cell = grid.get(cx * 8192 + cz);
+          if (!cell) continue;
+          for (const o of cell) {
+            if (o === b) continue;
+            if (Math.abs(o.g.position.x - out.x) > 20 || Math.abs(o.g.position.z - out.z) > 20) continue;
+            // only a bus heading our way can lead us — parallel opposite
+            // lanes and crossing traffic must not hold us
+            if (o.dx * out.dx + o.dz * out.dz < 0.7) continue;
+            const { s: os, d: od } = p.findNear(b.s, o.g.position.x, o.g.position.z, prj);
+            if (od < 4.5) {
+              const gap = (os - b.s + p.L) % p.L;
+              if (gap < lead) lead = gap;
+            }
           }
         }
+        // watchdog: held to a standstill a minute — creep past the blocker
+        if (b.v < 0.05 && lead < 14) { b.stuckT = (b.stuckT || 0) + dt; } else b.stuckT = 0;
+        if (b.stuckT > 60) lead = Infinity;
         let want = p.limit(b.s);
         if (lead < 16) want = Math.min(want, Math.max(0, (lead - 12) * 0.5));
         if (stop && d < 70) want = Math.min(want, Math.sqrt(2 * DECEL * d));
@@ -371,6 +479,7 @@ export class BusSim {
         b.s = (b.s + b.v * dt) % p.L;
         if (stop && d < 1.6 && b.v < 0.4) {
           b.state = 'dwell'; b.dwellT = 6 + Math.random() * 6; b.stop = stop;
+          b.lastStop = stop;
           b.alightN = Math.min(b.pax, Math.random() < 0.45 ? 0 : 1 + Math.floor(Math.random() * 2));
           b.alightT = b.alightN ? 0.8 : 0;
           stop.zoneObj.boardT = 1.6;
@@ -382,20 +491,37 @@ export class BusSim {
       b.dx = out.dx; b.dz = out.dz;   // heading, for the boarding proximity check
       // doors open for the dwell — the leaf pair slides apart along the body
       b.open = THREE.MathUtils.clamp(b.open + (b.state === 'dwell' ? dt : -dt) / 0.5, 0, 1);
-      b.doorL.position.x = -b.open * 0.42;
-      b.doorR.position.x = b.open * 0.42;
+      // push the bus transform into the instanced meshes — door leaves get an
+      // extra local slide, signs and the light strip ride the body matrix.
+      // A settled dwell (s frozen, doors static) writes nothing.
+      if (b.s !== b._ms || b.open !== b._mo) {
+        b._ms = b.s; b._mo = b.open;
+        b.g.updateMatrix();
+        const nm = b.g.matrix;
+        im.shell.setMatrixAt(b.i, nm);
+        im.glass.setMatrixAt(b.i, nm);
+        im.doorL.setMatrixAt(b.i, _m.makeTranslation(-b.open * 0.42, 0, 0).premultiply(nm));
+        im.doorR.setMatrixAt(b.i, _m.makeTranslation(b.open * 0.42, 0, 0).premultiply(nm));
+        im.glow.setMatrixAt(b.i, nm);
+        im.signF.setMatrixAt(b.i, nm);
+        im.signS.setMatrixAt(b.i, nm);
+        im.signR.setMatrixAt(b.i, nm);
+      }
       // destination blind follows the leg of the next stop
-      const { stop } = this.nextStop(b);
-      const leg = stop?.leg ?? 'A';
+      const leg = ns.stop?.leg ?? 'A';
       if (leg !== b.destFor) {
         b.destFor = leg;
-        const m = leg === 'A' ? b.route.destA_mat : b.route.destB_mat;
-        for (const sgn of b.signs) sgn.material = m;
+        const uv = leg === 'A' ? b.route._uvA : b.route._uvB;
+        uvF.setXY(b.i, uv[0], uv[1]); uvS.setXY(b.i, uv[0], uv[1]);
+        uvDirty = true;
       }
     }
+    for (const k in im) im[k].instanceMatrix.needsUpdate = true;
+    if (uvDirty) { uvF.needsUpdate = uvS.needsUpdate = true; }
 
     // ---- stop crowds -----------------------------------------------------------
     for (const z of this.zones) {
+      if (z.lite && !z.figures.length) continue;   // flag stops only shed alighters
       const queued = z.figures.filter(f => f.mode === 'queue' || f.mode === 'toQueue').length;
       z.spawnT -= dt;
       if (z.spawnT <= 0) {
