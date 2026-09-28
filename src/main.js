@@ -407,7 +407,7 @@ rig.trains = trainSim;              // lets the player board dwelling trains
 rig.audio = audio;
 rig.initColliders(colliders);
 rig.onLiftTap = () => liftSim.interact(rig);
-rig.onBusTap = () => busSim.interact(rig);
+rig.onBusTap = () => busSim.interact(rig, audio);
 window.__rig = rig; window.__cam = camera; window.__trains = trainSim; window.__people = passengers;
 window.__lifts = liftSim;
 window.__escRuns = ESC_RUNS; window.__weather = weather; window.__renderer = renderer;
@@ -617,7 +617,7 @@ function tick() {
   for (const ev of events) {
     passengers.onTrainEvent(ev, audio);
   }
-  busSim.update(sdt, rig);
+  busSim.update(sdt, rig, audio);
   // a berthed consist follows its level's visibility; a moving one always
   // shows — without this a train that left a culled level stays invisible
   // when it berths at a visible platform (applyLevelVis only runs on toggles)

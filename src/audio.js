@@ -214,4 +214,40 @@ export class StationAudio {
       ['車門即將關閉', 'The train doors are closing', '车门即将关闭'],
     ]), pos);
   }
+
+  // ---- Citybus onboard PA ---------------------------------------------------
+  // The Telargo stop announcer: after the doors close, "please hold the
+  // handrail" then the next stop, each 粵 → 英 → 普. Callers gate on the
+  // player being aboard — you can't hear the PA from the pavement.
+
+  // stop-request bell — the ding when someone wants off
+  busBell() {
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._tone(2093, t, 0.09, 'sine', 0.16);
+    this._tone(1568, t + 0.11, 0.18, 'sine', 0.16);
+  }
+
+  // bus PA queues rather than drops like the station announce() — riding a
+  // route means hearing every stop, even if a station PA is still playing
+  _busSpeak(lines) {
+    if (!this.enabled || !('speechSynthesis' in window)) return;
+    for (const [text, lang] of lines) this._speak(text, lang);
+  }
+
+  announceBusDepart(zhName, enName) {
+    this._busSpeak([
+      ['請緊握扶手', 'zh-HK'], ['Please hold the handrail', 'en-HK'], ['请紧握扶手', 'zh-CN'],
+      [`下一站：${zhName}`, 'zh-HK'], [`Next stop: ${enName}`, 'en-HK'], [`下一站：${zhName}`, 'zh-CN'],
+    ]);
+  }
+
+  // the extended terminus script Citybus rolled out in 2023
+  announceBusTerminus() {
+    this._busSpeak([
+      ['我哋已經到達終點站，請離開車廂。落車時請記得帶走個人財物，多謝乘搭城巴', 'zh-HK'],
+      ['We have arrived at the terminus. All passengers please alight. Please remember to take your personal belongings. Thank you for travelling with Citybus', 'en-HK'],
+      ['我们已经到达终点站，请离开车厢。下车时请记得带走个人财物，多谢乘搭城巴', 'zh-CN'],
+    ]);
+  }
 }

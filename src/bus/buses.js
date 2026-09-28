@@ -292,6 +292,8 @@ export class BusSim {
         st.door = { x: tmp.x + tmp.dx * 2.8 + tmp.dz * 1.35, z: tmp.z + tmp.dz * 2.8 - tmp.dx * 1.35 };
       }
       r.stopsByS = [...r.stops].sort((a, b) => a.s - b.s);
+      // a leg flip along the loop marks a terminus
+      r.stopsByS.forEach((st, i, a) => { st.term = st.leg !== a[(i + 1) % a.length].leg; });
     }
     // lite zones sit ON the path vertex (the warped pole point) — move halt to
     // the lane point and kerb to the door-side edge, tangent-aligned
@@ -384,7 +386,7 @@ export class BusSim {
   }
 
   // E at the kerb: board a dwelling bus; aboard at a dwell: step off
-  interact(rig) {
+  interact(rig, audio) {
     if (this.aboard) {
       const b = this.aboard;
       if (b.state === 'dwell' && b.stop) {
@@ -400,10 +402,11 @@ export class BusSim {
     if (b) {
       this.aboard = b; b.dwellT = Math.max(b.dwellT, 3);   // hold the doors
       rig.yaw = -b.g.rotation.y - Math.PI / 2; rig.pitch = -0.06;   // face forward
+      audio?.octopusBeep({ x: b.stop?.door.x ?? b.g.position.x, y: 1.4, z: b.stop?.door.z ?? b.g.position.z });
     }
   }
 
-  update(dt, rig) {
+  update(dt, rig, audio) {
     this.times.update(dt);
     const out = this._out ??= {}, prj = this._prj ??= {};
 
@@ -447,7 +450,12 @@ export class BusSim {
             }
           }
         }
-        if (b.dwellT <= 0) { b.state = 'drive'; b.stop = null; }
+        if (b.dwellT <= 0) {
+          b.state = 'drive'; b.stop = null;
+          // onboard PA after the doors close — ns.stop is already the stop
+          // after this one (lastStop is excluded by nextStop)
+          if (b === this.aboard && ns.stop) audio?.announceBusDepart(ns.stop.zh, ns.stop.en);
+        }
       } else {
         const { stop, d } = ns;
         // hold a following gap to whatever is ahead on this road — any route
@@ -479,9 +487,16 @@ export class BusSim {
         b.v += THREE.MathUtils.clamp(want - b.v, -DECEL * dt * 1.4, ACCEL * dt);
         if (b.v < 0) b.v = 0;
         b.s = (b.s + b.v * dt) % p.L;
+        // stop-request bell: aboard, under 55 m out, once per stop — some
+        // approaches nobody presses it
+        if (b === this.aboard && stop && d < 55 && b._rungFor !== stop) {
+          b._rungFor = stop;
+          if (Math.random() < 0.45) audio?.busBell();
+        }
         if (stop && d < 1.6 && b.v < 0.4) {
           b.state = 'dwell'; b.dwellT = 6 + Math.random() * 6; b.stop = stop;
           b.lastStop = stop;
+          if (b === this.aboard && stop.term) audio?.announceBusTerminus();
           b.alightN = Math.min(b.pax, Math.random() < 0.45 ? 0 : 1 + Math.floor(Math.random() * 2));
           b.alightT = b.alightN ? 0.8 : 0;
           stop.zoneObj.boardT = 1.6;
