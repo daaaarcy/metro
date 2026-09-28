@@ -124,6 +124,7 @@ input[type="range"]:disabled { opacity: 0.3; }
   background: rgba(255,255,255,0.08); border: none; color: #9fd3ff; cursor: pointer;
 }
 .lvl-row .go:hover { background: rgba(255,255,255,0.18); }
+.lvl-row.off { opacity: 0.38; }
 .lvl-stn {
   font-size: 10px; font-weight: 800; letter-spacing: 0.6px; opacity: 0.5;
   margin-top: 8px; padding-bottom: 2px; border-bottom: 1px solid rgba(255,255,255,0.12);

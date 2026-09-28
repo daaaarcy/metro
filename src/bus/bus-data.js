@@ -823,7 +823,7 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     const ov = (list, seq) => (list || []).filter(([, s]) => seq.includes(s)).length;
     for (const leg of ['A', 'B']) {
       const lo = ov(r.stops[leg], a.o), li = ov(r.stops[leg], a.i);
-      legSeq[r.id + '|' + leg] = lo >= li ? a.o : a.i;
+      legSeq[r.id + '|' + leg] = !a.o.length ? a.i : (!a.i.length || lo >= li ? a.o : a.i);
     }
   }
   // anchors pin real stop coordinates to the hand-placed kerbs — but only
@@ -867,7 +867,6 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     return best;
   };
   const taken = new Map();           // zid -> sid a hand zone now stands for
-  const GENERIC = new Set(['road', 'rd', 'street', 'st', 'station', 'bus', 'terminus', 'the', 'hong', 'kong']);
   for (const r of ROUTES) {
     const a = apiOf.get(r.id);
     if (!a) continue;
@@ -892,16 +891,26 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
         }
         if (!zid) zid = gzoneOf(sid);
         else if (!taken.has(zid)) {
-          // retitle the kerb to the real stop unless the names already agree
-          const z = ZONES[zid], s = API_STOPS[sid];
-          const share = z.en.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 2 && !GENERIC.has(w));
-          const ok = share.some(w => s.en.toLowerCase().includes(w));
-          if (!ok) { z.zh = s.zh; z.en = s.en; }
+          // the kerb stands for this real stop — take the API name outright;
+          // fuzzy word-matching here kept district tokens like "wong chuk
+          // hang" looking like agreement between unrelated stop names
+          ZONES[zid].zh = API_STOPS[sid].zh;
+          ZONES[zid].en = API_STOPS[sid].en;
         }
         taken.set(zid, sid);
         list.push([zid, sid]);
       }
       r.stops[leg] = list;
+      // the navigator lists the route's true API sequence — kerbs the
+      // schematic path can't reach render as inert rows, never silently
+      // dropped, or the menu reads like stops don't exist. Circulars carry
+      // one direction only; leg B sharing leg A's seq shows nothing extra.
+      if (leg === 'B' && seq === legSeq[r.id + '|A']) continue;
+      const inList = new Map(list.map(([zid, sid]) => [sid, zid]));
+      r.menuStops = [...(r.menuStops || []), ...seq.map(sid => {
+        const zid = inList.get(sid), s = API_STOPS[sid], z = zid && ZONES[zid];
+        return { leg, zone: zid || null, zh: (z || s)?.zh ?? '', en: (z || s)?.en ?? '' };
+      })];
     }
   }
   const dedupe = pts => pts.filter((p, k) => !k || Math.hypot(p[0] - pts[k - 1][0], p[1] - pts[k - 1][1]) > 7);
@@ -931,6 +940,18 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     };
     const mkStops = seq => seq.filter(id => wp(id)).map(id => [zoneOf(id), id]);
     const stops = { A: mkStops(r.o.length ? r.o : r.i), B: mkStops(r.i.length ? r.i : r.o) };
+    // the menu lists the full API seq — stops whose coords failed the warp
+    // still render (inert, no kerb in-world); single-direction data lists once
+    const oneWay = !r.o.length || !r.i.length;
+    const menuLeg = (leg, seq) => {
+      const bySid = new Map(stops[leg].map(([z, sid]) => [sid, z]));
+      return seq.map(id => {
+        const zone = bySid.get(id) || null, s = API_STOPS[id];
+        return { leg, zone, zh: (ZONES[zone] || s)?.zh ?? '', en: (ZONES[zone] || s)?.en ?? '' };
+      });
+    };
+    const menuStops = [...menuLeg('A', r.o.length ? r.o : r.i),
+                       ...(oneWay ? [] : menuLeg('B', r.i))];
     let len = 0;
     for (let k = 1; k <= pts.length; k++) {
       const a = pts[k - 1], b = pts[k % pts.length];
@@ -943,7 +964,7 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
       // thin fleets — ~370 generated routes all drawing buses would saturate
       // the shared corridor lanes into gridlock
       id: r.id, fleet: len > 14000 ? 2 : 1, headway: 15,
-      destA: r.dB, destB: r.dA, legs: () => pts, stops,
+      destA: r.dB, destB: r.dA, legs: () => pts, stops, menuStops,
     });
   }
 }
