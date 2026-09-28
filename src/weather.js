@@ -132,11 +132,13 @@ export class Weather {
       this.sun.color.copy(this._c2).lerp(this._c1, dusk * 0.85);
     } else {
       this.sun.position.set(70, 150, -90);
-      this.sun.intensity = (this.kind === 'clear' ? 0.14 : 0.07) + this.flash * 4;
+      // night floor is deliberately lifted — the old 0.07 read as pure black
+      // from inside a bus at night, where the bodywork eats the ambient
+      this.sun.intensity = (this.kind === 'clear' ? 0.24 : 0.13) + this.flash * 4;
       this.sun.color.set(0x8ea4c8);
     }
-    this.hemi.intensity = 0.7 + 0.85 * dayK * dim;
-    this.ambient.intensity = 0.85 + 0.2 * dayK * dim;
+    this.hemi.intensity = 0.8 + 0.85 * dayK * dim;
+    this.ambient.intensity = 0.9 + 0.2 * dayK * dim;
 
     // thunderstorm lightning: occasional flash on the sun light
     if (this.kind === 'storm' && Math.random() < dt * 0.12) this.flash = 1;

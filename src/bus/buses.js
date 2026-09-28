@@ -350,6 +350,7 @@ export class BusSim {
           g, i: this.buses.length, route: r, destFor: null, open: 0,
           s: (r.path.L * i / r.fleet + Math.random() * 300) % r.path.L,
           v: 5 + Math.random() * 4, state: 'drive', dwellT: 0, stop: null,
+          lane: 0, baseLane: Math.random() < 0.5 ? 0 : 5,   // kerb vs overtaking lane
           pax: 4 + Math.floor(Math.random() * 18),
         };
         r.path.at(b.s, tmp);
@@ -365,6 +366,23 @@ export class BusSim {
     this.aboard = null;        // bus carrying the player
     this._seat = new THREE.Vector3(1.8, 2.24, -0.82);    // window seat just aft of the rear door
     scene.add(this.root);
+  }
+
+  // is the road-space around path-arc position `s` free of same-heading
+  // buses? Used by the jam leapfrog to find somewhere to land.
+  _clearAhead(p, s, out, b) {
+    const gx = (out.x + 40000) / 48 | 0, gz = (out.z + 40000) / 48 | 0;
+    for (let cx = gx - 1; cx <= gx + 1; cx++) for (let cz = gz - 1; cz <= gz + 1; cz++) {
+      const cell = this._grid.get(cx * 8192 + cz);
+      if (!cell) continue;
+      for (const o of cell) {
+        if (o === b) continue;
+        if (Math.abs(o.g.position.x - out.x) > 16 || Math.abs(o.g.position.z - out.z) > 16) continue;
+        if (o.dx * out.dx + o.dz * out.dz < 0.7) continue;
+        return false;
+      }
+    }
+    return true;
   }
 
   nextStop(b) {
@@ -423,6 +441,7 @@ export class BusSim {
 
   update(dt, rig, audio) {
     this.times.update(dt);
+    this._frame = (this._frame || 0) + 1;
     const out = this._out ??= {}, prj = this._prj ??= {};
 
     // ---- spatial hash for the following-gap check (was O(n²)) --------------
@@ -443,6 +462,10 @@ export class BusSim {
       const ns = this.nextStop(b);          // shared by the drive logic + blind leg
       if (b.state === 'dwell') {
         b.dwellT -= dt;
+        if (b.stop) {
+          if (b.stop._qf !== this._frame) { b.stop._qf = this._frame; b.stop._q = 0; }
+          b.stop._q++;                       // a dwelling bus crowds its stop
+        }
         const z = b.stop?.zoneObj;
         if (z) {
           z.boardT -= dt;
@@ -473,8 +496,19 @@ export class BusSim {
         }
       } else {
         const { stop, d } = ns;
-        // hold a following gap to whatever is ahead on this road — any route
+        // count approach pressure per stop — a stop already saturated with
+        // buses gets skipped, so dwells can't stack a queue up the lane
+        if (stop && d < 90) {
+          if (stop._qf !== this._frame) { stop._qf = this._frame; stop._q = 0; }
+          stop._q++;
+        }
         p.at(b.s, out);
+        // the wide corridor carriageways carry two lanes; lane 2 isn't held
+        // up by lane-1 dwellers. Everything merges to the kerb to serve —
+        // but a bus skipping a saturated stop stays out and passes the queue
+        const serve = stop && !(d > 6 && d < 70 && (stop._q || 0) > 4);
+        const twoLane = Math.abs(out.z) > 30 && Math.abs(out.z) < 55 && out.x > -4400 && out.x < 7520;
+        b._laneT = !twoLane || (serve && d < 70) ? 0 : b.baseLane;
         let lead = Infinity;
         const gx = (out.x + 40000) / 48 | 0, gz = (out.z + 40000) / 48 | 0;
         for (let cx = gx - 1; cx <= gx + 1; cx++) for (let cz = gz - 1; cz <= gz + 1; cz++) {
@@ -486,6 +520,7 @@ export class BusSim {
             // only a bus heading our way can lead us — parallel opposite
             // lanes and crossing traffic must not hold us
             if (o.dx * out.dx + o.dz * out.dz < 0.7) continue;
+            if (twoLane && Math.abs((o.lane || 0) - b.lane) > 3) continue;   // other lane
             const { s: os, d: od } = p.findNear(b.s, o.g.position.x, o.g.position.z, prj);
             if (od < 4.5) {
               const gap = (os - b.s + p.L) % p.L;
@@ -493,12 +528,23 @@ export class BusSim {
             }
           }
         }
-        // watchdog: held to a standstill a minute — creep past the blocker
+        // boxed in a jam a full minute — hop to the first clear stretch
+        // ahead rather than creep into the blocker and compound it
         if (b.v < 0.05 && lead < 14) { b.stuckT = (b.stuckT || 0) + dt; } else b.stuckT = 0;
-        if (b.stuckT > 60) lead = Infinity;
+        if (b.stuckT > 60) {
+          b.stuckT = 45;                       // retry soon if nowhere clear
+          for (let hop = 40; hop <= 250; hop += 30) {
+            const cand = (b.s + hop) % p.L;
+            p.at(cand, out);
+            if (this._clearAhead(p, cand, out, b)) { b.s = cand; b.stuckT = 0; p.at(b.s, out); break; }
+            p.at(b.s, out);
+          }
+        }
+        // a saturated stop is run express rather than joined — once committed
+        // to the kerb (d < 6) the bus serves it regardless
         let want = p.limit(b.s);
         if (lead < 16) want = Math.min(want, Math.max(0, (lead - 12) * 0.5));
-        if (stop && d < 70) want = Math.min(want, Math.sqrt(2 * DECEL * d));
+        if (serve && d < 70) want = Math.min(want, Math.sqrt(2 * DECEL * d));
         b.v += THREE.MathUtils.clamp(want - b.v, -DECEL * dt * 1.4, ACCEL * dt);
         if (b.v < 0) b.v = 0;
         b.s = (b.s + b.v * dt) % p.L;
@@ -508,7 +554,7 @@ export class BusSim {
           b._rungFor = stop;
           if (Math.random() < 0.45) audio?.busBell();
         }
-        if (stop && d < 1.6 && b.v < 0.4) {
+        if (serve && stop && d < 1.6 && b.v < 0.4) {
           b.state = 'dwell'; b.dwellT = 6 + Math.random() * 6; b.stop = stop;
           b.lastStop = stop;
           if (b === this.aboard && stop.term) audio?.announceBusTerminus();
@@ -518,7 +564,10 @@ export class BusSim {
         }
       }
       p.at(b.s, out);
-      b.g.position.set(out.x, 0.02, out.z);
+      // lateral lane offset — the corridor runs two lanes; kerb lane serves
+      // stops, lane 2 flows past them. _laneT set in the drive branch.
+      b.lane += THREE.MathUtils.clamp((b._laneT || 0) - b.lane, -1.8 * dt, 1.8 * dt);
+      b.g.position.set(out.x - out.dz * b.lane, 0.02, out.z + out.dx * b.lane);
       b.g.rotation.y = Math.atan2(-out.dz, out.dx);
       b.dx = out.dx; b.dz = out.dz;   // heading, for the boarding proximity check
       // doors open for the dwell — the leaf pair slides apart along the body
