@@ -246,15 +246,17 @@ function buildSignAtlases(routes) {
   const num = atlasTex(NUM_COLS * NUM_W, Math.ceil(routes.length / NUM_COLS) * NUM_H);
   dest.ctx.textBaseline = num.ctx.textBaseline = 'middle';
   routes.forEach((r, ri) => {
-    for (const [k, zh] of [[0, r.destA[0]], [1, r.destB[0]]]) {
+    for (const [k, nm] of [[0, r.destA], [1, r.destB]]) {
       const i = ri * 2 + k, x = (i % DEST_COLS) * DEST_W, y = (i / DEST_COLS | 0) * DEST_H;
       const ctx = dest.ctx;
       ctx.save(); ctx.translate(x, y); ctx.beginPath(); ctx.rect(0, 0, DEST_W, DEST_H); ctx.clip();
       ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, DEST_W, DEST_H);
       ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 42px monospace'; ctx.textAlign = 'left';
       ctx.fillText(r.id, 10, 36);
-      ctx.font = 'bold 30px "PingFang HK","PingFang SC",sans-serif';
-      ctx.fillText(zh, 108, 36, DEST_W - 118);
+      ctx.font = 'bold 23px "PingFang HK","PingFang SC",sans-serif';
+      ctx.fillText(nm[0], 108, 20, DEST_W - 118);
+      ctx.font = 'bold 16px "Helvetica Neue",Arial,sans-serif';
+      ctx.fillText(nm[1], 108, 46, DEST_W - 118);
       ctx.restore();
       const u = x / dW, v = 1 - (y + DEST_H) / dH;
       (k ? r._uvB = [u, v] : r._uvA = [u, v]);
