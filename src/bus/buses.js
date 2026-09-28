@@ -292,8 +292,12 @@ export class BusSim {
         st.door = { x: tmp.x + tmp.dx * 2.8 + tmp.dz * 1.35, z: tmp.z + tmp.dz * 2.8 - tmp.dx * 1.35 };
       }
       r.stopsByS = [...r.stops].sort((a, b) => a.s - b.s);
-      // a leg flip along the loop marks a terminus
-      r.stopsByS.forEach((st, i, a) => { st.term = st.leg !== a[(i + 1) % a.length].leg; });
+      // the terminus is each leg's last stop in sequence — legs interleave on
+      // shared roads, so a leg flip along s can't be used
+      for (const leg of ['A', 'B']) {
+        const last = r.stops.findLast(st => st.leg === leg);
+        if (last) last.term = true;
+      }
     }
     // lite zones sit ON the path vertex (the warped pole point) — move halt to
     // the lane point and kerb to the door-side edge, tangent-aligned
@@ -364,7 +368,7 @@ export class BusSim {
     this.root.add(this.figRoot);
     this.near = null;          // dwelling bus whose front door is in reach
     this.aboard = null;        // bus carrying the player
-    this._seat = new THREE.Vector3(1.8, 2.24, -0.82);    // window seat just aft of the rear door
+    this._seat = new THREE.Vector3(5.05, 2.42, -0.55);   // front kerb-side seat — full windscreen view
     scene.add(this.root);
   }
 
@@ -434,7 +438,7 @@ export class BusSim {
     const b = this.near;
     if (b) {
       this.aboard = b; b.dwellT = Math.max(b.dwellT, 3);   // hold the doors
-      rig.yaw = -b.g.rotation.y - Math.PI / 2; rig.pitch = -0.06;   // face forward
+      rig.yaw = b.g.rotation.y - Math.PI / 2; rig.pitch = -0.06;    // face forward
       audio?.octopusBeep({ x: b.stop?.door.x ?? b.g.position.x, y: 1.4, z: b.stop?.door.z ?? b.g.position.z });
     }
   }
@@ -528,17 +532,15 @@ export class BusSim {
             }
           }
         }
-        // boxed in a jam a full minute — hop to the first clear stretch
-        // ahead rather than creep into the blocker and compound it
+        // boxed in a jam a while — squeeze past the blocker one bus-length at
+        // a time rather than teleport down the road or creep into the queue
         if (b.v < 0.05 && lead < 14) { b.stuckT = (b.stuckT || 0) + dt; } else b.stuckT = 0;
-        if (b.stuckT > 60) {
-          b.stuckT = 45;                       // retry soon if nowhere clear
-          for (let hop = 40; hop <= 250; hop += 30) {
-            const cand = (b.s + hop) % p.L;
-            p.at(cand, out);
-            if (this._clearAhead(p, cand, out, b)) { b.s = cand; b.stuckT = 0; p.at(b.s, out); break; }
-            p.at(b.s, out);
-          }
+        if (b.stuckT > 50) {
+          b.stuckT = 35;                       // retry soon if nowhere to land
+          const hop = Math.min(lead === Infinity ? 26 : lead + 13, 60);
+          const cand = (b.s + hop) % p.L;
+          p.at(cand, out);
+          if (this._clearAhead(p, cand, out, b)) { b.s = cand; b.stuckT = 0; p.at(b.s, out); }
         }
         // a saturated stop is run express rather than joined — once committed
         // to the kerb (d < 6) the bus serves it regardless
@@ -648,7 +650,7 @@ export class BusSim {
       if (this.aboard) {
         const b = this.aboard;
         b.g.updateMatrixWorld();
-        rig.camera.position.copy(b.g.localToWorld(this._seat.set(1.8, 2.24, -0.82)));
+        rig.camera.position.copy(b.g.localToWorld(this._seat.set(5.05, 2.42, -0.55)));
         rig.feetY = 1.12; rig._vx = rig._vz = 0; rig.vy = 0;
       } else if (rig.mode === 'walk' && !rig._aboard && !rig._inLift && !rig._fly && Math.abs(rig.feetY) < 2) {
         const p = rig.camera.position;

@@ -876,7 +876,10 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
       const list = [];
       for (const sid of seq) {
         const p = wp(sid);
-        if (!p || d2p(p[0], p[1], pts) > 450) continue;   // path doesn't reach
+        // stops the hand-drawn path doesn't genuinely pass get no service —
+        // up to ~120 m off is a side street's reach, beyond that the kerb
+        // would land in the wrong district announcing the wrong place
+        if (!p || d2p(p[0], p[1], pts) > 120) continue;
         // a pairing that survived direction-matching keeps its furniture zone
         const old = r.stops[leg].find(([zid, os]) => os === sid);
         let zid = old && (!taken.has(old[0]) || taken.get(old[0]) === sid) ? old[0] : null;
