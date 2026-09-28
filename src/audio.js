@@ -151,6 +151,7 @@ export class StationAudio {
 
   _speak(text, lang, vol = 1) {
     if (!this.enabled || !('speechSynthesis' in window)) return;
+    if (lang.startsWith('zh') && !this.voices.some(v => v.lang.startsWith('zh'))) return;   // no Chinese voice — don't speak gibberish
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
     const v = this.voices.find(v => v.lang === lang) ||
@@ -232,7 +233,19 @@ export class StationAudio {
   // route means hearing every stop, even if a station PA is still playing
   _busSpeak(lines) {
     if (!this.enabled || !('speechSynthesis' in window)) return;
+    // a wedged pending flag would queue silence forever — clear it if stuck
+    if (speechSynthesis.pending) {
+      this._busPend ??= performance.now();
+      if (performance.now() - this._busPend > 12000) { speechSynthesis.cancel(); this._busPend = 0; }
+    } else this._busPend = 0;
     for (const [text, lang] of lines) this._speak(text, lang);
+  }
+
+  // welcome aboard — the next-stop reminder a moment after you tap on
+  announceBusBoard(zhName, enName) {
+    this._busSpeak([
+      [`下一站：${zhName}`, 'zh-HK'], [`Next stop: ${enName}`, 'en-HK'], [`下一站：${zhName}`, 'zh-CN'],
+    ]);
   }
 
   announceBusDepart(zhName, enName) {

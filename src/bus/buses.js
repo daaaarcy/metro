@@ -440,6 +440,8 @@ export class BusSim {
       this.aboard = b; b.dwellT = Math.max(b.dwellT, 3);   // hold the doors
       rig.yaw = b.g.rotation.y - Math.PI / 2; rig.pitch = -0.06;    // face forward
       audio?.octopusBeep({ x: b.stop?.door.x ?? b.g.position.x, y: 1.4, z: b.stop?.door.z ?? b.g.position.z });
+      const ns = this.nextStop(b);                                // welcome aboard — name the road ahead
+      if (ns.stop) audio?.announceBusBoard(ns.stop.zh, ns.stop.en);
     }
   }
 
