@@ -69,11 +69,17 @@ export class CameraRig {
       if (e.target instanceof HTMLInputElement) return;   // typing in the search box
       this.keys.add(e.code);
       if (e.code === 'KeyE' && !e.repeat && this.mode === 'walk') {
-        if (this.nearGate) {
+        // a street-level gate or lift door can sit within reach of a bus
+        // stop kerb — aboard always means alight, and a dwelling bus beats a
+        // gate you're not basically touching
+        const gClose = this.nearGate &&
+          Math.hypot(this.camera.position.x - this.nearGate.x, this.camera.position.z - this.nearGate.z) < 1.5;
+        if (this.aboardBus || (this.nearBus && !gClose)) this.onBusTap?.();
+        else if (this.nearGate) {
           openGate(this.nearGate, this.audio);
           this.onGateTap?.(this.nearGate);
         } else if (this.nearLift || this._inLift) this.onLiftTap?.();
-        else if (this.nearBus || this.aboardBus) this.onBusTap?.();
+        else if (this.nearBus) this.onBusTap?.();
       }
     });
     window.addEventListener('keyup', e => {

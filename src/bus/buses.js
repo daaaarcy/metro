@@ -385,7 +385,16 @@ export class BusSim {
     return { mesh: m, mode: 'walk', tx: x, tz: z, speed: 1.3 + Math.random() * 0.3 };
   }
 
-  // E at the kerb: board a dwelling bus; aboard at a dwell: step off
+  // E at the kerb: board a dwelling bus; aboard at a dwell: step off.
+  // A bus held stationary within ~30 m of its next stop is just queued to
+  // serve it — doors shut but still boardable/alightable, or the player is
+  // stranded on the road while a perfectly still bus sits beside them.
+  _queuedAtStop(b) {
+    if (b.state !== 'drive' || b.v >= 0.8) return null;
+    const ns = this.nextStop(b);
+    return ns.stop && ns.d < 30 ? ns : null;
+  }
+
   interact(rig, audio) {
     if (this.aboard) {
       const b = this.aboard;
@@ -393,6 +402,12 @@ export class BusSim {
         const t = b.stop.zoneObj.kerbside();
         rig.camera.position.x = t.x;
         rig.camera.position.z = t.z;
+        rig.feetY = 0; rig._vx = rig._vz = 0;
+        this.aboard = null;
+      } else if (this._queuedAtStop(b)) {
+        // step off the door side beside the bus
+        rig.camera.position.x = b.g.position.x + b.dz * 3.2;
+        rig.camera.position.z = b.g.position.z - b.dx * 3.2;
         rig.feetY = 0; rig._vx = rig._vz = 0;
         this.aboard = null;
       }
@@ -589,14 +604,14 @@ export class BusSim {
       } else if (rig.mode === 'walk' && !rig._aboard && !rig._inLift && !rig._fly && Math.abs(rig.feetY) < 2) {
         const p = rig.camera.position;
         for (const b of this.buses) {
-          // doors open + barely moving — dwell, plus the short pull-away
-          // window while the leaves are still closing. Alongside the bus on
-          // the door side boards; the offside and open road do not.
-          if (b.open < 0.05 || b.v > 2) continue;
+          if (b.v > 2) continue;
           const rx = p.x - b.g.position.x, rz = p.z - b.g.position.z;
           const along = rx * b.dx + rz * b.dz;          // metres forward of centre
           const side = rx * -b.dz + rz * b.dx;          // +Z offside, −Z kerbside
-          if (along > -4.8 && along < 5.8 && side < -0.9 && side > -4.4) { this.near = b; break; }
+          if (!(along > -4.8 && along < 5.8 && side < -0.9 && side > -4.4)) continue;
+          // doors open (dwell or the pull-away window), or held stationary
+          // within the next stop's catchment — boardable either way
+          if (b.open > 0.05 || this._queuedAtStop(b)) { this.near = b; break; }
         }
       }
       rig.nearBus = this.near;
