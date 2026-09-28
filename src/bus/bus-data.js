@@ -808,11 +808,31 @@ export function resolveRoutes() {
 export const GEN_SEGS = [];          // [[ax,az,bx,bz], ...] paved by city.js
 export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
 {
-  // anchors pin real stop coordinates to the hand-placed kerbs
+  // ---- reconcile hand-authored stop lists with the real API ---------------
+  // The hand lists were sparse placeholders and a few pairings were wrong
+  // (e.g. a "Nam Long Shan Rd" kerb on routes 6/63 that never call there).
+  // Each leg is matched to the API direction it overlaps most, then rebuilt
+  // from the real stop sequence: existing pairings that check out keep their
+  // furniture zone, stops served at a hand-built kerb claim it, and the rest
+  // fall back to a lite flag zone at the warped position.
+  const apiOf = new Map(API_ROUTES.map(r => [r.id, r]));
+  const legSeq = {};                          // `${id}|${leg}` -> api stop seq
+  for (const r of ROUTES) {
+    const a = apiOf.get(r.id);
+    if (!a) continue;
+    const ov = (list, seq) => (list || []).filter(([, s]) => seq.includes(s)).length;
+    for (const leg of ['A', 'B']) {
+      const lo = ov(r.stops[leg], a.o), li = ov(r.stops[leg], a.i);
+      legSeq[r.id + '|' + leg] = lo >= li ? a.o : a.i;
+    }
+  }
+  // anchors pin real stop coordinates to the hand-placed kerbs — but only
+  // pairings the API actually serves, or a wrong sid would bend the warp
   const anchors = [];
   for (const r of ROUTES)
-    for (const list of Object.values(r.stops))
-      for (const [zid, sid] of list) {
+    for (const leg of ['A', 'B'])
+      for (const [zid, sid] of r.stops[leg] || []) {
+        if (!legSeq[r.id + '|' + leg]?.includes(sid)) continue;
         const z = ZONES[zid], s = API_STOPS[sid];
         if (z && s && inHK(s.la, s.lo)) anchors.push({ la: s.la, lo: s.lo, x: z.kerb[0], z: z.kerb[1] });
       }
@@ -825,6 +845,65 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     }
     return wpos.get(id);
   };
+  const gzoneOf = id => {            // lite flag zone for any API stop
+    const zid = 'G' + id;
+    if (!ZONES[zid]) {
+      const s = API_STOPS[id], p = wp(id);
+      ZONES[zid] = { halt: [...p], kerb: [...p], nv: [0, 1], qv: [1, 0],
+                     zh: s.zh, en: s.en, lite: true };
+    }
+    return zid;
+  };
+  // distance from a point to the route's hand-drawn path
+  const d2p = (x, z, pts) => {
+    let best = Infinity;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, az] = pts[i], [bx, bz] = pts[i + 1];
+      const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz;
+      const t = l2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)) : 0;
+      const d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+      if (d < best) best = d;
+    }
+    return best;
+  };
+  const taken = new Map();           // zid -> sid a hand zone now stands for
+  const GENERIC = new Set(['road', 'rd', 'street', 'st', 'station', 'bus', 'terminus', 'the', 'hong', 'kong']);
+  for (const r of ROUTES) {
+    const a = apiOf.get(r.id);
+    if (!a) continue;
+    const pts = r.legs();
+    for (const leg of ['A', 'B']) {
+      const seq = legSeq[r.id + '|' + leg];
+      const list = [];
+      for (const sid of seq) {
+        const p = wp(sid);
+        if (!p || d2p(p[0], p[1], pts) > 450) continue;   // path doesn't reach
+        // a pairing that survived direction-matching keeps its furniture zone
+        const old = r.stops[leg].find(([zid, os]) => os === sid);
+        let zid = old && (!taken.has(old[0]) || taken.get(old[0]) === sid) ? old[0] : null;
+        if (!zid) {
+          // a hand kerb within 90 m of the warped spot is that same stop
+          let bd = 90;
+          for (const [id, z] of Object.entries(ZONES)) {
+            if (z.lite || !z.kerb || (taken.has(id) && taken.get(id) !== sid)) continue;
+            const d = Math.hypot(z.kerb[0] - p[0], z.kerb[1] - p[1]);
+            if (d < bd) { zid = id; bd = d; }
+          }
+        }
+        if (!zid) zid = gzoneOf(sid);
+        else if (!taken.has(zid)) {
+          // retitle the kerb to the real stop unless the names already agree
+          const z = ZONES[zid], s = API_STOPS[sid];
+          const share = z.en.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 2 && !GENERIC.has(w));
+          const ok = share.some(w => s.en.toLowerCase().includes(w));
+          if (!ok) { z.zh = s.zh; z.en = s.en; }
+        }
+        taken.set(zid, sid);
+        list.push([zid, sid]);
+      }
+      r.stops[leg] = list;
+    }
+  }
   const dedupe = pts => pts.filter((p, k) => !k || Math.hypot(p[0] - pts[k - 1][0], p[1] - pts[k - 1][1]) > 7);
   // a one-way sequence returns down a parallel lane offset to the left
   const backtrack = seq => seq.slice(1, -1).reverse().map((p, k, a) => {
