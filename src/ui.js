@@ -201,7 +201,7 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
   const FAV_KEY = 'adm-bus-fav';
   let savedFav = null;
   try { savedFav = JSON.parse(localStorage.getItem(FAV_KEY) || 'null'); } catch { /* bad JSON */ }
-  const busFavs = new Set(savedFav ?? []);
+  const busFavs = new Set(savedFav ?? ['973']);
   const saveFavs = () => {
     try { localStorage.setItem(FAV_KEY, JSON.stringify([...busFavs])); } catch { /* private mode */ }
   };
