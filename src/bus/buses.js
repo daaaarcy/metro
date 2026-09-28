@@ -369,6 +369,10 @@ export class BusSim {
     this.near = null;          // dwelling bus whose front door is in reach
     this.aboard = null;        // bus carrying the player
     this._seat = new THREE.Vector3(5.05, 2.42, -0.55);   // front kerb-side seat — full windscreen view
+    // a warm cabin light follows the bus you're aboard — the navy seats and
+    // dark trim drink the ambient otherwise, and a night ride goes black
+    this._cabLight = new THREE.PointLight(0xffe2b0, 0, 9, 1.4);
+    this.root.add(this._cabLight);
     scene.add(this.root);
   }
 
@@ -649,11 +653,14 @@ export class BusSim {
     if (rig) {
       // teleporting or leaving walk mode drops the ride, wherever it went
       if (this.aboard && (rig.mode !== 'walk' || rig._fly)) this.aboard = null;
+      this._cabLight.intensity = 0;
       if (this.aboard) {
         const b = this.aboard;
         b.g.updateMatrixWorld();
         rig.camera.position.copy(b.g.localToWorld(this._seat.set(5.05, 2.42, -0.55)));
         rig.feetY = 1.12; rig._vx = rig._vz = 0; rig.vy = 0;
+        this._cabLight.position.set(b.g.position.x, 2.5, b.g.position.z);
+        this._cabLight.intensity = 14;
       } else if (rig.mode === 'walk' && !rig._aboard && !rig._inLift && !rig._fly && Math.abs(rig.feetY) < 2) {
         const p = rig.camera.position;
         for (const b of this.buses) {
