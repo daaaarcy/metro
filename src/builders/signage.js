@@ -29,12 +29,17 @@ export function makeSign({ zh = '', en = '', chips = [], w = 6, h = 1.6 }) {
     x += cwpx + pad * 0.7;
   }
   ctx.textAlign = 'left';
+  const avail = cw - x - pad;
   ctx.fillStyle = '#fff';
   ctx.font = `600 ${ch * 0.4}px "PingFang HK","PingFang SC",sans-serif`;
-  ctx.fillText(zh, x, ch * 0.36);
+  const zhW = ctx.measureText(zh).width;
+  if (zhW > avail) ctx.font = `600 ${Math.max(6, Math.floor(ch * 0.4 * avail / zhW))}px "PingFang HK","PingFang SC",sans-serif`;
+  ctx.fillText(zh, x, ch * 0.36, avail);
   ctx.font = `400 ${ch * 0.24}px sans-serif`;
+  const enW = ctx.measureText(en).width;
+  if (enW > avail) ctx.font = `400 ${Math.max(6, Math.floor(ch * 0.24 * avail / enW))}px sans-serif`;
   ctx.fillStyle = '#c8d4de';
-  ctx.fillText(en, x, ch * 0.72);
+  ctx.fillText(en, x, ch * 0.72, avail);
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

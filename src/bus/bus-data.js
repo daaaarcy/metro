@@ -825,6 +825,10 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     '002387': ['馬坑邨駿馬樓', 'Chun Ma House, Ma Hang Estate'],
     '002386': ['馬坑邨駿馬樓', 'Chun Ma House, Ma Hang Estate'],
     '002175': ['馬坑邨觀馬樓', 'Koon Ma House, Ma Hang Estate'],
+    // 002486 carries CTB's famous full landmark chain — the onboard PA and
+    // flag announce every neighbour (stadium, hospital, hotels), not just 錫克廟
+    '002486': ['錫克廟 - 伊利沙伯體育館 - 鄧肇堅醫院 - 麗悅酒店 - 灣仔帝盛酒店 - 英皇駿景酒店',
+               'Khalsa Diwan Sikh Temple - Queen Elizabeth Stadium - Tang Shiu Kin Hospital - Cosmo Hotel - Dorsett Wanchai Hong Kong Hotel - The Emperor Hotel'],
   };
   for (const [sid, [zh, en]] of Object.entries(NAME_FIX))
     if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
