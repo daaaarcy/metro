@@ -833,6 +833,9 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     // direction — city-bound leads with the station, village-bound with San Wai
     '002352': ['海洋公園站 - 黃竹坑新圍', 'Ocean Park Station - Wong Chuk Hang San Wai'],
     '002350': ['黃竹坑新圍 - 海洋公園站', 'Wong Chuk Hang San Wai - Ocean Park Station'],
+    // the Stanley expresses city-bound use the Marriott kerb, not the
+    // station kerb that 73/973 pull into
+    '002353': ['香港海洋公園萬豪酒店 - 海洋公園站', 'Hong Kong Ocean Park Marriott Hotel - Ocean Park Station'],
   };
   for (const [sid, [zh, en]] of Object.entries(NAME_FIX))
     if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
