@@ -831,6 +831,14 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
   };
   for (const [sid, [zh, en]] of Object.entries(NAME_FIX))
     if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
+  // riders hear the place name alone — the API's ", <parent road>" tail is a
+  // database disambiguator the LECIP never speaks: Deep Water Bay, Deepdene,
+  // Island Club, Belleview Drive, Turtle Cove announce without the road
+  for (const [sid, st] of Object.entries(API_STOPS)) {
+    if (ANNOUNCE[sid] || NAME_FIX[sid]) continue;
+    const cut = s => { const i = (s || '').lastIndexOf(','); return i > 0 ? s.slice(0, i).trim() : s; };
+    st.en = cut(st.en); st.zh = cut(st.zh);
+  }
   const legSeq = {};                          // `${id}|${leg}` -> api stop seq
   for (const r of ROUTES) {
     const a = apiOf.get(r.id);
