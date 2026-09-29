@@ -829,6 +829,10 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     // flag announce every neighbour (stadium, hospital, hotels), not just 錫克廟
     '002486': ['錫克廟 - 伊利沙伯體育館 - 鄧肇堅醫院 - 麗悅酒店 - 灣仔帝盛酒店 - 英皇駿景酒店',
                'Khalsa Diwan Sikh Temple - Queen Elizabeth Stadium - Tang Shiu Kin Hospital - Cosmo Hotel - Dorsett Wanchai Hong Kong Hotel - The Emperor Hotel'],
+    // the Ocean Park stop pair carries the same two landmarks swapped by
+    // direction — city-bound leads with the station, village-bound with San Wai
+    '002352': ['海洋公園站 - 黃竹坑新圍', 'Ocean Park Station - Wong Chuk Hang San Wai'],
+    '002350': ['黃竹坑新圍 - 海洋公園站', 'Wong Chuk Hang San Wai - Ocean Park Station'],
   };
   for (const [sid, [zh, en]] of Object.entries(NAME_FIX))
     if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
