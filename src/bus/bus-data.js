@@ -836,6 +836,14 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     // the Stanley expresses city-bound use the Marriott kerb, not the
     // station kerb that 73/973 pull into
     '002353': ['香港海洋公園萬豪酒店 - 海洋公園站', 'Hong Kong Ocean Park Marriott Hotel - Ocean Park Station'],
+    // Wong Chuk Hang corridor — the kerb names carry the landmark across the
+    // road, not the road suffix the database shows
+    '002354': ['黃竹坑體育館 - 香港仔運動場', 'Wong Chuk Hang Sports Centre - Aberdeen Sports Ground'],
+    '002355': ['黃竹坑遊樂場 - 南灣如心酒店', 'Wong Chuk Hang Recreation Ground - Nina Hotel Island South'],
+    '002357': ['南朗山道 - 黃竹坑商貿區', 'Nam Long Shan Road - Wong Chuk Hang Business Area'],
+    '002383': ['業興街 - 南灣如心酒店 - 黃竹坑商貿區', 'Yip Hing Street - Nina Hotel Island South - Wong Chuk Hang Business Area'],
+    '002345': ['黃竹坑遊樂場 - 黃竹坑道', 'Wong Chuk Hang Recreation Ground - Wong Chuk Hang Road'],
+    '002346': ['葛量洪醫院 - 香港仔運動場', 'Grantham Hospital - Aberdeen Sports Ground'],
   };
   for (const [sid, [zh, en]] of Object.entries(NAME_FIX))
     if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
