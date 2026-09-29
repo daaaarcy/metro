@@ -12,6 +12,7 @@
 //     Lei Tung estate drives and South Horizons.
 
 import { API_STOPS, API_ROUTES } from './generated.js';
+import { ANNOUNCE } from './announce-names.js';
 import { makeWarp, inHK } from './geo.js';
 
 const LANE_IN = 2.5;
@@ -816,34 +817,17 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
   // furniture zone, stops served at a hand-built kerb claim it, and the rest
   // fall back to a lite flag zone at the warped position.
   const apiOf = new Map(API_ROUTES.map(r => [r.id, r]));
-  // rider-verified masthead names — the API's database strings lag the real
-  // kerb signage: the Ma Hang poles carry no road name, and the QRE stops
-  // display their landmark qualifiers
+  // real LECIP onboard-announcement names (documented per-stop on the HK bus
+  // wiki) — where the PA says a landmark chain rather than the flag's plain
+  // "X, Road" string, the announcement wins on signs, menus and the PA itself
+  for (const [sid, [zh, en]] of Object.entries(ANNOUNCE))
+    if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
+  // rider-verified masthead names with no documented announcement —
+  // the Ma Hang poles carry no road name
   const NAME_FIX = {
-    '002487': ['香港華仁書院 - 律敦治醫院', 'Wah Yan College Hong Kong - Ruttonjee Hospital'],
-    '002569': ['胡忠大廈 - 合和中心', 'Wu Chung House - Hopewell Centre'],
     '002387': ['馬坑邨駿馬樓', 'Chun Ma House, Ma Hang Estate'],
     '002386': ['馬坑邨駿馬樓', 'Chun Ma House, Ma Hang Estate'],
     '002175': ['馬坑邨觀馬樓', 'Koon Ma House, Ma Hang Estate'],
-    // 002486 carries CTB's famous full landmark chain — the onboard PA and
-    // flag announce every neighbour (stadium, hospital, hotels), not just 錫克廟
-    '002486': ['錫克廟 - 伊利沙伯體育館 - 鄧肇堅醫院 - 麗悅酒店 - 灣仔帝盛酒店 - 英皇駿景酒店',
-               'Khalsa Diwan Sikh Temple - Queen Elizabeth Stadium - Tang Shiu Kin Hospital - Cosmo Hotel - Dorsett Wanchai Hong Kong Hotel - The Emperor Hotel'],
-    // the Ocean Park stop pair carries the same two landmarks swapped by
-    // direction — city-bound leads with the station, village-bound with San Wai
-    '002352': ['海洋公園站 - 黃竹坑新圍', 'Ocean Park Station - Wong Chuk Hang San Wai'],
-    '002350': ['黃竹坑新圍 - 海洋公園站', 'Wong Chuk Hang San Wai - Ocean Park Station'],
-    // the Stanley expresses city-bound use the Marriott kerb, not the
-    // station kerb that 73/973 pull into
-    '002353': ['香港海洋公園萬豪酒店 - 海洋公園站', 'Hong Kong Ocean Park Marriott Hotel - Ocean Park Station'],
-    // Wong Chuk Hang corridor — the kerb names carry the landmark across the
-    // road, not the road suffix the database shows
-    '002354': ['黃竹坑體育館 - 香港仔運動場', 'Wong Chuk Hang Sports Centre - Aberdeen Sports Ground'],
-    '002355': ['黃竹坑遊樂場 - 南灣如心酒店', 'Wong Chuk Hang Recreation Ground - Nina Hotel Island South'],
-    '002357': ['南朗山道 - 黃竹坑商貿區', 'Nam Long Shan Road - Wong Chuk Hang Business Area'],
-    '002383': ['業興街 - 南灣如心酒店 - 黃竹坑商貿區', 'Yip Hing Street - Nina Hotel Island South - Wong Chuk Hang Business Area'],
-    '002345': ['黃竹坑遊樂場 - 黃竹坑道', 'Wong Chuk Hang Recreation Ground - Wong Chuk Hang Road'],
-    '002346': ['葛量洪醫院 - 香港仔運動場', 'Grantham Hospital - Aberdeen Sports Ground'],
   };
   for (const [sid, [zh, en]] of Object.entries(NAME_FIX))
     if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
