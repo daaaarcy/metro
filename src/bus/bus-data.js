@@ -816,6 +816,18 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
   // furniture zone, stops served at a hand-built kerb claim it, and the rest
   // fall back to a lite flag zone at the warped position.
   const apiOf = new Map(API_ROUTES.map(r => [r.id, r]));
+  // rider-verified masthead names — the API's database strings lag the real
+  // kerb signage: the Ma Hang poles carry no road name, and the QRE stops
+  // display their landmark qualifiers
+  const NAME_FIX = {
+    '002487': ['香港華仁書院 - 律敦治醫院', 'Wah Yan College Hong Kong - Ruttonjee Hospital'],
+    '002569': ['胡忠大廈 - 合和中心', 'Wu Chung House - Hopewell Centre'],
+    '002387': ['馬坑邨駿馬樓', 'Chun Ma House, Ma Hang Estate'],
+    '002386': ['馬坑邨駿馬樓', 'Chun Ma House, Ma Hang Estate'],
+    '002175': ['馬坑邨觀馬樓', 'Koon Ma House, Ma Hang Estate'],
+  };
+  for (const [sid, [zh, en]] of Object.entries(NAME_FIX))
+    if (API_STOPS[sid]) { API_STOPS[sid].zh = zh; API_STOPS[sid].en = en; }
   const legSeq = {};                          // `${id}|${leg}` -> api stop seq
   for (const r of ROUTES) {
     const a = apiOf.get(r.id);
