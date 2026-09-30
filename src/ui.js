@@ -243,7 +243,8 @@ export function buildUI({ onMode, onClip, onGoto, onLabels, onAudio, onPeople, o
         row.dataset.hay = `${zh} ${en}`.toLowerCase();
         row.innerHTML = `
           <span class="lvl-id bus-dir">${s.leg === 'A' ? '▸' : '◂'}</span>
-          <span class="lvl-name"><span class="zh">${zh}</span> <span class="en">${en}</span></span>
+          <span class="lvl-name"><span class="zh">${zh}</span> <span class="en">${en}</span>
+            ${s.sat ? '<span class="wk-tag">六日假期 Sat·Sun</span>' : ''}</span>
           ${z ? '<button class="go">go</button>' : ''}`;
         rowsEl.appendChild(row);
         if (z) row.querySelector('.go').addEventListener('click', () => onGoto(s.zone, busVp(z)));

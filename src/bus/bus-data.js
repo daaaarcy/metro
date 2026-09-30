@@ -889,6 +889,11 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     }
     return best;
   };
+  // special-day stops: 973's Sat/Sun/PH departures divert via Museum Drive
+  // (M+, HK Palace Museum) both ways, plus the Ocean Park → Sham Wan loop
+  const SAT_ONLY = { '973': new Set(['002225', '002222', '002389', '002390',
+                                     '002399', '003762', '003763']) };
+  const isWk = [0, 6].includes(new Date().getDay());
   const taken = new Map();           // zid -> sid a hand zone now stands for
   for (const r of ROUTES) {
     const a = apiOf.get(r.id);
@@ -896,6 +901,7 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     const pts = r.legs();
     for (const leg of ['A', 'B']) {
       const seq = legSeq[r.id + '|' + leg];
+      const wkOnly = SAT_ONLY[r.id];
       const list = [];
       for (const sid of seq) {
         const p = wp(sid);
@@ -924,6 +930,8 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
           ZONES[zid].en = API_STOPS[sid].en;
         }
         taken.set(zid, sid);
+        // special-day kerb: the flag stands all week, the bus only calls Sat/Sun
+        if (wkOnly?.has(sid) && !isWk) continue;
         list.push([zid, sid]);
       }
       r.stops[leg] = list;
@@ -935,7 +943,8 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
       const inList = new Map(list.map(([zid, sid]) => [sid, zid]));
       r.menuStops = [...(r.menuStops || []), ...seq.map(sid => {
         const zid = inList.get(sid), s = API_STOPS[sid], z = zid && ZONES[zid];
-        return { leg, zone: zid || null, zh: (z || s)?.zh ?? '', en: (z || s)?.en ?? '' };
+        return { leg, zone: zid || null, zh: (z || s)?.zh ?? '', en: (z || s)?.en ?? '',
+                 sat: wkOnly?.has(sid) || undefined };
       })];
     }
   }
