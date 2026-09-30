@@ -902,13 +902,15 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
     for (const leg of ['A', 'B']) {
       const seq = legSeq[r.id + '|' + leg];
       const wkOnly = SAT_ONLY[r.id];
-      const list = [];
+      const list = [], zidOf = new Map();
       for (const sid of seq) {
         const p = wp(sid);
-        // stops the hand-drawn path doesn't genuinely pass get no service —
-        // up to ~120 m off is a side street's reach, beyond that the kerb
-        // would land in the wrong district announcing the wrong place
-        if (!p || d2p(p[0], p[1], pts) > 120) continue;
+        // beyond the hand path's reach the real stop still stands at its map
+        // spot — riders can walk there; the route just never calls in-sim.
+        // Up to ~120 m off is a side street's reach, beyond that the kerb
+        // would halt buses in the wrong district announcing the wrong place
+        if (!p) continue;
+        if (d2p(p[0], p[1], pts) > 120) { zidOf.set(sid, gzoneOf(sid)); continue; }
         // a pairing that survived direction-matching keeps its furniture zone
         const old = r.stops[leg].find(([zid, os]) => os === sid);
         let zid = old && (!taken.has(old[0]) || taken.get(old[0]) === sid) ? old[0] : null;
@@ -930,6 +932,7 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
           ZONES[zid].en = API_STOPS[sid].en;
         }
         taken.set(zid, sid);
+        zidOf.set(sid, zid);
         // special-day kerb: the flag stands all week, the bus only calls Sat/Sun
         if (wkOnly?.has(sid) && !isWk) continue;
         list.push([zid, sid]);
@@ -942,9 +945,10 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
       if (leg === 'B' && seq === legSeq[r.id + '|A']) continue;
       const inList = new Map(list.map(([zid, sid]) => [sid, zid]));
       r.menuStops = [...(r.menuStops || []), ...seq.map(sid => {
-        const zid = inList.get(sid), s = API_STOPS[sid], z = zid && ZONES[zid];
+        const zid = inList.get(sid) || zidOf.get(sid) || (ZONES['G' + sid] ? 'G' + sid : null);
+        const s = API_STOPS[sid], z = zid && ZONES[zid];
         return { leg, zone: zid || null, zh: (z || s)?.zh ?? '', en: (z || s)?.en ?? '',
-                 sat: wkOnly?.has(sid) || undefined };
+                 sid, sat: wkOnly?.has(sid) || undefined };
       })];
     }
   }
@@ -1004,21 +1008,21 @@ export const GEN_BOUNDS = [Infinity, Infinity, -Infinity, -Infinity];
   }
 }
 
-// furniture zones with the set of routes serving each
+// furniture zones with the set of routes serving each — menu-only kerbs
+// (stops the schematic path can't serve) still render so riders can walk to
+// every real stop, they just carry no service and no ETA feed
 export function zonesWithRoutes() {
   const out = {};
-  for (const r of ROUTES)
+  const add = (rid, zone, stopId) => {
+    const z = out[zone] ??= { ...ZONES[zone], routes: [], stopIds: [] };
+    if (!z.routes.includes(rid)) z.routes.push(rid);
+    if (stopId && !z.stopIds.some(s => s.route === rid)) z.stopIds.push({ route: rid, stopId });
+  };
+  for (const r of ROUTES) {
     for (const list of Object.values(r.stops))
-      for (const [zone] of list) {
-        const z = out[zone] ??= { ...ZONES[zone], routes: [], stopIds: [] };
-        if (!z.routes.includes(r.id)) z.routes.push(r.id);
-      }
-  // per-route real stop ids for the ETA poller
-  for (const r of ROUTES)
-    for (const list of Object.values(r.stops))
-      for (const [zone, stopId] of list) {
-        const z = out[zone];
-        if (!z.stopIds.some(s => s.route === r.id)) z.stopIds.push({ route: r.id, stopId });
-      }
+      for (const [zone, sid] of list) add(r.id, zone, sid);
+    for (const s of r.menuStops || [])
+      if (s.zone && ZONES[s.zone]) add(r.id, s.zone, s.sid);
+  }
   return Object.entries(out).map(([id, z]) => ({ id, ...z }));
 }
